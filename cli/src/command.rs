@@ -57,6 +57,10 @@ pub fn command() -> Command {
 
     Command::new("opensdk")
         .about("Generate SDKs from OpenAPI specs through OpenSDK emitter plugins")
+        // Straight from the manifest, which release.yml refuses to publish unless
+        // it matches the tag. Without this the binary had no way to say which
+        // build it was, and that gate guarded a number nobody could observe.
+        .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
         .arg_required_else_help(true)
         .arg(
