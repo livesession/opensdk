@@ -6,7 +6,7 @@ edition.workspace = true
 # artifact, and `release.yml` refuses to publish a tag that disagrees with this
 # number. Inheriting 0.0.0 would make that gate compare every tag against a
 # constant, which is the same as not having it.
-version = "0.1.3"
+version = "0.1.4"
 license.workspace = true
 publish = false
 description = "The `opensdk` binary: parse | generate | diff | publish | run | init | xsdk, plus the emitter registry"
