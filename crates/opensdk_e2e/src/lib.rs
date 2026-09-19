@@ -76,9 +76,11 @@ pub fn files_by_ext(dir: &Path, ext: &str) -> Vec<PathBuf> {
     out
 }
 
-/// Suppresses the .NET CLI's per-invocation first-run work. Belt and braces
-/// alongside the `Once` warm-up below: the warm-up removes the race, these keep
-/// each build from re-entering the configurer at all.
+/// Suppresses the .NET CLI's per-invocation first-run work. On its own this does
+/// NOT prevent the mutex race below — `DOTNET_SKIP_FIRST_TIME_EXPERIENCE` is
+/// honoured inconsistently across SDK versions, which is why the isolation and
+/// serialization there carry the fix and these are only a cheap reduction of the
+/// window.
 const DOTNET_ENV: &[(&str, &str)] = &[
     ("DOTNET_CLI_TELEMETRY_OPTOUT", "1"),
     ("DOTNET_NOLOGO", "1"),
@@ -176,20 +178,46 @@ pub fn compile_smoke(lang: &str, dir: &Path) -> Result<bool, String> {
             //     at NuGet.Common.Migrations.MigrationRunner.Run(..)
             //     at Microsoft.DotNet.Configurer.DotnetFirstTimeUseConfigurer.Configure()
             //
-            // The giveaway that it is a race and not a compile error: three
-            // failures reported three DIFFERENT errnos, and a fourth case passed.
+            // The giveaway that it is a race and not a compile error: the failures
+            // report DIFFERENT errnos (EEXIST on mkdir, ENOENT on mkdir, EEXIST on
+            // an O_EXCL open) and which case loses changes between runs.
             //
-            // `call_once` blocks every other thread until the configurer has run
-            // exactly once, so the builds that follow find the work already done.
-            static FIRST_RUN: std::sync::Once = std::sync::Once::new();
-            FIRST_RUN.call_once(|| {
-                let _ = Command::new("dotnet")
-                    .arg("--info")
-                    .envs(DOTNET_ENV.iter().copied())
-                    .output();
-            });
+            // Warming the configurer once was not enough — it left the builds
+            // themselves running concurrently, and the failure count merely went
+            // from 3 to 1. The shared resource is the mutex PATH, so:
+            //
+            //  1. Give each invocation its own TMPDIR. The shm directory hangs off
+            //     it, so no two dotnet processes name the same mutex at all. This
+            //     is the load-bearing fix and it holds across processes, not just
+            //     across threads of this one.
+            //  2. Serialize the builds anyway. Belt and braces: if some part of
+            //     the path turns out not to derive from TMPDIR on a given SDK,
+            //     one-at-a-time still cannot contend with itself.
+            // BESIDE the project, never inside it: an SDK-style csproj globs
+            // `**/*.cs`, so a scratch directory under `dir` is one stray file away
+            // from joining the compilation it is supposed to be invisible to.
+            let name = dir
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "sdk".to_string());
+            let dotnet_tmp = std::env::temp_dir().join(format!("xyd_dotnet_tmp_{name}"));
+            let _ = std::fs::remove_dir_all(&dotnet_tmp);
+            std::fs::create_dir_all(&dotnet_tmp)
+                .map_err(|e| format!("create {}: {e}", dotnet_tmp.display()))?;
+            let tmp = dotnet_tmp.to_string_lossy().to_string();
+            let mut env: Vec<(&str, &str)> = DOTNET_ENV.to_vec();
+            env.push(("TMPDIR", &tmp));
+            env.push(("DOTNET_CLI_HOME", &tmp));
+
+            static DOTNET_BUILD: std::sync::Mutex<()> = std::sync::Mutex::new(());
+            // A panicking test would poison this; the lock orders builds and
+            // guards no data, so recover rather than cascading one case's failure
+            // into every other case.
+            let _serial = DOTNET_BUILD.lock().unwrap_or_else(|e| e.into_inner());
+
+            let mut result = Ok(());
             for proj in files_by_ext(dir, ".csproj") {
-                run(
+                result = run(
                     "dotnet",
                     &[
                         s("build"),
@@ -197,9 +225,15 @@ pub fn compile_smoke(lang: &str, dir: &Path) -> Result<bool, String> {
                         proj.to_string_lossy().to_string(),
                     ],
                     dir,
-                    DOTNET_ENV,
-                )?;
+                    &env,
+                );
+                if result.is_err() {
+                    break;
+                }
             }
+            // Ours to clean: it lives outside `dir`, which the caller removes.
+            let _ = std::fs::remove_dir_all(&dotnet_tmp);
+            result?;
         }
         "rust" => run("cargo", &[s("build")], dir, &[])?,
         // node is handled by the caller: locating `tsc` needs the JS toolchain's
