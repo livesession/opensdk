@@ -65,8 +65,12 @@ guard() {
   esac
 }
 
-# 1. Path deps escaping the repo. A sibling hop (`../<crate>`) is fine; two or
-#    more hops leaves crates/ and can only resolve inside xyd.
+# 1. Path deps escaping the repo. Crates sit at two depths — `crates/<name>` and
+#    the root-level `cli` — so "one hop good, two hops bad" is not the rule: the
+#    CLI legitimately reaches its dependencies as `../crates/<name>`. What can
+#    never resolve inside this repo is a `../..` prefix, from either depth.
+#    (`crates/opensdk_core/tests/layers.rs` does the rigorous version of this
+#    check, resolving every declared path and asserting it lands under the root.)
 guard "path-deps" 20 'path *= *"\.\./\.\.' '*/Cargo.toml'
 
 # 2. Filesystem reaches into xyd's layout, in code (not comments or goldens).

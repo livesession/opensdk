@@ -22,7 +22,7 @@ crates are also consumable directly as libraries.
 | `crates/opensdk_{go,node,python,ruby,java,dotnet,rust}` | the seven emitters |
 | `crates/opensdk_framework` | the emitter contract, orchestrator, and the regen-safe `write_project` lifecycle |
 | `crates/opensdk_{core,config,diff,chain}` | IR + behavior, config shapes, the breaking-change classifier, the chain pipeline |
-| `crates/opensdk` | the `opensdk` binary |
+| `cli` | the `opensdk` binary |
 | `crates/oas_doc` | `DocCtx` — the shared spec loader/dereferencer |
 | `crates/{opensdk_cli_common,opensdk_e2e,parity_kit}` | test harnesses |
 

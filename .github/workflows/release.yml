@@ -1,0 +1,212 @@
+# Tag-push release of the `opensdk` binary.
+#
+# Gate -> build -> attach. The gate is ci.yml itself, called with `full: true` so
+# the e2e tier runs: it is the only tier that observes real HTTP behaviour, and
+# the only one a push cannot reach. Re-declaring ci.yml's seven language
+# toolchains in a second file would guarantee the two drift.
+#
+# The three asset NAMES are load-bearing, not cosmetic: xyd's installer builds
+# the download URL from them (crates/xyd_cli/src/v0/opensdk.rs). Rename one and
+# `xyd components install opensdk` 404s.
+#
+# Not GoReleaser, deliberately — see the note at the bottom of this file.
+name: release
+
+on:
+  push:
+    tags:
+      # Deliberately broad. Stable vs prerelease is decided below from the tag
+      # text, not by two disjoint globs in two files. A `v[0-9]+.[0-9]+.[0-9]+`
+      # pattern relies on `+` semantics GitHub's filter-pattern docs do not state
+      # plainly; if `+` were literal, the stable path would simply never fire.
+      - "v*"
+
+# Read-only by default; only the publishing job is granted write.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  # A tag is immutable. Never cancel a release mid-flight.
+  cancel-in-progress: false
+
+jobs:
+  # 1) THE GATE. Every tier, e2e included. Nothing publishes if this is red.
+  ci:
+    name: full test suite
+    uses: ./.github/workflows/ci.yml
+    with:
+      full: true
+
+  # 2) The three assets, built natively — one runner per target.
+  #
+  # Runs in PARALLEL with the gate: the publish job below `needs:` both, so a red
+  # gate still blocks the release, and serialising would add the whole suite's
+  # wall-clock to every tag for no extra confidence.
+  binaries:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: opensdk-linux-x64
+          - os: ubuntu-24.04-arm
+            artifact: opensdk-linux-arm64
+          - os: macos-14
+            artifact: opensdk-darwin-arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # The tag is the release's identity; the manifest is what users see in
+      # `--version`. If they disagree, one of them is a lie — fail before
+      # building rather than shipping a binary that misreports itself.
+      #
+      # EXACT match, prerelease included: tagging v0.1.0-rc1 requires
+      # cli/Cargo.toml to say `version = "0.1.0-rc1"` (a valid cargo version).
+      # Comparing only the X.Y.Z core would let every rc ship claiming to be the
+      # stable it is not.
+      - name: Verify tag matches cli/Cargo.toml
+        shell: bash
+        run: |
+          manifest=$(cargo metadata --no-deps --format-version 1 \
+            | python3 -c "import json,sys;print(next(p['version'] for p in json.load(sys.stdin)['packages'] if p['name']=='opensdk'))")
+          tag="${GITHUB_REF_NAME#v}"
+          echo "tag=$tag manifest=$manifest"
+          if [ "$tag" != "$manifest" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match cli/Cargo.toml version $manifest"
+            exit 1
+          fi
+
+      # The package is `opensdk` (it was `opensdk_cli` before the move to cli/).
+      # Cargo writes to the WORKSPACE-root target/, not cli/target/.
+      - name: Build
+        run: cargo build -p opensdk --bin opensdk --release
+
+      # Stage under the asset name BEFORE upload. Every target's raw output is
+      # just `opensdk`, so a `merge-multiple: true` download would collapse all
+      # three into one file — last writer wins, silently.
+      - name: Stage under the asset name
+        shell: bash
+        run: cp target/release/opensdk "target/release/${{ matrix.artifact }}"
+
+      # An unsigned arm64 Mach-O does not execute at all on Apple silicon. Ad-hoc
+      # is enough: this is a pure codegen CLI with no JIT and no entitlements.
+      - name: Codesign + verify (darwin)
+        if: matrix.os == 'macos-14'
+        run: |
+          codesign -s - --force "target/release/${{ matrix.artifact }}"
+          codesign --verify --strict --verbose=2 "target/release/${{ matrix.artifact }}"
+
+      # Exercise the SHIPPED artifact, in a clean temp dir with no node_modules
+      # and no repo on PATH. Asserts files were EMITTED — exit 0 alone would pass
+      # for a binary that generates nothing.
+      - name: "Smoke: node-free generate"
+        shell: bash
+        run: |
+          BIN="$PWD/target/release/${{ matrix.artifact }}"
+          WORK="$RUNNER_TEMP/opensdk-smoke"
+          rm -rf "$WORK"; mkdir -p "$WORK"
+          cp crates/openapi2opensdk/__fixtures__/1.basic/input.json "$WORK/openapi.json"
+          cd "$WORK"
+          "$BIN" --help > /dev/null
+          "$BIN" generate --lang go --spec ./openapi.json --output ./out
+          test -f ./out/go.mod
+          test -f ./out/client.go
+          echo "smoke ok: $(find ./out -type f | wc -l) files generated"
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: target/release/${{ matrix.artifact }}
+          if-no-files-found: error
+
+  # 3) Attach. Downloads and publishes; builds nothing.
+  release:
+    name: GitHub Release
+    needs: [ci, binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          pattern: opensdk-*
+          merge-multiple: true
+
+      # The failure this pipeline exists to avoid. xyd builds these same three
+      # assets, codesigns them, smoke-tests them — and then attaches `xyd-*`,
+      # which `opensdk-*` never matches, so they are dropped on the floor and the
+      # download URL 404s forever while every job reports success. Assert all
+      # three are here BEFORE publishing, so a glob typo is red, not silent.
+      - name: Verify all three assets arrived
+        shell: bash
+        run: |
+          ls -la binaries
+          for a in opensdk-linux-x64 opensdk-linux-arm64 opensdk-darwin-arm64; do
+            test -f "binaries/$a" || { echo "::error::missing asset $a"; exit 1; }
+          done
+          chmod +x binaries/opensdk-*
+          ( cd binaries && sha256sum opensdk-* > checksums.txt && cat checksums.txt )
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          # A `-` in the tag (v0.1.0-rc1) means prerelease, which also keeps it
+          # OUT of /releases/latest/download/ — the endpoint xyd's installer
+          # uses, which resolves to the newest NON-prerelease, non-draft release.
+          # So the first tag that ships usable assets must NOT be a prerelease.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
+          draft: false
+          files: |
+            binaries/opensdk-*
+            binaries/checksums.txt
+          body: |
+            The `opensdk` toolchain binary — node-free and self-contained.
+
+            Download the asset for your platform, `chmod +x`, and run `opensdk --help`.
+
+            | Asset | Platform |
+            |---|---|
+            | `opensdk-linux-x64` | Linux x86-64 |
+            | `opensdk-linux-arm64` | Linux ARM64 |
+            | `opensdk-darwin-arm64` | macOS Apple Silicon |
+
+      # A release whose assets did not attach looks identical to one that worked
+      # until somebody tries to download it. Ask GitHub what it actually stored.
+      - name: Verify the release carries the assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --json assets \
+            --jq '.assets[].name' | sort | tee /tmp/attached.txt
+          for a in opensdk-linux-x64 opensdk-linux-arm64 opensdk-darwin-arm64; do
+            grep -qx "$a" /tmp/attached.txt || { echo "::error::$a is not attached to the release"; exit 1; }
+          done
+
+# Why not GoReleaser
+# -----------------
+# Two things you would reasonably expect to disqualify it do NOT: the Rust
+# builder is OSS (since v2.5 — only "Publishing with Cargo" is Pro), and
+# `archives: formats: [binary]` does emit bare, un-archived assets whose names
+# `name_template` controls. Both were verified against the docs and its source.
+#
+# What disqualifies it here is structural. Splitting a release across runners
+# (`partial`) is Pro-only, and the Rust builder declares
+# `AllowConcurrentBuilds() = false`. So on OSS it must build all three targets
+# SERIALLY ON ONE RUNNER. darwin-arm64 needs `codesign`, which exists only on
+# macOS — so that one runner must be macos-14, giving three serial
+# cross-compiles of a 22-crate LTO workspace on the priciest runner class, plus
+# zig + cargo-zigbuild, plus linux-from-macOS cross-compilation as a new
+# unproven variable. That replaces the three-way parallel native matrix above —
+# which already codesigns and smoke-tests — to buy archives, changelogs, nfpm
+# and Homebrew taps that this consumer cannot use: it downloads one bare binary
+# by exact name.

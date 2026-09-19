@@ -1,10 +1,15 @@
 [package]
 name = "opensdk"
 edition.workspace = true
-version.workspace = true
+# NOT `version.workspace = true`. The libraries all sit at the workspace's 0.0.0
+# because nothing versions them independently — but this crate is the released
+# artifact, and `release.yml` refuses to publish a tag that disagrees with this
+# number. Inheriting 0.0.0 would make that gate compare every tag against a
+# constant, which is the same as not having it.
+version = "0.1.0"
 license.workspace = true
 publish = false
-description = "Rust port of @xyd-js/opensdk-cli: the `opensdk` binary (parse | generate | diff | publish | run | init | xsdk) plus the emitter registry"
+description = "The `opensdk` binary: parse | generate | diff | publish | run | init | xsdk, plus the emitter registry"
 
 # THE EMITTER REGISTRY LIVES HERE, not in opensdk_core. A `static EMITTERS`
 # in core would make core depend on the 7 emitter crates, which all depend on

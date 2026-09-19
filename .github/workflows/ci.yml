@@ -11,6 +11,18 @@ on:
   # run when someone pressed the button.
   schedule:
     - cron: "0 3 * * *"
+  # Called by release.yml on a tag push, with `full: true` to arm the e2e tier.
+  #
+  # An INPUT rather than `github.event_name == 'workflow_call'`: inside a called
+  # workflow that expression evaluates to the CALLER's event (`push`), never
+  # `workflow_call`, so such a branch is unreachable and e2e would skip behind a
+  # green check — the exact silent-skip the XYD_* gates exist to prevent.
+  workflow_call:
+    inputs:
+      full:
+        description: "Run every tier, e2e included. Set by the release pipeline."
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -146,8 +158,8 @@ jobs:
           done
 
   e2e:
-    name: e2e (real SDK → recording server, nightly)
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    name: e2e (real SDK → recording server)
+    if: inputs.full || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
