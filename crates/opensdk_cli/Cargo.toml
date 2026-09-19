@@ -1,0 +1,49 @@
+[package]
+name = "opensdk_cli"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+description = "Rust port of @xyd-js/opensdk-cli: the `opensdk` binary (parse | generate | diff | publish | run | init | xsdk) plus the emitter registry"
+
+# THE EMITTER REGISTRY LIVES HERE, not in opensdk_core. A `static EMITTERS`
+# in core would make core depend on the 7 emitter crates, which all depend on
+# core — a cycle. This crate is the one place where "every emitter" is in scope,
+# exactly like the TS `registerBuiltinEmitters()` lives in the CLI package.
+[[bin]]
+name = "opensdk"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+# MANDATORY `workspace = true`: `preserve_order` is load-bearing. sdk.json
+# language-section order decides the multi-target generate order, and
+# `grouping.mountRules` is scanned longest-prefix-first with a strict `>` so a
+# re-sort silently changes which rule applies. Every golden in __fixtures__ was
+# captured from JS object key order.
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+clap = { workspace = true }
+# `xsdk --output x.yaml` serialises the enriched spec (js-yaml `dump` analog).
+serde_yaml = "0.9"
+
+# ── already ported; depended on, never re-implemented ────────────────────────
+opensdk_core = { path = "../opensdk_core" }
+opensdk_config = { path = "../opensdk_config" }
+opensdk_chain = { path = "../opensdk_chain" }
+opensdk_diff = { path = "../opensdk_diff" }
+opensdk_framework = { path = "../opensdk_framework" }
+oas_doc = { path = "../oas_doc" }
+openapi2opensdk = { path = "../openapi2opensdk" }
+openapi2opencli = { path = "../openapi2opencli" }
+opencli2go = { path = "../opencli2go" }
+opencli2rust = { path = "../opencli2rust" }
+
+# ── the 7 emitters (the registry table) ──────────────────────────────────────
+opensdk_go = { path = "../opensdk_go" }
+opensdk_python = { path = "../opensdk_python" }
+opensdk_node = { path = "../opensdk_node" }
+opensdk_ruby = { path = "../opensdk_ruby" }
+opensdk_java = { path = "../opensdk_java" }
+opensdk_dotnet = { path = "../opensdk_dotnet" }
+opensdk_rust = { path = "../opensdk_rust" }

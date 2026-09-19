@@ -142,7 +142,7 @@ jobs:
           XYD_CLI_SMOKE_RUST: "1"
         run: |
           for lang in go node python ruby java dotnet rust; do
-            cargo test -p "xyd_opensdk_$lang" --test cli_smoke
+            cargo test -p "opensdk_$lang" --test cli_smoke
           done
 
   e2e:
@@ -163,4 +163,4 @@ jobs:
       - name: go request diff
         env:
           XYD_E2E_GO: "1"
-        run: cargo test -p xyd_opensdk_go --test request_diff
+        run: cargo test -p opensdk_go --test request_diff

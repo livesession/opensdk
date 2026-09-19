@@ -244,10 +244,245 @@ dependencies = [
 ]
 
 [[package]]
+name = "oas_doc"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_yaml",
+]
+
+[[package]]
 name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "openapi2opencli"
+version = "0.0.0"
+dependencies = [
+ "oas_doc",
+ "parity_kit",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "openapi2opensdk"
+version = "0.0.0"
+dependencies = [
+ "opensdk_core",
+ "parity_kit",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "opencli2go"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opencli2opensdk"
+version = "0.0.0"
+dependencies = [
+ "opensdk_core",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "opencli2rust"
+version = "0.0.0"
+dependencies = [
+ "opensdk_framework",
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
+name = "opensdk_chain"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_json_path",
+ "serde_yaml",
+ "thiserror",
+]
+
+[[package]]
+name = "opensdk_cli"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "oas_doc",
+ "openapi2opencli",
+ "openapi2opensdk",
+ "opencli2go",
+ "opencli2rust",
+ "opensdk_chain",
+ "opensdk_config",
+ "opensdk_core",
+ "opensdk_diff",
+ "opensdk_dotnet",
+ "opensdk_framework",
+ "opensdk_go",
+ "opensdk_java",
+ "opensdk_node",
+ "opensdk_python",
+ "opensdk_ruby",
+ "opensdk_rust",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+]
+
+[[package]]
+name = "opensdk_cli_common"
+version = "0.0.0"
+dependencies = [
+ "opencli2opensdk",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_config"
+version = "0.0.0"
+dependencies = [
+ "opensdk_core",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "opensdk_core"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_diff"
+version = "0.0.0"
+dependencies = [
+ "parity_kit",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_dotnet"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "opensdk_e2e",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_e2e"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "serde_json",
+ "tiny_http",
+]
+
+[[package]]
+name = "opensdk_framework"
+version = "0.0.0"
+dependencies = [
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
+name = "opensdk_go"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "opensdk_e2e",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_java"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "opensdk_e2e",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_node"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_python"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "opensdk_e2e",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_ruby"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "opensdk_e2e",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "opensdk_rust"
+version = "0.0.0"
+dependencies = [
+ "opensdk_cli_common",
+ "opensdk_core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "parity_kit"
+version = "0.0.0"
+dependencies = [
+ "serde_json",
+]
 
 [[package]]
 name = "proc-macro2"
@@ -588,241 +823,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "xyd_oas_doc"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "serde_yaml",
-]
-
-[[package]]
-name = "xyd_openapi2opencli"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "xyd_oas_doc",
- "xyd_parity_kit",
-]
-
-[[package]]
-name = "xyd_openapi2opensdk"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "xyd_opensdk_core",
- "xyd_parity_kit",
-]
-
-[[package]]
-name = "xyd_opencli2go"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "xyd_opencli2opensdk"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "xyd_opensdk_core",
-]
-
-[[package]]
-name = "xyd_opencli2rust"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "toml",
- "xyd_opensdk_framework",
-]
-
-[[package]]
-name = "xyd_opensdk_chain"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "serde_json_path",
- "serde_yaml",
- "thiserror",
-]
-
-[[package]]
-name = "xyd_opensdk_cli"
-version = "0.0.0"
-dependencies = [
- "clap",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "xyd_oas_doc",
- "xyd_openapi2opencli",
- "xyd_openapi2opensdk",
- "xyd_opencli2go",
- "xyd_opencli2rust",
- "xyd_opensdk_chain",
- "xyd_opensdk_config",
- "xyd_opensdk_core",
- "xyd_opensdk_diff",
- "xyd_opensdk_dotnet",
- "xyd_opensdk_framework",
- "xyd_opensdk_go",
- "xyd_opensdk_java",
- "xyd_opensdk_node",
- "xyd_opensdk_python",
- "xyd_opensdk_ruby",
- "xyd_opensdk_rust",
-]
-
-[[package]]
-name = "xyd_opensdk_cli_common"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opencli2opensdk",
-]
-
-[[package]]
-name = "xyd_opensdk_config"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "xyd_opensdk_core",
-]
-
-[[package]]
-name = "xyd_opensdk_core"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "xyd_opensdk_diff"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_parity_kit",
-]
-
-[[package]]
-name = "xyd_opensdk_dotnet"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
- "xyd_opensdk_e2e",
-]
-
-[[package]]
-name = "xyd_opensdk_e2e"
-version = "0.0.0"
-dependencies = [
- "serde_json",
- "tiny_http",
- "xyd_opensdk_cli_common",
-]
-
-[[package]]
-name = "xyd_opensdk_framework"
-version = "0.0.0"
-dependencies = [
- "regex",
- "serde",
- "serde_json",
- "sha2",
-]
-
-[[package]]
-name = "xyd_opensdk_go"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
- "xyd_opensdk_e2e",
-]
-
-[[package]]
-name = "xyd_opensdk_java"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
- "xyd_opensdk_e2e",
-]
-
-[[package]]
-name = "xyd_opensdk_node"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
-]
-
-[[package]]
-name = "xyd_opensdk_python"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
- "xyd_opensdk_e2e",
-]
-
-[[package]]
-name = "xyd_opensdk_ruby"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
- "xyd_opensdk_e2e",
-]
-
-[[package]]
-name = "xyd_opensdk_rust"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "xyd_opensdk_cli_common",
- "xyd_opensdk_core",
-]
-
-[[package]]
-name = "xyd_parity_kit"
-version = "0.0.0"
-dependencies = [
- "serde_json",
 ]
 
 [[package]]

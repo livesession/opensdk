@@ -1,0 +1,11 @@
+{
+  "specFile": "crates/opensdk_node/__fixtures__/-2.complex.openai/responses__create/input.json",
+  "lookups": [
+    "CreateResponse",
+    "Metadata",
+    "ServiceTier",
+    "ContainerFileCitationBody",
+    "Conversation2",
+    "NotAType"
+  ]
+}

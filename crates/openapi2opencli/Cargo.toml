@@ -1,0 +1,15 @@
+[package]
+name = "openapi2opencli"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "OpenAPI 3.x -> OpenCLI doc converter (Rust port of @xyd-js/openapi2opencli, Stage A of the CLI pipeline)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+oas_doc = { path = "../oas_doc" }
+
+[dev-dependencies]
+parity_kit = { path = "../parity_kit" }

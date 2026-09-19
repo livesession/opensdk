@@ -1,31 +1,30 @@
 # opensdk
 
-The SDK toolchain behind [xyd](https://github.com/livesession/xyd): it turns an
-OpenAPI 3.x document into typed, functional client SDKs for seven languages, and
-into command-line interfaces.
+An SDK toolchain: it turns an OpenAPI 3.x document into typed, functional client
+SDKs for seven languages, and into command-line interfaces.
 
 ```
 OpenAPI 3.x ──► OpenSDK IR ──► go · node · python · ruby · java · dotnet · rust
             └─► OpenCLI    ──► go-cli · rust-cli
 ```
 
-Rust throughout. The `opensdk` binary is the user-facing entry point; xyd
-consumes the same crates through a napi addon.
+Rust throughout. The `opensdk` binary is the user-facing entry point; the
+crates are also consumable directly as libraries.
 
 ## Layout
 
 | path | what |
 |---|---|
-| `crates/xyd_openapi2opensdk` | OpenAPI → the OpenSDK IR |
-| `crates/xyd_openapi2opencli` | OpenAPI → an OpenCLI doc (+ the `x-openapi` request binding) |
-| `crates/xyd_opencli2{go,rust}` | OpenCLI → a buildable CLI project |
-| `crates/xyd_opencli2opensdk` | OpenCLI → the OpenSDK IR |
-| `crates/xyd_opensdk_{go,node,python,ruby,java,dotnet,rust}` | the seven emitters |
-| `crates/xyd_opensdk_framework` | the emitter contract, orchestrator, and the regen-safe `write_project` lifecycle |
-| `crates/xyd_opensdk_{core,config,diff,chain}` | IR + behavior, config shapes, the breaking-change classifier, the chain pipeline |
-| `crates/xyd_opensdk_cli` | the `opensdk` binary |
-| `crates/xyd_oas_doc` | `DocCtx` — the shared spec loader/dereferencer (xyd depends on this one too) |
-| `crates/xyd_{opensdk_cli_common,opensdk_e2e,parity_kit}` | test harnesses |
+| `crates/openapi2opensdk` | OpenAPI → the OpenSDK IR |
+| `crates/openapi2opencli` | OpenAPI → an OpenCLI doc (+ the `x-openapi` request binding) |
+| `crates/opencli2{go,rust}` | OpenCLI → a buildable CLI project |
+| `crates/opencli2opensdk` | OpenCLI → the OpenSDK IR |
+| `crates/opensdk_{go,node,python,ruby,java,dotnet,rust}` | the seven emitters |
+| `crates/opensdk_framework` | the emitter contract, orchestrator, and the regen-safe `write_project` lifecycle |
+| `crates/opensdk_{core,config,diff,chain}` | IR + behavior, config shapes, the breaking-change classifier, the chain pipeline |
+| `crates/opensdk_cli` | the `opensdk` binary |
+| `crates/oas_doc` | `DocCtx` — the shared spec loader/dereferencer |
+| `crates/{opensdk_cli_common,opensdk_e2e,parity_kit}` | test harnesses |
 
 ## Developing
 
@@ -51,12 +50,5 @@ still prints `ok`. CI sets `XYD_SMOKE_<LANG>=1` and `XYD_CLI_SMOKE_<LANG>=1`,
 which turn a missing toolchain into a failure — so the tiers cannot go dark.
 Set them locally too if you want the real thing. Never set `XYD_BLESS` in CI:
 it regenerates goldens instead of checking them.
-
-## Relationship to xyd
-
-xyd pins this repo as a submodule at `xyd/opensdk` and path-deps these crates
-from its napi addon. The crates keep their `xyd_*` names deliberately — the
-extraction preserved every git tree hash, and renaming would have thrown that
-proof away.
 
 MIT licensed.

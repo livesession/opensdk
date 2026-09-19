@@ -16,8 +16,8 @@ members = ["crates/*"]
 # them. They must never gain a `[workspace]` stanza either — that would change
 # emitter output and break every byte comparison.
 exclude = [
-    "crates/xyd_opensdk_rust/__fixtures__",
-    "crates/xyd_opencli2rust/__fixtures__",
+    "crates/opensdk_rust/__fixtures__",
+    "crates/opencli2rust/__fixtures__",
 ]
 
 [workspace.package]
@@ -38,12 +38,12 @@ repository = "https://github.com/livesession/opensdk"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = "2"
-# The `opensdk` binary's argument parser (crates/xyd_opensdk_cli).
+# The `opensdk` binary's argument parser (crates/opensdk_cli).
 clap = { version = "4", features = ["string"] }
 # Content-addressed hashing for `writeProject`'s `.sdk/sdk.lock` manifest
-# (crates/xyd_opensdk_framework).
+# (crates/opensdk_framework).
 sha2 = "0.10"
-# The e2e recording server (crates/xyd_opensdk_e2e): a small, blocking,
+# The e2e recording server (crates/opensdk_e2e): a small, blocking,
 # dependency-light HTTP server that captures the requests a generated SDK makes.
 tiny_http = "0.12"
 

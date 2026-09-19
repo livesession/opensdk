@@ -1,0 +1,15 @@
+[package]
+name = "openapi2opensdk"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "OpenAPI 3.x -> OpenSDK IR converter (Rust port of @xyd-js/openapi2opensdk)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+opensdk_core = { path = "../opensdk_core" }
+
+[dev-dependencies]
+parity_kit = { path = "../parity_kit" }

@@ -1,0 +1,14 @@
+[package]
+name = "opensdk_node"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "node SDK emitter — OpenSDK IR -> generated node SDK code (Rust port of @xyd-js/opensdk-node; generated-code emitter, vendored runtime + tests deferred)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+opensdk_cli_common = { path = "../opensdk_cli_common" }
+opensdk_core = { path = "../opensdk_core" }
+
+[dev-dependencies]

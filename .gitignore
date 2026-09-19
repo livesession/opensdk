@@ -1,6 +1,6 @@
 # Unanchored on purpose. A leading-slash `/target` matches the workspace root
 # ONLY, which is how 969 files of cargo build state under
-# crates/xyd_opencli2go/target (102 MB) came to be committed — a cost paid by
+# crates/opencli2go/target (102 MB) came to be committed — a cost paid by
 # every clone here and by every xyd job that checks out this submodule.
 target/
 node_modules/
