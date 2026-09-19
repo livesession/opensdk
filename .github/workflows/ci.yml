@@ -25,7 +25,16 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A LITERAL `ci`, not ${{ github.workflow }}. That context aliases to the
+  # CALLER's workflow name when this file is reached through `workflow_call` —
+  # the same aliasing as `github.event_name` noted above. Called from release.yml
+  # it evaluated to `release`, making this group `release-<ref>`: byte-identical
+  # to the caller's own, which GitHub reports as
+  #   "Canceling since a deadlock was detected for concurrency group
+  #    release-refs/tags/v0.1.0 between a top level workflow and 'full test suite'"
+  # and the entire release is cancelled. A caller and its callee must never share
+  # a group, so this half of the pair is pinned to a constant.
+  group: ci-${{ github.ref }}
   # PR iterations only. A `schedule` event's github.ref is refs/heads/master —
   # byte-identical to a push to master — so cancelling on every event would let a
   # 03:00 merge kill the in-flight nightly, or the cron kill the push run. A
