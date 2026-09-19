@@ -8,7 +8,7 @@ license.workspace = true
 # entry, never a real one: it shells out to language toolchains, and the emitter
 # crates are linked into the @xyd-js/native cdylib. A std::process::Command
 # dependency must not follow them there — the same reason the publishers were
-# kept out of the emitters (see crates/opensdk_cli/src/publish.rs).
+# kept out of the emitters (see crates/opensdk/src/publish.rs).
 #
 # Port of the deleted `@xyd-js/opensdk-ci` harness. Recover the TypeScript it was
 # ported from with:

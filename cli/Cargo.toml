@@ -1,5 +1,5 @@
 [package]
-name = "opensdk_cli"
+name = "opensdk"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
@@ -28,22 +28,22 @@ clap = { workspace = true }
 serde_yaml = "0.9"
 
 # ── already ported; depended on, never re-implemented ────────────────────────
-opensdk_core = { path = "../opensdk_core" }
-opensdk_config = { path = "../opensdk_config" }
-opensdk_chain = { path = "../opensdk_chain" }
-opensdk_diff = { path = "../opensdk_diff" }
-opensdk_framework = { path = "../opensdk_framework" }
-oas_doc = { path = "../oas_doc" }
-openapi2opensdk = { path = "../openapi2opensdk" }
-openapi2opencli = { path = "../openapi2opencli" }
-opencli2go = { path = "../opencli2go" }
-opencli2rust = { path = "../opencli2rust" }
+opensdk_core = { path = "../crates/opensdk_core" }
+opensdk_config = { path = "../crates/opensdk_config" }
+opensdk_chain = { path = "../crates/opensdk_chain" }
+opensdk_diff = { path = "../crates/opensdk_diff" }
+opensdk_framework = { path = "../crates/opensdk_framework" }
+oas_doc = { path = "../crates/oas_doc" }
+openapi2opensdk = { path = "../crates/openapi2opensdk" }
+openapi2opencli = { path = "../crates/openapi2opencli" }
+opencli2go = { path = "../crates/opencli2go" }
+opencli2rust = { path = "../crates/opencli2rust" }
 
 # ── the 7 emitters (the registry table) ──────────────────────────────────────
-opensdk_go = { path = "../opensdk_go" }
-opensdk_python = { path = "../opensdk_python" }
-opensdk_node = { path = "../opensdk_node" }
-opensdk_ruby = { path = "../opensdk_ruby" }
-opensdk_java = { path = "../opensdk_java" }
-opensdk_dotnet = { path = "../opensdk_dotnet" }
-opensdk_rust = { path = "../opensdk_rust" }
+opensdk_go = { path = "../crates/opensdk_go" }
+opensdk_python = { path = "../crates/opensdk_python" }
+opensdk_node = { path = "../crates/opensdk_node" }
+opensdk_ruby = { path = "../crates/opensdk_ruby" }
+opensdk_java = { path = "../crates/opensdk_java" }
+opensdk_dotnet = { path = "../crates/opensdk_dotnet" }
+opensdk_rust = { path = "../crates/opensdk_rust" }

@@ -12,28 +12,30 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{json, Map, Value};
 
-use opensdk_cli::cli_targets::{
+use opensdk::cli_targets::{
     cli_backend_keys, generate_cli_target, is_cli_target, CliTargetOptions, CLI_CONVERTER_KEYS,
 };
-use opensdk_cli::config::resolve_config;
-use opensdk_cli::diff::{diff_command, DiffCommandOptions, DiffFailOn};
-use opensdk_cli::exec::EmitterPublishOptions;
-use opensdk_cli::generate::{
+use opensdk::config::resolve_config;
+use opensdk::diff::{diff_command, DiffCommandOptions, DiffFailOn};
+use opensdk::exec::EmitterPublishOptions;
+use opensdk::generate::{
     generate_command, generate_targets, GenerateCommandOptions, GenerateTargetsOptions,
 };
-use opensdk_cli::grouping::ConverterInputs;
-use opensdk_cli::init::{init_command, InitOptions};
-use opensdk_cli::parse::{parse_command, ParseCommandOptions};
-use opensdk_cli::publish::{publish_command, publish_target, PublishCommandOptions};
-use opensdk_cli::registry::resolve_lang;
-use opensdk_cli::run::{run_chain, RunOptions};
-use opensdk_cli::xsdk::{xsdk_command, XsdkCommandOptions};
+use opensdk::grouping::ConverterInputs;
+use opensdk::init::{init_command, InitOptions};
+use opensdk::parse::{parse_command, ParseCommandOptions};
+use opensdk::publish::{publish_command, publish_target, PublishCommandOptions};
+use opensdk::registry::resolve_lang;
+use opensdk::run::{run_chain, RunOptions};
+use opensdk::xsdk::{xsdk_command, XsdkCommandOptions};
 
-/// The petstore OpenAPI doc vendored as the converter's `1.basic` fixture —
-/// the same spec every TypeScript test drives.
+/// The petstore OpenAPI doc vendored as the converter's `1.basic` fixture.
+///
+/// No longer a SIBLING hop: this crate lives at `cli/`, so reaching a crate means
+/// going up to the repo root and back down through `crates/`.
 fn spec() -> String {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../openapi2opensdk/__fixtures__/1.basic/input.json")
+        .join("../crates/openapi2opensdk/__fixtures__/1.basic/input.json")
         .canonicalize()
         .expect("petstore fixture")
         .to_string_lossy()
@@ -1046,7 +1048,7 @@ fn a_js_plugin_bundle_config_fails_with_a_pointer_to_sdk_json() {
 fn cli(args: &[&str], cwd: &Path) -> i32 {
     let mut argv = vec!["opensdk".to_string()];
     argv.extend(args.iter().map(|s| s.to_string()));
-    opensdk_cli::command::main_with(argv, cwd)
+    opensdk::command::main_with(argv, cwd)
 }
 
 #[test]

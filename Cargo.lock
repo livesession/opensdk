@@ -309,18 +309,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "opensdk_chain"
-version = "0.0.0"
-dependencies = [
- "serde",
- "serde_json",
- "serde_json_path",
- "serde_yaml",
- "thiserror",
-]
-
-[[package]]
-name = "opensdk_cli"
+name = "opensdk"
 version = "0.0.0"
 dependencies = [
  "clap",
@@ -343,6 +332,17 @@ dependencies = [
  "opensdk_rust",
  "serde",
  "serde_json",
+ "serde_yaml",
+ "thiserror",
+]
+
+[[package]]
+name = "opensdk_chain"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_json_path",
  "serde_yaml",
  "thiserror",
 ]

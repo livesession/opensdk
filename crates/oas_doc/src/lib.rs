@@ -3,7 +3,7 @@
 //!
 //! Split out of `xyd_openapi` for the `opensdk` extraction. `xyd_openapi` is
 //! xyd's OpenAPI→Uniform converter and stays in xyd; `openapi2opencli` and
-//! `opensdk_cli` move to the opensdk repo but still need `DocCtx`, whose
+//! `opensdk` move to the opensdk repo but still need `DocCtx`, whose
 //! `preprocess` / `with_merged_stamps` / `resolve` trio IS the deref engine —
 //! deep enough that reimplementing it on the other side of the boundary would
 //! be a second, drifting copy of the semantics every fixture is frozen against.

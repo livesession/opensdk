@@ -8,7 +8,10 @@
 # rooted at `crates/` for its own historical reasons; do not copy that here.)
 [workspace]
 resolver = "2"
-members = ["crates/*"]
+# `cli` is listed explicitly — the `crates/*` glob does not reach the repo root.
+# Omitting it would not be a build error: the binary still compiles as a path
+# dep, it just silently drops out of `--workspace` fmt/clippy/test.
+members = ["crates/*", "cli"]
 
 # The generated SDK/CLI projects under these trees are COMMITTED GOLDENS: they
 # carry their own Cargo.toml and would otherwise be auto-adopted as members,
@@ -38,7 +41,7 @@ repository = "https://github.com/livesession/opensdk"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = "2"
-# The `opensdk` binary's argument parser (crates/opensdk_cli).
+# The `opensdk` binary's argument parser (crates/opensdk).
 clap = { version = "4", features = ["string"] }
 # Content-addressed hashing for `writeProject`'s `.sdk/sdk.lock` manifest
 # (crates/opensdk_framework).

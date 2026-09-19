@@ -18,14 +18,14 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{json, Map, Value};
 
-use opensdk_cli::cli_targets::{
+use opensdk::cli_targets::{
     cli_backend_keys, is_cli_target, split_cli_options, CLI_CONVERTER_KEYS,
 };
-use opensdk_cli::config::{resolve_config, ResolvedConfig};
-use opensdk_cli::diff::{exit_code, render_report, DiffFailOn};
-use opensdk_cli::generate::{apply_publish_identity, load_ir};
-use opensdk_cli::grouping::{converter_options, load_grouping, ConverterInputs};
-use opensdk_cli::init::{init_command, init_plan, InitOptions};
+use opensdk::config::{resolve_config, ResolvedConfig};
+use opensdk::diff::{exit_code, render_report, DiffFailOn};
+use opensdk::generate::{apply_publish_identity, load_ir};
+use opensdk::grouping::{converter_options, load_grouping, ConverterInputs};
+use opensdk::init::{init_command, init_plan, InitOptions};
 
 /// Replaced with the case directory's absolute path at run time (and folded
 /// back before comparing, so goldens stay machine-independent).
@@ -358,10 +358,12 @@ fn run_publish_identity(case: &Path) -> Value {
 // loop, CLI-target routing, and the `write_project` lifecycle (`.sdk/sdk.lock`
 // is part of the tree) in one comparison.
 
-/// The repo root, from `crates/opensdk_cli`.
+/// The repo root. This crate lives at `cli/` — ONE level down, not the two it was
+/// under `crates/`. Get the depth wrong and this resolves ABOVE the repo, where
+/// `PETSTORE` below does not exist.
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
+        .join("..")
         .canonicalize()
         .expect("repo root")
 }
@@ -409,10 +411,10 @@ fn tree_manifest(root: &Path, prefix: &str, out: &mut Map<String, Value>) {
 }
 
 fn run_generate_tree(case: &Path) -> Value {
-    use opensdk_cli::generate::{
+    use opensdk::generate::{
         generate_command, generate_targets, GenerateCommandOptions, GenerateTargetsOptions,
     };
-    use opensdk_cli::parse::{parse_command, ParseCommandOptions};
+    use opensdk::parse::{parse_command, ParseCommandOptions};
 
     let input = read_json(&case.join("input.json"));
     let spec = repo_root().join(PETSTORE).to_string_lossy().to_string();

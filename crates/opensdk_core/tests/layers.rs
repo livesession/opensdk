@@ -1,86 +1,83 @@
-//! Is the SDK/CLI toolchain still self-contained?
+//! Is this repo still self-contained?
 //!
-//! These crates are destined for `github.com/livesession/opensdk`, consumed
-//! back as a submodule. The precondition for that move is simple to state and
-//! easy to violate by accident: **no crate in the moving set may depend on a
-//! crate outside it.** One `path = "../xyd_uniform"` added in a hurry turns a
-//! clean relocation into a dependency that cannot follow, and the failure does
-//! not surface until extraction day.
+//! These crates were extracted from github.com/livesession/xyd, which consumes
+//! them back as a submodule. The extraction is done; the invariant it rested on
+//! is permanent: **no crate here may path-depend on anything outside this repo.**
+//! One `path = "../../xyd/crates/xyd_uniform"` added in a hurry builds fine on a
+//! developer's machine — where xyd happens to sit next door — and fails in every
+//! standalone clone and in CI.
 //!
-//! Two crates exist ONLY because of this rule, and the test is what keeps them
-//! honest:
+//! Two crates exist ONLY because of this rule:
 //!
-//! * `oas_doc` — `DocCtx` plus spec loading, split out of `xyd_openapi`
-//!   (which stays in xyd). The deref engine is shared production code, so it
-//!   moves and xyd depends on it through the submodule.
-//! * `parity_kit` — a vendored copy of the parity harness, because the
-//!   original depends on `xyd_uniform` (xyd's docs data model, which does not
-//!   move) for a 185-line JSON comparator. That copy's drift check lives in
-//!   `xyd_parity` on the xyd side, NOT here: this file moves to opensdk, where
-//!   `xyd_uniform` does not exist to compare against.
+//! * `oas_doc` — `DocCtx` plus spec loading, split out of xyd's `xyd_openapi`.
+//!   The deref engine is shared production code, so it lives here and xyd depends
+//!   on it through the submodule.
+//! * `parity_kit` — a vendored copy of xyd's fixture-parity comparator, because
+//!   the original depends on `xyd_uniform` (xyd's docs data model, which did not
+//!   come along). That copy's drift check lives on the XYD side, not here: there
+//!   is no `xyd_uniform` in this repo to compare against.
 //!
-//! Checked statically against `Cargo.toml` rather than `cargo metadata`: no
-//! toolchain invocation, and it reads the same text a human would.
+//! Checked by RESOLVING each declared path against the filesystem rather than by
+//! pattern-matching the string. The earlier version classified `../<name>` as an
+//! intra-repo edge and anything deeper as an escape — true only while every crate
+//! sat at the same depth under `crates/`. `cli/` sits at the repo root and
+//! legitimately reaches its dependencies as `../crates/<name>`, a shape that rule
+//! would have called a leak.
 
 use std::path::{Path, PathBuf};
 
-/// The extraction set. Editing this list is a deliberate act — it is the
-/// contract Part B rests on, not a convenience cache.
-const MOVING: &[&str] = &[
-    // converters
-    "openapi2opencli",
-    "openapi2opensdk",
-    "opencli2go",
-    "opencli2opensdk",
-    "opencli2rust",
-    // opensdk core + upper layers
-    "opensdk_chain",
-    "opensdk_cli",
-    "opensdk_cli_common",
-    "opensdk_config",
-    "opensdk_core",
-    "opensdk_diff",
-    "opensdk_framework",
-    // the seven emitters
-    "opensdk_dotnet",
-    "opensdk_go",
-    "opensdk_java",
-    "opensdk_node",
-    "opensdk_python",
-    "opensdk_ruby",
-    "opensdk_rust",
-    // shared test harness (dev-only) + the two boundary crates
-    "opensdk_e2e",
-    "oas_doc",
-    "parity_kit",
-];
+fn repo_root() -> PathBuf {
+    // CARGO_MANIFEST_DIR is <repo>/crates/opensdk_core — TWO pops reach the root.
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("repo root")
+}
 
-fn crates_dir() -> PathBuf {
-    // CARGO_MANIFEST_DIR is crates/opensdk_core — ONE `..` reaches crates/.
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
+/// Every workspace member's manifest: `crates/*` plus the root-level `cli`.
+///
+/// Mirrors `members` in the workspace manifest. If that list grows a third entry
+/// this must grow with it, or the new crate goes unchecked.
+fn member_manifests(root: &Path) -> Vec<(String, PathBuf)> {
+    let mut out = Vec::new();
+    let crates = root.join("crates");
+    let entries = std::fs::read_dir(&crates)
+        .unwrap_or_else(|e| panic!("read {}: {e}", crates.display()))
+        .filter_map(Result::ok);
+    for e in entries {
+        let manifest = e.path().join("Cargo.toml");
+        if manifest.is_file() {
+            out.push((e.file_name().to_string_lossy().into_owned(), manifest));
+        }
+    }
+    let cli = root.join("cli/Cargo.toml");
+    assert!(
+        cli.is_file(),
+        "no cli crate at {} — it is a workspace member listed separately from \
+         the crates/* glob, so a move that forgets it drops the binary out of \
+         --workspace entirely, silently",
+        cli.display()
+    );
+    out.push(("cli".to_string(), cli));
+    out
 }
 
 /// Every `path = "…"` a manifest declares, in any dependency section.
-/// Sections are not distinguished on purpose: a dev-dependency escaping the set
-/// breaks extraction exactly as hard as a real one, because the tests move too.
 ///
-/// A SIBLING (`../<crate>`) is an intra-`crates/` edge and is returned by name.
-/// Anything else — `../../packages/x`, `../../xwrite/crates/x` — already points
-/// outside `crates/`, so it can never be satisfied from the opensdk repo. Those
-/// are returned VERBATIM rather than dropped: the earlier version silently
-/// skipped them, which meant the one dep shape that most obviously breaks
-/// extraction was the one shape this test could not see.
-fn path_deps(manifest: &Path) -> Vec<PathDep> {
+/// Sections are not distinguished on purpose: a dev-dependency escaping the repo
+/// breaks a standalone clone exactly as hard as a real one, because the tests
+/// have to build there too.
+fn declared_paths(manifest: &Path) -> Vec<String> {
     let text = std::fs::read_to_string(manifest)
         .unwrap_or_else(|e| panic!("read {}: {e}", manifest.display()));
-    let mut out: Vec<PathDep> = Vec::new();
+    let mut out = Vec::new();
     for line in text.lines() {
         let line = line.trim_start();
         if line.starts_with('#') {
             continue; // a commented-out dep is not a dep
         }
         let Some(i) = line.find("path") else { continue };
-        // `path` must be a KEY, not a suffix of one: `serde_json_path = "0.7"`
+        // `path` must be a KEY, not the tail of one: `serde_json_path = "0.7"`
         // would otherwise parse as a path dep on "0.7".
         if i > 0 {
             let prev = line.as_bytes()[i - 1];
@@ -93,68 +90,53 @@ fn path_deps(manifest: &Path) -> Vec<PathDep> {
         let rest = &rest[j + 1..];
         let Some(k) = rest.find('"') else { continue };
         let p = &rest[..k];
-        // In-crate paths (`[[bin]] path = "src/bin/regen.rs"`) never leave the
-        // crate, so they are irrelevant here. Only a `../` prefix reaches out.
-        match p.strip_prefix("../") {
-            Some(name) if !name.contains('/') => out.push(PathDep::Sibling(name.to_string())),
-            Some(_) => out.push(PathDep::Escaping(p.to_string())),
-            None => {}
+        // In-crate targets (`[[bin]] path = "src/bin/regen.rs"`) never leave the
+        // crate. Only a `../` prefix reaches out, and only those are interesting.
+        if p.starts_with("../") {
+            out.push(p.to_string());
         }
     }
     out
 }
 
-/// A manifest's `path` dependency, classified by whether it stays inside
-/// `crates/` (and can therefore move) or already reaches outside it.
-enum PathDep {
-    /// `../<crate>` — an edge to a sibling crate.
-    Sibling(String),
-    /// Anything with more hops or a nested path: unsatisfiable after extraction.
-    Escaping(String),
-}
-
 #[test]
-fn the_moving_cluster_depends_on_nothing_outside_itself() {
-    let dir = crates_dir();
+fn no_crate_depends_on_anything_outside_this_repo() {
+    let root = repo_root();
+    let members = member_manifests(&root);
     let mut edges = 0usize;
     let mut leaks = Vec::new();
 
-    for c in MOVING {
-        let manifest = dir.join(c).join("Cargo.toml");
-        assert!(
-            manifest.exists(),
-            "{c} is in MOVING but has no manifest at {} — the list is stale, and \
-             a stale list silently shrinks what this test covers",
-            manifest.display()
-        );
-        for dep in path_deps(&manifest) {
-            match dep {
-                PathDep::Sibling(name) => {
-                    edges += 1;
-                    if !MOVING.contains(&name.as_str()) {
-                        leaks.push(format!("  {c} -> {name}"));
-                    }
-                }
-                // Not counted toward the floor: it is not an intra-cluster edge.
-                PathDep::Escaping(p) => leaks.push(format!("  {c} -> {p} (escapes crates/)")),
+    for (name, manifest) in &members {
+        let dir = manifest.parent().expect("manifest dir");
+        for p in declared_paths(manifest) {
+            // Resolve for real. A path that cannot be canonicalized does not
+            // exist — itself a leak, and one cargo would report only at build
+            // time, in whichever clone lacks the neighbour.
+            match dir.join(&p).canonicalize() {
+                Ok(target) if target.starts_with(&root) => edges += 1,
+                Ok(target) => leaks.push(format!(
+                    "  {name} -> {p}  (resolves to {}, outside this repo)",
+                    target.display()
+                )),
+                Err(e) => leaks.push(format!("  {name} -> {p}  (does not resolve: {e})")),
             }
         }
     }
 
     // The floor. Without it, a parsing change that silently matches nothing
     // leaves `leaks` empty and this test reports a green it never earned —
-    // which is precisely how the by-hand version of this check fooled me.
+    // which is precisely how the by-hand version of this check once fooled me.
     assert!(
         edges >= 40,
-        "only {edges} intra-cluster path deps parsed across {} crates — the \
+        "only {edges} intra-repo path deps resolved across {} crates — the \
          manifest parser is broken, so an empty leak list proves nothing",
-        MOVING.len()
+        members.len()
     );
 
     assert!(
         leaks.is_empty(),
-        "{} dependency edge(s) escape the extraction set — these crates cannot \
-         move to the opensdk repo while this holds:\n{}",
+        "{} dependency edge(s) leave this repo — a standalone clone cannot \
+         build with these:\n{}",
         leaks.len(),
         leaks.join("\n")
     );
