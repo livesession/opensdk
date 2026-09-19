@@ -124,9 +124,15 @@ fn first_divergent_line(got: &str, want: &str) -> usize {
 pub fn recording_cli_path() -> PathBuf {
     static PATH: OnceLock<PathBuf> = OnceLock::new();
     PATH.get_or_init(|| {
+        // CARGO_MANIFEST_DIR is <repo>/crates/xyd_opensdk_cli_common; TWO pops
+        // reach the workspace root. It must be the real root, not `crates/`:
+        // it is both the cwd for `cargo build` below and the parent of the
+        // target dir, so a one-pop value would build fine and then look for
+        // the binary in `crates/target/`, which cargo never writes.
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
-            .expect("crates/ parent")
+            .and_then(Path::parent)
+            .expect("workspace root (two levels up from the crate dir)")
             .to_path_buf();
         let status = std::process::Command::new(env!("CARGO"))
             .args([

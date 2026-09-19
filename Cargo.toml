@@ -1,0 +1,52 @@
+# The OpenSDK toolchain: OpenAPI → OpenSDK IR → SDKs for seven languages, and
+# OpenAPI → OpenCLI → Go/Rust CLIs. Extracted from github.com/livesession/xyd,
+# which consumes it back as a pinned submodule at `xyd/opensdk`.
+#
+# The workspace is rooted at the REPO ROOT (not `crates/`) so that a fresh
+# clone's `cargo test --workspace` / `cargo fmt --all` / `cargo clippy
+# --workspace` work from the directory you land in. (The xyd-side workspace is
+# rooted at `crates/` for its own historical reasons; do not copy that here.)
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+# The generated SDK/CLI projects under these trees are COMMITTED GOLDENS: they
+# carry their own Cargo.toml and would otherwise be auto-adopted as members,
+# which both pollutes this workspace and makes `cargo metadata` fail inside
+# them. They must never gain a `[workspace]` stanza either — that would change
+# emitter output and break every byte comparison.
+exclude = [
+    "crates/xyd_opensdk_rust/__fixtures__",
+    "crates/xyd_opencli2rust/__fixtures__",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.0.0"
+license = "MIT"
+repository = "https://github.com/livesession/opensdk"
+
+# Shared third-party pins: every crate takes these via `{ workspace = true }`
+# so the converters and emitters cannot drift among themselves.
+#
+# serde_json's `preserve_order` is BYTE-LOAD-BEARING. Without it `Map` becomes
+# a BTreeMap, every emitted JSON key sorts, and the golden trees this repo is
+# tested against re-order wholesale. It also gives IndexMap equality, which is
+# order-insensitive — exactly the vitest `toEqual` semantics the goldens were
+# frozen under.
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+# The `opensdk` binary's argument parser (crates/xyd_opensdk_cli).
+clap = { version = "4", features = ["string"] }
+# Content-addressed hashing for `writeProject`'s `.sdk/sdk.lock` manifest
+# (crates/xyd_opensdk_framework).
+sha2 = "0.10"
+# The e2e recording server (crates/xyd_opensdk_e2e): a small, blocking,
+# dependency-light HTTP server that captures the requests a generated SDK makes.
+tiny_http = "0.12"
+
+[profile.release]
+lto = true
+strip = true

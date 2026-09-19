@@ -1,0 +1,7 @@
+# Every gate in this repo compares generated trees BYTE for byte (SDK sources,
+# CLI sources, docs.json, recorded requests). A checkout that rewrites line
+# endings would break all of them in a way that looks like a compiler bug.
+* text=auto eol=lf
+
+# The conformance oracles are encrypted archives.
+*.enc binary

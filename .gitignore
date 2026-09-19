@@ -1,0 +1,8 @@
+/target
+node_modules/
+.DS_Store
+
+# NOTE: Cargo.lock and package-lock.json are COMMITTED on purpose. Nearly every
+# gate in this repo is a BYTE comparison against a committed golden tree, so an
+# unpinned patch bump in a transitive dep can flip a golden on a PR that changed
+# nothing. Do not add them here.

@@ -1,0 +1,14 @@
+{
+  "name": "opensdk-harness",
+  "private": true,
+  "type": "module",
+  "description": "JS toolchain the node emitter's tests need (tsc + @types/node). The toolchain itself is Rust — see crates/.",
+  "scripts": {
+    "test": "cargo test --workspace",
+    "check:standalone": "bash scripts/check-standalone.sh"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "@types/node": "20.9.0"
+  }
+}

@@ -1,0 +1,133 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: rust (fmt + clippy + goldens)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # Keyed on the COMMITTED Cargo.lock: hashing Cargo.toml alone would miss
+      # exactly the transitive bumps that can flip a byte-compared golden.
+      - uses: Swatinem/rust-cache@v2
+
+      - name: fmt
+        run: cargo fmt --all -- --check
+
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      # The node emitter's smokes typecheck generated SDKs with the local tsc
+      # and read node_modules/@types. Installed HERE, from this repo's own
+      # lockfile — under xyd this repo is a submodule whose ancestor walk would
+      # otherwise find xyd's node_modules, making the gate pass here and fail
+      # in a standalone clone.
+      - name: Install the JS harness
+        run: npm ci
+
+      # Every XYD_SMOKE_<LANG> is set so a missing toolchain becomes a FAILURE
+      # instead of a skip. Without them `cargo test` prints `ok` while seven
+      # "does the generated SDK actually compile?" tiers quietly do nothing —
+      # and a syntax error emitted consistently matches its golden perfectly,
+      # so the goldens cannot catch what these tiers catch.
+      - name: test
+        env:
+          XYD_SMOKE_GO: "1"
+          XYD_SMOKE_NODE: "1"
+          XYD_SMOKE_PYTHON: "1"
+          XYD_SMOKE_RUBY: "1"
+          XYD_SMOKE_JAVA: "1"
+          XYD_SMOKE_DOTNET: "1"
+          XYD_SMOKE_RUST: "1"
+        run: cargo test --workspace
+
+      - name: standalone guard
+        run: bash scripts/check-standalone.sh
+
+  cli-smokes:
+    name: cli smokes (generated SDK drives a recording CLI)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Install the JS harness
+        run: npm ci
+
+      # Same reasoning as XYD_SMOKE_* above: unset, each of these seven tiers
+      # returns early and the suite still reports ok.
+      - name: cli smokes
+        env:
+          XYD_CLI_SMOKE_GO: "1"
+          XYD_CLI_SMOKE_NODE: "1"
+          XYD_CLI_SMOKE_PYTHON: "1"
+          XYD_CLI_SMOKE_RUBY: "1"
+          XYD_CLI_SMOKE_JAVA: "1"
+          XYD_CLI_SMOKE_DOTNET: "1"
+          XYD_CLI_SMOKE_RUST: "1"
+        run: |
+          for lang in go node python ruby java dotnet rust; do
+            cargo test -p "xyd_opensdk_$lang" --test cli_smoke
+          done
+
+  e2e:
+    name: e2e (real SDK → recording server, nightly)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: false
+
+      # Builds a real Go SDK and diffs the HTTP request it actually sends
+      # against the committed recording. `!= "1"` skips, so it must be set.
+      - name: go request diff
+        env:
+          XYD_E2E_GO: "1"
+        run: cargo test -p xyd_opensdk_go --test request_diff
