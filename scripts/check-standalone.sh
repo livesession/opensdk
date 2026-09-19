@@ -9,6 +9,11 @@
 # Excludes are generated data and prose. Goldens are oracles — rewriting them
 # to match the code would defeat the point of having them; doc comments
 # legitimately reference where a file used to live in xyd's history.
+#
+# Every guard reports the size of the corpus it scanned. A guard that matches
+# nothing because its pathspec is broken, or because the corpus is empty, is
+# indistinguishable from a guard that passed — and a single shared counter
+# cannot vouch for three greps over three different file sets.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,33 +26,56 @@ EXCLUDES=(
 
 fail=0
 
+# guard <label> <min-corpus> <regex> <pathspec>...
+#
+# min-corpus is the floor below which a clean result proves nothing. Pass 0 for
+# a corpus that may legitimately be empty — it is then REPORTED as inapplicable
+# rather than counted as a pass.
+guard() {
+  local label="$1" min="$2" regex="$3"; shift 3
+  local paths=("$@")
+  local n status
+
+  n=$(git ls-files -- "${paths[@]}" "${EXCLUDES[@]}" | wc -l | tr -d ' ')
+
+  if [ "$n" -lt "$min" ]; then
+    echo "ERROR: [$label] scanned only $n file(s), expected >= $min — the" >&2
+    echo "       pathspec is broken, so a clean result proves nothing." >&2
+    fail=1
+    return
+  fi
+
+  if [ "$n" -eq 0 ]; then
+    echo "  [$label] no files match this corpus — check INAPPLICABLE (not a pass)"
+    return
+  fi
+
+  # git grep: 0 = matched, 1 = no match, >1 = real error. `if git grep ...`
+  # would collapse 1 and 2 into "clean", so a broken invocation would read as a
+  # pass. Discriminate explicitly.
+  set +e
+  git grep -n -E "$regex" -- "${paths[@]}" "${EXCLUDES[@]}"
+  status=$?
+  set -e
+
+  case "$status" in
+    0) echo "ERROR: [$label] matched (see above) across $n file(s)." >&2; fail=1 ;;
+    1) echo "  [$label] clean ($n file(s) scanned)" ;;
+    *) echo "ERROR: [$label] git grep failed with status $status." >&2; fail=1 ;;
+  esac
+}
+
 # 1. Path deps escaping the repo. A sibling hop (`../<crate>`) is fine; two or
 #    more hops leaves crates/ and can only resolve inside xyd.
-if git grep -n -E 'path *= *"\.\./\.\.' -- '*/Cargo.toml' "${EXCLUDES[@]}"; then
-  echo "ERROR: a Cargo.toml path dep escapes this repo (see above)." >&2
-  fail=1
-fi
+guard "path-deps" 20 'path *= *"\.\./\.\.' '*/Cargo.toml'
 
 # 2. Filesystem reaches into xyd's layout, in code (not comments or goldens).
-if git grep -n -E '"(\.\./)*packages/xyd-' -- '*.rs' "${EXCLUDES[@]}"; then
-  echo "ERROR: Rust code resolves a path under xyd's packages/ (see above)." >&2
-  fail=1
-fi
+guard "rust-paths" 50 '"(\.\./)*packages/xyd-' '*.rs'
 
-# 3. npm imports of xyd's workspace packages.
-if git grep -n -E "from ['\"]@xyd-js/" -- '*.ts' '*.mjs' '*.js' "${EXCLUDES[@]}"; then
-  echo "ERROR: an @xyd-js/* import would not resolve standalone (see above)." >&2
-  fail=1
-fi
+# 3. npm imports of xyd's workspace packages. The JS corpus is legitimately
+#    empty today (this repo is pure Rust plus a lockfile), so the floor is 0 and
+#    an empty scan is reported as inapplicable rather than green.
+guard "npm-imports" 0 "from ['\"]@xyd-js/" '*.ts' '*.mjs' '*.js'
 
-# Non-vacuity: if the pathspec ever stops matching anything, the greps above
-# pass for the wrong reason. Assert the corpus they scan is actually there.
-manifests=$(git ls-files '*/Cargo.toml' -- "${EXCLUDES[@]}" | wc -l | tr -d ' ')
-if [ "$manifests" -lt 20 ]; then
-  echo "ERROR: only $manifests crate manifests scanned (expected >= 20) — the" >&2
-  echo "       pathspec is broken, so a clean result proves nothing." >&2
-  fail=1
-fi
-
-[ "$fail" -eq 0 ] && echo "check-standalone: OK ($manifests manifests scanned)"
+[ "$fail" -eq 0 ] && echo "check-standalone: OK"
 exit "$fail"
