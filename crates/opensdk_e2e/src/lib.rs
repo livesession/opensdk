@@ -76,6 +76,15 @@ pub fn files_by_ext(dir: &Path, ext: &str) -> Vec<PathBuf> {
     out
 }
 
+/// Suppresses the .NET CLI's per-invocation first-run work. Belt and braces
+/// alongside the `Once` warm-up below: the warm-up removes the race, these keep
+/// each build from re-entering the configurer at all.
+const DOTNET_ENV: &[(&str, &str)] = &[
+    ("DOTNET_CLI_TELEMETRY_OPTOUT", "1"),
+    ("DOTNET_NOLOGO", "1"),
+    ("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"),
+];
+
 /// Run a command in `dir`, returning Err with captured output on failure.
 fn run(bin: &str, args: &[String], dir: &Path, env: &[(&str, &str)]) -> Result<(), String> {
     let mut cmd = Command::new(bin);
@@ -156,6 +165,29 @@ pub fn compile_smoke(lang: &str, dir: &Path) -> Result<bool, String> {
             r?;
         }
         "dotnet" => {
+            // On its first invocation the .NET CLI runs a first-use configurer,
+            // which takes a NAMED MUTEX ("NuGet-Migrations") under
+            // $TMPDIR/.dotnet/shm/session<uid>. cargo runs these cases on
+            // parallel threads, so several `dotnet build` processes reach that
+            // at once and all but one die before compiling anything:
+            //
+            //   System.IO.IOException: ... 'NuGet-Migrations'. One or more system
+            //   calls failed: mkdir(".../shm/session2010") == -1; errno == EEXIST
+            //     at NuGet.Common.Migrations.MigrationRunner.Run(..)
+            //     at Microsoft.DotNet.Configurer.DotnetFirstTimeUseConfigurer.Configure()
+            //
+            // The giveaway that it is a race and not a compile error: three
+            // failures reported three DIFFERENT errnos, and a fourth case passed.
+            //
+            // `call_once` blocks every other thread until the configurer has run
+            // exactly once, so the builds that follow find the work already done.
+            static FIRST_RUN: std::sync::Once = std::sync::Once::new();
+            FIRST_RUN.call_once(|| {
+                let _ = Command::new("dotnet")
+                    .arg("--info")
+                    .envs(DOTNET_ENV.iter().copied())
+                    .output();
+            });
             for proj in files_by_ext(dir, ".csproj") {
                 run(
                     "dotnet",
@@ -165,7 +197,7 @@ pub fn compile_smoke(lang: &str, dir: &Path) -> Result<bool, String> {
                         proj.to_string_lossy().to_string(),
                     ],
                     dir,
-                    &[],
+                    DOTNET_ENV,
                 )?;
             }
         }
