@@ -22,6 +22,11 @@
       "/v1"
     ],
     "maxBodyDepth": 3,
-    "authEnvVar": "ACME_API_KEY"
+    "authEnvVar": "ACME_API_KEY",
+    "rootCommand": "endpoints",
+    "grammar": "verb-noun",
+    "singularOverrides": {
+      "apis": "api"
+    }
   }
 }

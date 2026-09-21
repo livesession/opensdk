@@ -20,7 +20,9 @@
     "includePaths",
     "maxBodyDepth",
     "authEnvVar",
-    "rootCommand"
+    "rootCommand",
+    "grammar",
+    "singularOverrides"
   ],
   "split": {
     "converter": {},

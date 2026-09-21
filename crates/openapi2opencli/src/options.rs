@@ -38,6 +38,19 @@ pub struct VerbMap {
     pub delete_item: Option<String>,
 }
 
+/// Which order a generated command reads in.
+///
+/// `NounVerb` is the historical shape and the default: the resource comes
+/// first, the action last (`api sdks list`). `VerbNoun` puts the action first
+/// (`api get sdks`), the way kubectl and PowerShell do.
+#[derive(Deserialize, Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum Grammar {
+    #[default]
+    NounVerb,
+    VerbNoun,
+}
+
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Options {
@@ -65,4 +78,15 @@ pub struct Options {
     /// Note for the backends: both emit one source file per TOP-LEVEL command,
     /// so a wrapper collapses the whole CLI into a single generated file.
     pub root_command: Option<String>,
+    /// Command grammar — `"noun-verb"` (default) or `"verb-noun"`.
+    ///
+    /// Do NOT feed verb-noun output to `opencli2opensdk`: it would produce SDK
+    /// resources named `get`/`create` rather than the API's nouns.
+    pub grammar: Option<Grammar>,
+    /// Irregular singulars, keyed by the word or the whole kebab segment.
+    ///
+    /// Only consulted under `verb-noun`, where a resource name is singularized
+    /// for single-item commands. The built-in ladder handles regular English and
+    /// no-ops on anything else; this is the escape hatch for the rest.
+    pub singular_overrides: Option<std::collections::BTreeMap<String, String>>,
 }

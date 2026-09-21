@@ -87,3 +87,12 @@ c!(responses, "5.responses");
 // the only difference between the two goldens IS the wrapper — which is what
 // makes this readable as a diff.
 c!(root_command, "6.root-command");
+
+// Verb-first placement with kubectl-style reads. Pins, in one golden:
+//   - list + retrieve collapse into ONE command, singular canonical, plural
+//     alias, and a second binding under `whenArgsPresent`
+//   - that command is ALSO a parent (`get sdk targets`), i.e. a runnable node
+//   - `apis` needs an override or it collides with itself, so the override is
+//     part of the fixture rather than a footnote
+//   - `usage` and other already-singular nouns pass through untouched
+c!(grammar_verb_noun, "7.grammar-verb-noun");

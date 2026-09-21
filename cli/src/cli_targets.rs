@@ -111,6 +111,8 @@ pub const CLI_CONVERTER_KEYS: &[&str] = &[
     "maxBodyDepth",
     "authEnvVar",
     "rootCommand",
+    "grammar",
+    "singularOverrides",
 ];
 
 /// The backend option keys for a CLI target id (empty for a non-CLI id).

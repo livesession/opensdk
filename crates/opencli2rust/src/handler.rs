@@ -150,14 +150,83 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
             ));
         }
     }
-    if !args.is_empty() {
-        lines.push(format!(
-            "let path = format!({}, {});",
-            q(&fmt),
-            args.join(", ")
-        ));
-    } else {
-        lines.push(format!("let path = {}.to_string();", q(&model.path)));
+    // A command with TWO bindings picks between them on whether its optional
+    // positional was supplied: `get sdk` lists, `get sdk <id>` retrieves. The
+    // discriminator is the argument the alternate path uses and the primary
+    // does not — i.e. the id that turns a collection request into an item one.
+    let alt_model = command
+        .get("x-openapi")
+        .and_then(|x| x.get("whenArgsPresent"))
+        .map(|alt| {
+            let mut synthetic = command.clone();
+            if let Some(obj) = synthetic.as_object_mut() {
+                obj.insert("x-openapi".to_string(), alt.clone());
+            }
+            build_leaf_model(&synthetic)
+        });
+
+    let method_expr = match &alt_model {
+        None => q(&model.method),
+        Some(alt) => {
+            let alt_parts = path_parts(alt);
+            // Read every argument either path needs, then branch.
+            for a in &alt.path_args {
+                if alt_parts.used_vars.contains(&a.var_name) && !used_vars.contains(&a.var_name) {
+                    lines.push(format!(
+                        "let {} = m.get_one::<String>({}).map(String::as_str).unwrap_or(\"\");",
+                        a.var_name,
+                        q(&a.arg_name)
+                    ));
+                }
+            }
+            let discriminators: Vec<String> = alt
+                .path_args
+                .iter()
+                .filter(|a| {
+                    alt_parts.used_vars.contains(&a.var_name) && !used_vars.contains(&a.var_name)
+                })
+                .map(|a| format!("{}.is_empty()", a.var_name))
+                .collect();
+            let primary_path = if args.is_empty() {
+                format!("{}.to_string()", q(&model.path))
+            } else {
+                format!("format!({}, {})", q(&fmt), args.join(", "))
+            };
+            let alt_path = if alt_parts.args.is_empty() {
+                format!("{}.to_string()", q(&alt.path))
+            } else {
+                format!(
+                    "format!({}, {})",
+                    q(&alt_parts.fmt),
+                    alt_parts.args.join(", ")
+                )
+            };
+            let cond = if discriminators.is_empty() {
+                "true".to_string()
+            } else {
+                discriminators.join(" && ")
+            };
+            lines.push(format!(
+                "let (method, path) = if {cond} {{ ({}, {}) }} else {{ ({}, {}) }};",
+                q(&model.method),
+                primary_path,
+                q(&alt.method),
+                alt_path
+            ));
+            "method".to_string()
+        }
+    };
+
+    if alt_model.is_none() {
+        if !args.is_empty() {
+            lines.push(format!(
+                "let path = format!({}, {});",
+                q(&fmt),
+                args.join(", ")
+            ));
+        } else {
+            lines.push(format!("let path = {}.to_string();", q(&model.path)));
+        }
     }
 
     // Query params.
@@ -254,7 +323,7 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
 
     // Assemble the request.
     lines.push("let req = runtime::Request {".to_string());
-    lines.push(format!("    method: {},", q(&model.method)));
+    lines.push(format!("    method: {method_expr},"));
     lines.push("    path,".to_string());
     lines.push(if !query_flags.is_empty() {
         "    query,".to_string()
@@ -273,7 +342,10 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
     lines.push("};".to_string());
     lines.push("runtime::run_request(ctx, o, cmd_path, req).await".to_string());
 
-    let reads_matches = !used_vars.is_empty() || !model.flags.is_empty();
+    // The alternate binding reads `m` too — for a collection whose own path
+    // needs no arguments, it is the ONLY reader, so this is what keeps the
+    // parameter from being named `_m` while the body uses it.
+    let reads_matches = !used_vars.is_empty() || !model.flags.is_empty() || alt_model.is_some();
     let m_param = if reads_matches { "m" } else { "_m" };
     let code = format!(
         "async fn {name}<O: CliOverrides>(\n    ctx: &Context,\n    o: &O,\n    cmd_path: &[String],\n    {m_param}: &ArgMatches,\n) -> ExitCode {{\n{}\n}}",

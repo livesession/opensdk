@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info: { title: api, version: 1.0.0 }
+paths:
+  /sdks:
+    get:
+      operationId: listSdks
+      responses: { "200": { description: ok } }
+    post:
+      operationId: createSdk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { name: { type: string } }
+      responses: { "201": { description: created } }
+  /sdks/{id}:
+    get:
+      operationId: getSdk
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: ok } }
+    delete:
+      operationId: deleteSdk
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { "204": { description: gone } }
+  /sdks/{id}/targets:
+    get:
+      operationId: listSdkTargets
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: ok } }
+  /apis:
+    get:
+      operationId: listApis
+      responses: { "200": { description: ok } }
+  /apis/{apiId}:
+    get:
+      operationId: getApi
+      parameters: [{ name: apiId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: ok } }
+  /usage:
+    get:
+      operationId: getUsage
+      responses: { "200": { description: ok } }

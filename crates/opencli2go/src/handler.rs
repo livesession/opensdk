@@ -113,7 +113,47 @@ pub fn render_handler(
             lines.push(format!("{} := cmd.Args().Get({})", a.go_var, a.idx));
         }
     }
-    lines.push(format!("path := {pe}"));
+    // A command with TWO bindings picks between them on whether its optional
+    // positional was supplied: `get sdk` lists, `get sdk <id>` retrieves. Mirrors
+    // the same branch in opencli2rust — the request either backend sends for a
+    // given argv is identical, which is what the shared `recorded.json` asserts.
+    let alt_model = command
+        .get("x-openapi")
+        .and_then(|x| x.get("whenArgsPresent"))
+        .map(|alt| {
+            let mut synthetic = command.clone();
+            if let Some(obj) = synthetic.as_object_mut() {
+                obj.insert("x-openapi".to_string(), alt.clone());
+            }
+            build_leaf_model(&synthetic)
+        });
+
+    let method_expr = match &alt_model {
+        None => {
+            lines.push(format!("path := {pe}"));
+            q(&model.method)
+        }
+        Some(alt) => {
+            let alt_pe = path_expr(alt, imports);
+            // The argument the alternate path uses and the primary does not IS the
+            // discriminator — the id that turns a collection request into an item one.
+            let mut discriminators: Vec<String> = Vec::new();
+            for a in &alt.path_args {
+                let esc = format!("url.PathEscape({})", a.go_var);
+                if alt_pe.contains(&esc) && !pe.contains(&esc) {
+                    lines.push(format!("{} := cmd.Args().Get({})", a.go_var, a.idx));
+                    discriminators.push(format!("{} != \"\"", a.go_var));
+                }
+            }
+            lines.push(format!("method, path := {}, {pe}", q(&model.method)));
+            if !discriminators.is_empty() {
+                lines.push(format!("if {} {{", discriminators.join(" && ")));
+                lines.push(format!("\tmethod, path = {}, {alt_pe}", q(&alt.method)));
+                lines.push("}".to_string());
+            }
+            "method".to_string()
+        }
+    };
 
     // Query params.
     let query_flags: Vec<&_> = model
@@ -202,7 +242,7 @@ pub fn render_handler(
 
     // Assemble the request.
     lines.push("req := runtime.Request{".to_string());
-    lines.push(format!("\tMethod: {},", q(&model.method)));
+    lines.push(format!("\tMethod: {method_expr},"));
     lines.push("\tPath: path,".to_string());
     if !query_flags.is_empty() {
         lines.push("\tQuery: query,".to_string());

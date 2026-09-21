@@ -20,7 +20,9 @@
     "includePaths",
     "maxBodyDepth",
     "authEnvVar",
-    "rootCommand"
+    "rootCommand",
+    "grammar",
+    "singularOverrides"
   ],
   "split": {
     "converter": {
@@ -45,7 +47,12 @@
         "/v1"
       ],
       "maxBodyDepth": 3,
-      "authEnvVar": "ACME_API_KEY"
+      "authEnvVar": "ACME_API_KEY",
+      "rootCommand": "endpoints",
+      "grammar": "verb-noun",
+      "singularOverrides": {
+        "apis": "api"
+      }
     },
     "backend": {},
     "converterOrder": [
@@ -61,7 +68,10 @@
       "customActionVerbs",
       "includePaths",
       "maxBodyDepth",
-      "authEnvVar"
+      "authEnvVar",
+      "rootCommand",
+      "grammar",
+      "singularOverrides"
     ],
     "backendOrder": []
   },

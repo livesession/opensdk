@@ -1,0 +1,168 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "api",
+    "version": "1.0.0"
+  },
+  "commands": [
+    {
+      "name": "get",
+      "commands": [
+        {
+          "name": "sdk",
+          "aliases": [
+            "sdks"
+          ],
+          "arguments": [
+            {
+              "name": "id"
+            }
+          ],
+          "commands": [
+            {
+              "name": "targets",
+              "arguments": [
+                {
+                  "name": "id",
+                  "required": true
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/sdks/{id}/targets",
+                "operationId": "listSdkTargets",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "id",
+                    "from": "argument:id",
+                    "required": true
+                  }
+                ]
+              }
+            }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/sdks",
+            "operationId": "listSdks",
+            "whenArgsPresent": {
+              "method": "get",
+              "path": "/sdks/{id}",
+              "operationId": "getSdk",
+              "params": [
+                {
+                  "in": "path",
+                  "name": "id",
+                  "from": "argument:id",
+                  "required": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "api",
+          "aliases": [
+            "apis"
+          ],
+          "arguments": [
+            {
+              "name": "api-id"
+            }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/apis",
+            "operationId": "listApis",
+            "whenArgsPresent": {
+              "method": "get",
+              "path": "/apis/{apiId}",
+              "operationId": "getApi",
+              "params": [
+                {
+                  "in": "path",
+                  "name": "apiId",
+                  "from": "argument:api-id",
+                  "required": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "usage",
+          "x-openapi": {
+            "method": "get",
+            "path": "/usage",
+            "operationId": "getUsage"
+          }
+        }
+      ]
+    },
+    {
+      "name": "create",
+      "commands": [
+        {
+          "name": "sdk",
+          "options": [
+            {
+              "name": "name",
+              "group": "body",
+              "arguments": [
+                {
+                  "name": "string"
+                }
+              ]
+            }
+          ],
+          "x-openapi": {
+            "method": "post",
+            "path": "/sdks",
+            "operationId": "createSdk",
+            "contentType": "application/json",
+            "body": {
+              "style": "flatten",
+              "contentType": "application/json",
+              "properties": [
+                {
+                  "name": "name",
+                  "from": "option:name",
+                  "jsonPath": "name",
+                  "encoding": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "commands": [
+        {
+          "name": "sdk",
+          "arguments": [
+            {
+              "name": "id",
+              "required": true
+            }
+          ],
+          "x-openapi": {
+            "method": "delete",
+            "path": "/sdks/{id}",
+            "operationId": "deleteSdk",
+            "params": [
+              {
+                "in": "path",
+                "name": "id",
+                "from": "argument:id",
+                "required": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

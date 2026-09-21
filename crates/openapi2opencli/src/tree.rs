@@ -75,6 +75,8 @@ impl std::fmt::Display for Collision {
 
 pub struct CommandTree {
     root: Node,
+    /// Verb-first placement: rank the top level as verbs when emitting.
+    verb_first: bool,
 }
 
 impl Default for CommandTree {
@@ -87,6 +89,7 @@ impl CommandTree {
     pub fn new() -> Self {
         CommandTree {
             root: Node::new(""),
+            verb_first: false,
         }
     }
 
@@ -141,14 +144,46 @@ impl CommandTree {
         Ok(())
     }
 
+    /// Rank the top level as verbs rather than sorting it alphabetically.
+    pub fn verb_first(mut self) -> Self {
+        self.verb_first = true;
+        self
+    }
+
     pub fn emit(&self) -> Vec<Command> {
-        emit_children(&self.root)
+        emit_children(&self.root, self.verb_first)
     }
 }
 
-fn emit_children(node: &Node) -> Vec<Command> {
+/// Under verb-noun the tree's top level is verbs, and sorting them
+/// alphabetically puts `delete` second in `--help`. Rank them the way the action
+/// leaves already are, so the listing reads read-then-write in both grammars.
+///
+/// Only consulted when the tree was built verb-first. Under noun-verb the top
+/// level is resource nouns, and a resource legitimately named `get` or `delete`
+/// would otherwise be silently reordered — so the no-op is structural, not a bet
+/// on nobody having such a resource.
+fn root_rank(name: &str) -> i32 {
+    match name {
+        "get" | "list" | "retrieve" => 0,
+        "create" => 1,
+        "update" | "modify" | "replace" => 2,
+        "delete" => 3,
+        _ => 100,
+    }
+}
+
+fn emit_children(node: &Node, rank_this_level: bool) -> Vec<Command> {
     let mut children: Vec<&Node> = node.children.iter().collect();
-    children.sort_by(|a, b| locale_compare(&a.name, &b.name));
+    if rank_this_level {
+        children.sort_by(|a, b| {
+            root_rank(&a.name)
+                .cmp(&root_rank(&b.name))
+                .then_with(|| locale_compare(&a.name, &b.name))
+        });
+    } else {
+        children.sort_by(|a, b| locale_compare(&a.name, &b.name));
+    }
     let mut out: Vec<Command> = children.iter().map(|c| emit_node(c)).collect();
 
     let mut leaves = node.leaves.clone();
@@ -162,7 +197,8 @@ fn emit_children(node: &Node) -> Vec<Command> {
 }
 
 fn emit_node(node: &Node) -> Command {
-    let subs = emit_children(node);
+    // Below the root, ordering is alphabetical in both grammars.
+    let subs = emit_children(node, false);
     let commands = if subs.is_empty() { None } else { Some(subs) };
     match node.payload.clone() {
         // A runnable parent: everything the command carried, plus its children.
@@ -275,5 +311,41 @@ mod tests {
             .map(|c| c.name.as_str())
             .collect();
         assert_eq!(names, ["list", "create", "delete"], "action rank preserved");
+    }
+}
+
+#[cfg(test)]
+mod root_rank_tests {
+    use super::*;
+
+    fn cmd(name: &str) -> Command {
+        Command {
+            name: name.to_string(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn verb_first_ranks_the_top_level_read_then_write() {
+        let mut t = CommandTree::new().verb_first();
+        for verb in ["delete", "update", "get", "create", "publish"] {
+            t.insert(&[verb.to_string()], cmd("sdk")).unwrap();
+        }
+        let emitted = t.emit();
+        let names: Vec<&str> = emitted.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["get", "create", "update", "delete", "publish"]);
+    }
+
+    #[test]
+    fn noun_verb_leaves_the_top_level_alphabetical() {
+        // A resource legitimately NAMED `get` must not be hoisted; this is why
+        // the rank is gated on the grammar rather than applied at depth 0.
+        let mut t = CommandTree::new();
+        for res in ["sdks", "get", "apis"] {
+            t.insert(&[res.to_string()], cmd("list")).unwrap();
+        }
+        let emitted = t.emit();
+        let names: Vec<&str> = emitted.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["apis", "get", "sdks"]);
     }
 }

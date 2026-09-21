@@ -158,6 +158,16 @@ pub struct XOpenApiCommand {
     pub body: Option<XOpenApiBody>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub responses: Option<Vec<XOpenApiResponse>>,
+    /// The request to make INSTEAD when the command's optional positional is
+    /// supplied.
+    ///
+    /// One command, two bindings: `get sdks` lists and `get sdks <id>`
+    /// retrieves, which is how kubectl reads and what lets the plural and
+    /// singular spellings be aliases of one command rather than two commands a
+    /// character apart. `None` — the overwhelming majority — serializes away
+    /// entirely, so every existing document is byte-identical.
+    #[serde(rename = "whenArgsPresent", skip_serializing_if = "Option::is_none")]
+    pub when_args_present: Option<Box<XOpenApiCommand>>,
 }
 
 #[derive(Serialize, Clone, Default)]

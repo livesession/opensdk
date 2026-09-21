@@ -145,3 +145,173 @@ pub fn truthy(v: Option<&Value>) -> bool {
 pub fn locale_compare(a: &str, b: &str) -> std::cmp::Ordering {
     a.cmp(b)
 }
+
+// ── inflection ───────────────────────────────────────────────────────────────
+//
+// Copied from `opensdk_node::jsrt` rather than shared. The three SDK copies
+// (node/go/java) are byte-parity ports locked to their own oracles, so moving
+// them would risk four emitters' goldens for no functional gain; the convention
+// is stated in `opencli2opensdk/src/jsrt.rs`: "Small pure functions; the crates
+// stay independent."
+//
+// Two deliberate differences from those copies, both because this output is
+// TYPED BY A HUMAN rather than compiled into a symbol name:
+//
+//   - `CLI_UNCOUNTABLE` guards words that merely END in `s`. `dns -> dn`,
+//     `alias -> alia` and `news -> new` are fine as type names nobody reads,
+//     and unusable as commands.
+//   - slicing is done with `strip_suffix`, not byte indexing after a char-count
+//     guard. The SDK copies can panic on a multi-byte final grapheme; that bug
+//     is not worth propagating into a fourth copy.
+
+/// Mass nouns — identical to the SDK copies, kept in lockstep on purpose.
+const UNCOUNTABLE: &[&str] = &["data", "media", "series"];
+
+/// Singular nouns that END in `s`. Stripping these produces a word that is not
+/// English, which matters when the result is something a person has to type.
+/// `apis` is here for a specific reason: every singularizer guards `is` to
+/// protect `analysis`/`basis`, so without an override `GET /apis` and
+/// `GET /apis/{id}` both claim `apis` and one of them loses.
+const CLI_UNCOUNTABLE: &[&str] = &[
+    "news", "alias", "canvas", "gas", "lens", "bias", "atlas", "bonus", "campus", "census",
+    "corpus", "status", "dns", "sms", "aws", "tls", "cors", "ops", "gps", "ai", "css", "js",
+];
+
+/// Singularize one lowercase English word.
+///
+/// `overrides` is consulted first so a spec can name its own irregulars; the
+/// built-in ladder handles the regular cases and no-ops on anything it does not
+/// recognise, which is why an already-singular noun passes through untouched.
+pub fn singularize_with(
+    word: &str,
+    overrides: &std::collections::BTreeMap<String, String>,
+) -> String {
+    if let Some(explicit) = overrides.get(word) {
+        return explicit.clone();
+    }
+    if word.chars().count() < 3 || UNCOUNTABLE.contains(&word) || CLI_UNCOUNTABLE.contains(&word) {
+        return word.to_string();
+    }
+    if word.chars().count() > 4 {
+        if let Some(stem) = word.strip_suffix("ies") {
+            return format!("{stem}y");
+        }
+        for suffix in ["sses", "xes", "ches", "shes", "uses"] {
+            if word.ends_with(suffix) {
+                // Drop only the "es": sses->ss, xes->x, ches->ch, uses->us.
+                return word[..word.len() - 2].to_string();
+            }
+        }
+    }
+    if word.ends_with("ss") || word.ends_with("us") || word.ends_with("is") {
+        return word.to_string();
+    }
+    word.strip_suffix('s').unwrap_or(word).to_string()
+}
+
+/// Singularize a kebab-case path SEGMENT by its last word only, so
+/// `api-keys -> api-key` and `package-registries -> package-registry` while the
+/// qualifier in front is left alone (`docs-projects -> docs-project`).
+pub fn singularize_segment(
+    segment: &str,
+    overrides: &std::collections::BTreeMap<String, String>,
+) -> String {
+    // A whole-segment override wins over per-word handling, so a spec can fix
+    // `sdk-targets` outright without knowing how the split works.
+    if let Some(explicit) = overrides.get(segment) {
+        return explicit.clone();
+    }
+    let words = split_words(segment);
+    match words.split_last() {
+        None => segment.to_string(),
+        Some((last, rest)) => {
+            let mut out: Vec<String> = rest.to_vec();
+            out.push(singularize_with(last, overrides));
+            out.join("-")
+        }
+    }
+}
+
+#[cfg(test)]
+mod inflect_tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    fn s(w: &str) -> String {
+        singularize_with(w, &BTreeMap::new())
+    }
+    fn seg(w: &str) -> String {
+        singularize_segment(w, &BTreeMap::new())
+    }
+
+    #[test]
+    fn regular_plurals() {
+        assert_eq!(s("sdks"), "sdk");
+        assert_eq!(s("projects"), "project");
+        assert_eq!(s("registries"), "registry");
+        assert_eq!(s("boxes"), "box");
+        assert_eq!(s("batches"), "batch");
+        assert_eq!(s("statuses"), "status");
+    }
+
+    #[test]
+    fn already_singular_words_are_untouched() {
+        // The common case in a real spec: most segments are not plural at all.
+        for w in ["usage", "overview", "context", "auth", "me", "login"] {
+            assert_eq!(s(w), w, "{w} must pass through");
+        }
+        // NOT `stats`: it is a real plural of `stat`, so singularizing it is
+        // correct here. `GET /overview/stats` still reads `get overview stats`,
+        // because the terminal segment is only singularized for `create` — the
+        // grammar rule keeps it plural, not the inflector.
+        assert_eq!(s("stats"), "stat");
+    }
+
+    #[test]
+    fn singular_nouns_ending_in_s_are_not_mangled() {
+        // Each of these would otherwise become a word that is not English, in a
+        // string the user has to type.
+        for w in [
+            "news", "alias", "dns", "sms", "status", "analysis", "address",
+        ] {
+            assert_eq!(s(w), w, "{w} must not be stripped");
+        }
+    }
+
+    #[test]
+    fn apis_is_guarded_because_it_would_otherwise_collide() {
+        // `apis` ends in `is`, so the generic ladder leaves it alone and
+        // `GET /apis` + `GET /apis/{id}` both claim `apis`. On a product whose
+        // binary is `api`, the loser shipped as `apis-2`.
+        assert_eq!(s("apis"), "apis");
+        let mut ov = BTreeMap::new();
+        ov.insert("apis".to_string(), "api".to_string());
+        assert_eq!(singularize_with("apis", &ov), "api");
+    }
+
+    #[test]
+    fn segments_singularize_only_their_last_word() {
+        assert_eq!(seg("api-keys"), "api-key");
+        assert_eq!(seg("package-registries"), "package-registry");
+        assert_eq!(seg("repo-connections"), "repo-connection");
+        assert_eq!(seg("sdk-targets"), "sdk-target");
+        // The qualifier is left alone even though it is itself plural.
+        assert_eq!(seg("docs-projects"), "docs-project");
+    }
+
+    #[test]
+    fn a_whole_segment_override_wins() {
+        let mut ov = BTreeMap::new();
+        ov.insert("sdk-targets".to_string(), "target".to_string());
+        assert_eq!(singularize_segment("sdk-targets", &ov), "target");
+    }
+
+    #[test]
+    fn multibyte_input_does_not_panic() {
+        // The SDK copies index by byte after a char-count guard; this one uses
+        // strip_suffix, so a final multi-byte grapheme is safe.
+        for w in ["café", "naïve", "日本語", "señor"] {
+            let _ = s(w);
+        }
+    }
+}

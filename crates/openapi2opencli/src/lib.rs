@@ -28,7 +28,7 @@ use oas_doc::DocCtx;
 use security::security_schemes_to_x_openapi;
 use tree::CommandTree;
 
-pub use options::Options;
+pub use options::{Grammar, Options};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -159,6 +159,12 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
     let x_openapi = build_x_root(doc, &cli_name, options);
 
     let mut tree = CommandTree::new();
+    if options.grammar.unwrap_or_default() == Grammar::VerbNoun {
+        tree = tree.verb_first();
+    }
+    // Collected first, then paired, then inserted — pairing needs to see both
+    // halves of a read pair, which streaming inserts cannot.
+    let mut built_leaves: Vec<(String, String, command::BuiltLeaf)> = Vec::new();
     let empty = Map::new();
     let paths = doc
         .get("paths")
@@ -189,9 +195,27 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
             }
             let built =
                 build_leaf_command(ctx, method, path, operation, &path_item_params, options);
-            tree.insert(&built.resource_path, built.command)
-                .map_err(|c| Error::Collision(c.to_string()))?;
+            built_leaves.push((method.clone(), path.to_string(), built));
         }
+    }
+
+    // Under verb-noun, a collection GET and its item GET are ONE command: the
+    // plural name lists, the singular is an alias, and supplying the positional
+    // retrieves. That is how kubectl reads (`get pods`, `get pod my-pod`, and
+    // `get pods my-pod` all work), and it is what keeps `get sdks` and
+    // `get sdk` from being two commands one character apart.
+    //
+    // It also removes a whole class of collisions rather than patching them: a
+    // resource whose plural and singular are the SAME WORD — `apis`, and
+    // anything else the inflector leaves alone — no longer produces two
+    // commands fighting for one name.
+    if options.grammar.unwrap_or_default() == Grammar::VerbNoun {
+        pair_reads(&mut built_leaves);
+    }
+
+    for (_, _, built) in built_leaves {
+        tree.insert(&built.resource_path, built.command)
+            .map_err(|c| Error::Collision(c.to_string()))?;
     }
 
     let mut commands: Vec<Command> = tree.emit();
@@ -258,4 +282,115 @@ pub fn openapi2opencli_from_json_str(
     };
     let spec = openapi2opencli(&doc, options)?;
     serde_json::to_string(&spec).map_err(|e| Error::Io(e.to_string()))
+}
+
+/// Collapse each collection-GET / item-GET pair into ONE command.
+///
+/// The pair is identified by the STATIC path segments, which are identical for
+/// `/sdks` and `/sdks/{id}` — the surviving handle after singularization has
+/// already made the two commands' names differ. The collection wins the name
+/// (plural, so `get sdks` reads as a list), the item's name becomes an alias
+/// (so `get sdk <id>` works), and the item's binding rides along under
+/// `whenArgsPresent` together with its positional, made optional.
+///
+/// Anything that is not exactly one collection + one item is left alone: two
+/// item GETs on differently-named params, or a lone collection, have no pair to
+/// form and merging them would be inventing behaviour.
+fn pair_reads(leaves: &mut Vec<(String, String, command::BuiltLeaf)>) {
+    use std::collections::HashMap;
+
+    // Group GET operations by their static segments, remembering whether the
+    // path ends in a parameter (the item) or not (the collection).
+    let mut groups: HashMap<String, (Option<usize>, Option<usize>)> = HashMap::new();
+    for (i, (method, path, _)) in leaves.iter().enumerate() {
+        if method.to_lowercase() != "get" {
+            continue;
+        }
+        let segs: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+        let statics: Vec<&str> = segs
+            .iter()
+            .copied()
+            .filter(|s| !s.starts_with('{'))
+            .collect();
+        let ends_in_param = segs.last().map(|s| s.starts_with('{')).unwrap_or(false);
+        let key = statics.join("/");
+        let slot = groups.entry(key).or_insert((None, None));
+        if ends_in_param {
+            // Only the FIRST item GET pairs; a second one means the shape is
+            // not a plain collection/item pair.
+            if slot.1.is_none() {
+                slot.1 = Some(i);
+            } else {
+                slot.1 = None;
+            }
+        } else if slot.0.is_none() {
+            slot.0 = Some(i);
+        } else {
+            slot.0 = None;
+        }
+    }
+
+    let mut drop_idx: Vec<usize> = Vec::new();
+    for (collection, item) in groups.into_values() {
+        let (Some(ci), Some(ii)) = (collection, item) else {
+            continue;
+        };
+        // Both halves must sit at the same place in the tree, or merging them
+        // would move one of them.
+        if leaves[ci].2.resource_path != leaves[ii].2.resource_path {
+            continue;
+        }
+
+        let item_leaf = leaves[ii].2.command.clone();
+        let collection_cmd = &mut leaves[ci].2.command;
+
+        // The SINGULAR spelling is canonical and the plural becomes the alias —
+        // not the other way round, which is the version that does not work.
+        //
+        // Sub-resources reach the same node through N1, which singularizes a
+        // segment followed by `{param}`: `/sdks/{id}/targets` nests under a node
+        // named `sdk`. Naming the merged command `sdks` would leave that node a
+        // SIBLING of a command aliased `sdk` — a name/alias duplication clap
+        // rejects outright. Naming it `sdk` makes it the same node, so the
+        // leaf↔node merge folds them into one runnable parent and every
+        // spelling resolves: `get sdk`, `get sdks`, `get sdk <id>`,
+        // `get sdks <id>`, `get sdk targets <id>`.
+        let plural = collection_cmd.name.clone();
+        if item_leaf.name != plural {
+            collection_cmd.name = item_leaf.name.clone();
+            let mut aliases = collection_cmd.aliases.clone().unwrap_or_default();
+            if !aliases.contains(&plural) {
+                aliases.push(plural);
+            }
+            collection_cmd.aliases = Some(aliases);
+        }
+
+        // The item's positionals, made OPTIONAL — their absence is what selects
+        // the list binding at runtime.
+        if let Some(args) = item_leaf.arguments.clone() {
+            let optional: Vec<model::Argument> = args
+                .into_iter()
+                .map(|mut a| {
+                    a.required = None;
+                    a
+                })
+                .collect();
+            let mut merged = collection_cmd.arguments.clone().unwrap_or_default();
+            merged.extend(optional);
+            collection_cmd.arguments = Some(merged);
+        }
+
+        if let Some(item_binding) = item_leaf.x_openapi {
+            if let Some(binding) = collection_cmd.x_openapi.as_mut() {
+                binding.when_args_present = Some(Box::new(item_binding));
+            }
+        }
+
+        drop_idx.push(ii);
+    }
+
+    drop_idx.sort_unstable();
+    for i in drop_idx.into_iter().rev() {
+        leaves.remove(i);
+    }
 }
