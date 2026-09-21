@@ -34,6 +34,12 @@ pub use options::Options;
 pub enum Error {
     #[error("openapi2opencli: {0}")]
     Io(String),
+    /// Two operations claimed the same command path. Deliberately fatal: the
+    /// old behaviour renamed the second to `name-2`, which shipped commands
+    /// nobody meant to publish and hid the fact that two operations were
+    /// fighting over one name.
+    #[error("openapi2opencli: {0}")]
+    Collision(String),
 }
 
 const DEFAULT_HTTP_METHODS: [&str; 5] = ["get", "put", "patch", "post", "delete"];
@@ -117,7 +123,7 @@ fn build_x_root(doc: &Value, cli_name: &str, options: &Options) -> Option<XOpenA
 
 /// Convert an (already-dereferenced or ref-carrying) OpenAPI doc. `ctx`
 /// resolves `$ref`s lazily.
-fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Spec {
+fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> {
     let title = doc
         .get("info")
         .and_then(|i| i.get("title"))
@@ -183,13 +189,14 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Spec {
             }
             let built =
                 build_leaf_command(ctx, method, path, operation, &path_item_params, options);
-            tree.insert(&built.resource_path, built.command);
+            tree.insert(&built.resource_path, built.command)
+                .map_err(|c| Error::Collision(c.to_string()))?;
         }
     }
 
     let commands: Vec<Command> = tree.emit();
 
-    Spec {
+    Ok(Spec {
         opencli: "1.0.0".to_string(),
         info: build_info(doc, &cli_name, &version),
         x_openapi,
@@ -198,11 +205,11 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Spec {
         } else {
             Some(commands)
         },
-    }
+    })
 }
 
 /// Convert a dereferenced OpenAPI document (as a JSON Value) to an OpenCLI doc.
-pub fn openapi2opencli(doc: &Value, options: Option<Options>) -> Spec {
+pub fn openapi2opencli(doc: &Value, options: Option<Options>) -> Result<Spec, Error> {
     let options = options.unwrap_or_default();
     // preprocess materializes $ref-with-siblings merges; DocCtx resolves refs.
     let (processed, stamps) = DocCtx::preprocess(doc);
@@ -213,7 +220,7 @@ pub fn openapi2opencli(doc: &Value, options: Option<Options>) -> Spec {
 /// Read + deref an OpenAPI spec file, then convert (tier-1 fixtures + napi).
 pub fn openapi2opencli_from_file(path: &str, options: Option<Options>) -> Result<Spec, Error> {
     let raw = oas_doc::read_spec(path).map_err(|e| Error::Io(e.to_string()))?;
-    Ok(openapi2opencli(&raw, options))
+    openapi2opencli(&raw, options)
 }
 
 /// napi transport: a dereferenced-or-raw doc as a JSON string → OpenCLI JSON.
@@ -228,6 +235,6 @@ pub fn openapi2opencli_from_json_str(
         }
         None => None,
     };
-    let spec = openapi2opencli(&doc, options);
+    let spec = openapi2opencli(&doc, options)?;
     serde_json::to_string(&spec).map_err(|e| Error::Io(e.to_string()))
 }
