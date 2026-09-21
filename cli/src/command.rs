@@ -61,7 +61,10 @@ pub fn command() -> Command {
         // it matches the tag. Without this the binary had no way to say which
         // build it was, and that gate guarded a number nobody could observe.
         .version(env!("CARGO_PKG_VERSION"))
-        .subcommand_required(true)
+        // NOT `subcommand_required`: a bare config path is accepted as shorthand
+        // for generating from it (see the CONFIG positional below). Bare
+        // `opensdk` with no arguments at all still prints help, via
+        // `arg_required_else_help`.
         .arg_required_else_help(true)
         .arg(
             Arg::new("config")
@@ -69,6 +72,15 @@ pub fn command() -> Command {
                 .value_name("path")
                 .global(true)
                 .help("Path to opensdk config file (default: sdk.json in cwd)"),
+        )
+        .arg(
+            Arg::new("config_path")
+                .value_name("CONFIG")
+                .help(
+                    "Shorthand: generate everything declared by this config \
+                     (`opensdk ./sdk.json` == `opensdk run --chain ./sdk.json` for a \
+                     chain, or `opensdk generate --config <path>` for language sections)",
+                ),
         )
         .subcommand(
             Command::new("parse")
@@ -444,10 +456,63 @@ fn run_generate(m: &ArgMatches, config: Option<&ResolvedConfig>, cwd: &Path) -> 
 }
 
 /// Dispatch one parsed invocation. Returns the process exit code.
+/// `opensdk <config>` — route a bare config path by what the file declares.
+///
+/// The shape decides, not the filename: `chain.json` and `sdk.json` are both
+/// just names, and an `sdk.json` may legitimately be either shape. Dispatching
+/// on the name instead would make `opensdk ./my-pipeline.json` fail for no
+/// reason a user could see.
+fn dispatch_config_path(path: &str, cwd: &Path) -> Result<i32> {
+    let resolved = crate::paths::resolve(cwd, path);
+    if !resolved.exists() {
+        return Err(Error::msg(format!("Config file not found: {path}")));
+    }
+
+    let resolved = resolved.to_string_lossy().to_string();
+    let doc: serde_json::Value = {
+        let raw = std::fs::read_to_string(&resolved)
+            .map_err(|e| Error::msg(format!("Failed to read {path}: {e}")))?;
+        serde_json::from_str(&raw)
+            .map_err(|e| Error::msg(format!("Failed to parse {path}: {e}")))?
+    };
+
+    if opensdk_chain::is_chain_shaped(&doc) {
+        run_chain(
+            &RunOptions {
+                chain: resolved,
+                target: None,
+                source: None,
+                publish: false,
+                dry_run: false,
+            },
+            cwd,
+        )?;
+        return Ok(0);
+    }
+
+    // Not a chain: hand it to `generate` as its config, which is what
+    // `--config <path>` already means.
+    let config = resolve_config(cwd, Some(&resolved))?;
+    let args = vec!["opensdk".to_string(), "generate".to_string()];
+    let m = command()
+        .try_get_matches_from(&args)
+        .map_err(|e| Error::msg(e.to_string()))?;
+    let (_, sub) = m.subcommand().expect("generate");
+    run_generate(sub, config.as_ref(), cwd)
+}
+
 pub fn dispatch(matches: &ArgMatches, cwd: &Path) -> Result<i32> {
-    let (name, m) = matches
-        .subcommand()
-        .ok_or_else(|| Error::msg("no subcommand"))?;
+    // `opensdk ./sdk.json` — a bare config path means "generate what this
+    // declares". Which verb that is depends on the file's SHAPE, not its name: a
+    // chain (sources -> targets) runs the pipeline, anything else generates the
+    // language sections. Asking the user to know which of `run` and `generate`
+    // their config needs is asking them to know an internal distinction.
+    let Some((name, m)) = matches.subcommand() else {
+        let Some(path) = matches.get_one::<String>("config_path") else {
+            return Err(Error::msg("no subcommand"));
+        };
+        return dispatch_config_path(path, cwd);
+    };
 
     // `init` never reads a config (it CREATES one), so resolving first would
     // make `opensdk init` fail in a directory holding an opensdk.config.mjs.

@@ -1286,3 +1286,83 @@ fn regeneration_honors_the_emitters_per_file_write_modes() {
     assert_ne!(read(&dir, "src/client.ts"), "// gone\n");
     std::fs::remove_dir_all(&dir).ok();
 }
+
+// ── `opensdk <config>` — the bare-path shorthand ─────────────────────────────
+/// The local `write` takes a parsed `Value`; these cases are clearer as raw JSON.
+fn j(raw: &str) -> Value {
+    serde_json::from_str(raw).expect("valid json fixture")
+}
+
+//
+// `opensdk ./sdk.json` used to fail with "unrecognized subcommand './sdk.json'",
+// which is a poor answer to an obvious request. The shorthand routes on the
+// file's SHAPE, because "chain or not" is an internal distinction users should
+// not have to carry: `chain.json` and `sdk.json` are just names, and an sdk.json
+// may legitimately be either shape.
+
+const SPEC_MIN_RAW: &str = r#"{"openapi":"3.0.0","info":{"title":"Probe","version":"1.0.0"},
+  "paths":{"/things":{"get":{"operationId":"listThings","responses":{"200":{"description":"ok"}}}}}}"#;
+
+#[test]
+fn a_bare_chain_path_runs_the_pipeline() {
+    let dir = tmp("bare-chain");
+    write(&dir, "spec.json", &j(SPEC_MIN_RAW));
+    write(
+        &dir,
+        "sdk.json",
+        &j(r#"{"version":1,
+            "sources":{"a":{"inputs":[{"location":"spec.json"}],"output":".chain/a.json"}},
+            "targets":{"t":{"target":"node","source":"a","output":"out","options":{"tests":false}}}}"#),
+    );
+    let (code, stdout, stderr) = run_bin(&["./sdk.json"], &dir);
+    assert_eq!(code, 0, "stderr: {stderr}");
+    assert!(stdout.contains("Processed source"), "stdout: {stdout}");
+    assert!(dir.join("out/package.json").exists(), "the SDK was written");
+}
+
+#[test]
+fn a_bare_non_chain_config_path_generates_its_language_sections() {
+    // Same shorthand, different shape — it must NOT try to run a pipeline.
+    let dir = tmp("bare-sdk");
+    write(&dir, "spec.json", &j(SPEC_MIN_RAW));
+    write(
+        &dir,
+        "sdk.json",
+        &j(r#"{"version":1,"api":"spec.json","node":{"output":"out","tests":false}}"#),
+    );
+    let (code, stdout, stderr) = run_bin(&["./sdk.json"], &dir);
+    assert_eq!(code, 0, "stderr: {stderr}");
+    assert!(
+        !stdout.contains("Processed source"),
+        "not a chain: {stdout}"
+    );
+    assert!(dir.join("out/package.json").exists(), "the SDK was written");
+}
+
+#[test]
+fn a_bare_path_that_does_not_exist_says_so() {
+    let dir = tmp("bare-missing");
+    let (code, _, stderr) = run_bin(&["./nope.json"], &dir);
+    assert_ne!(code, 0);
+    assert!(stderr.contains("Config file not found"), "stderr: {stderr}");
+}
+
+#[test]
+fn bare_opensdk_with_no_arguments_still_prints_help_and_writes_nothing() {
+    // The shorthand must not turn a bare invocation into "generate everything":
+    // help is the conventional answer, and generation writes files.
+    let dir = tmp("bare-none");
+    write(&dir, "spec.json", &j(SPEC_MIN_RAW));
+    write(
+        &dir,
+        "sdk.json",
+        &j(r#"{"version":1,"api":"spec.json","node":{"output":"out","tests":false}}"#),
+    );
+    let (_, stdout, stderr) = run_bin(&[], &dir);
+    let all = format!("{stdout}{stderr}");
+    assert!(all.contains("Usage"), "expected help, got: {all}");
+    assert!(
+        !dir.join("out").exists(),
+        "a bare invocation must write nothing"
+    );
+}

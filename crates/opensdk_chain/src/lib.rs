@@ -45,7 +45,7 @@ mod overlay;
 mod sources;
 mod yaml;
 
-pub use chain::{detect_chain, resolve_chain};
+pub use chain::{detect_chain, is_chain_shaped, resolve_chain};
 pub use error::{Error, Result};
 pub use overlay::apply_overlay;
 pub use sources::{
