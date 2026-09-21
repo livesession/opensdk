@@ -93,6 +93,7 @@ pub fn render_handler(
     command: &Value,
     module: &str,
     imports: &mut Imports,
+    enforce_required: bool,
 ) -> RenderedHandler {
     let model = build_leaf_model(command);
     let name = format!(
@@ -105,6 +106,28 @@ pub fn render_handler(
     imports.add(&["context", CLI, &format!("{module}/internal/runtime")]);
 
     let mut lines: Vec<String> = Vec::new();
+
+    // A runnable parent's required flags are declared non-required so they do
+    // not block its subcommands (see flags.rs), so the check belongs here —
+    // reached only when the parent itself runs. The message matches urfave's
+    // own wording; the difference is invisible to users, which is the point.
+    if enforce_required {
+        let required: Vec<&str> = model
+            .flags
+            .iter()
+            .filter(|f| f.required)
+            .map(|f| f.flag_name.as_str())
+            .collect();
+        if !required.is_empty() {
+            imports.add(&["fmt"]);
+            let list = required.iter().map(|n| q(n)).collect::<Vec<_>>().join(", ");
+            lines.push(format!("for _, required := range []string{{{list}}} {{"));
+            lines.push("\tif !cmd.IsSet(required) {".to_string());
+            lines.push("\t\treturn fmt.Errorf(\"Required flag %q not set\", required)".to_string());
+            lines.push("\t}".to_string());
+            lines.push("}".to_string());
+        }
+    }
 
     // Path params (positional args) — only those the path actually uses.
     let pe = path_expr(&model, imports);

@@ -14,6 +14,7 @@ pub fn command() -> Command {
             Command::new("sdks")
                 .visible_alias("sdk")
                 .about("List SDKs, or retrieve one by id")
+                .subcommand_negates_reqs(true)
                 .arg(
                     Arg::new("id")
                         .help("SDK id; omit to list"),

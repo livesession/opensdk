@@ -86,6 +86,17 @@ fn render_command_chain(
         calls.push(("arg_required_else_help".into(), vec![lit("true")]));
     }
 
+    // A runnable parent whose OWN request has a required option would otherwise
+    // make its subcommands unreachable: clap enforces a parent's requirements
+    // before it dispatches, so `api create sdk target <id>` fails demanding the
+    // `--api-id` that belongs to `api create sdk`. This tells clap to drop the
+    // parent's requirements once a subcommand is present, which is exactly the
+    // intent — the two are alternative invocations, not a command plus a
+    // modifier.
+    if has_subs && has_binding {
+        calls.push(("subcommand_negates_reqs".into(), vec![lit("true")]));
+    }
+
     if has_binding {
         let model = build_leaf_model(command);
         if let Some(cmd_args) = command.get("arguments").and_then(|a| a.as_array()) {

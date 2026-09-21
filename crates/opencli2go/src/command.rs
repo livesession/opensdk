@@ -2,7 +2,7 @@
 
 use serde_json::Value;
 
-use crate::flags::render_flags;
+use crate::flags::{render_flags, render_flags_relaxed};
 use crate::golit::{go_bool, go_file, go_slice, go_str, go_struct, lit, GoVal, Imports};
 use crate::handler::render_handler;
 use crate::model::build_leaf_model;
@@ -57,11 +57,19 @@ fn render_command(
 
     if command.get("x-openapi").is_some() {
         let model = build_leaf_model(command);
-        let flags = render_flags(&model.flags);
+        // A runnable parent (binding AND children) declares its required flags
+        // as optional and enforces them in its own Action instead — urfave
+        // would otherwise apply them to every subcommand too.
+        let runnable_parent = subs.is_some();
+        let flags = if runnable_parent {
+            render_flags_relaxed(&model.flags)
+        } else {
+            render_flags(&model.flags)
+        };
         if !flags.is_empty() {
             fields.push(("Flags".to_string(), go_slice("cli.Flag", flags)));
         }
-        let handler = render_handler(path_names, command, module, imports);
+        let handler = render_handler(path_names, command, module, imports, runnable_parent);
         fields.push(("Action".to_string(), lit(handler.name)));
         handlers.push(handler.code);
     }

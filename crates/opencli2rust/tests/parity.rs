@@ -40,6 +40,21 @@ fn run_case(name: &str) {
     let generated = flatten(&opencli2rust(&spec, None));
 
     let out_dir = case.join("output");
+
+    // `XYD_BLESS=1` rewrites the golden tree instead of checking it — the same
+    // gate the other crates use. Never set it in CI: it would turn every
+    // regression into a passing test that quietly rewrites its own expectation.
+    if std::env::var("XYD_BLESS").as_deref() == Ok("1") {
+        let _ = std::fs::remove_dir_all(&out_dir);
+        for (rel, content) in &generated {
+            let p = out_dir.join(rel);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(p, content).unwrap();
+        }
+        eprintln!("blessed {name} ({} files)", generated.len());
+        return;
+    }
+
     let mut expected: BTreeMap<String, String> = BTreeMap::new();
     list_tree(&out_dir, &out_dir, &mut expected);
 
