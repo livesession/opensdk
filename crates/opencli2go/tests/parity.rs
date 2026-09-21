@@ -41,6 +41,21 @@ fn run_case(name: &str) {
     let files = opencli2go(&spec, None);
 
     let out_dir = case.join("output");
+
+    // `XYD_BLESS=1` rewrites the golden tree instead of checking it — the same
+    // gate opencli2rust and the opensdk crates use. Never set it in CI: it would
+    // turn every regression into a passing test that rewrites its expectation.
+    if std::env::var("XYD_BLESS").as_deref() == Ok("1") {
+        let _ = std::fs::remove_dir_all(&out_dir);
+        for (rel, content) in &files {
+            let p = out_dir.join(rel);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(p, content).unwrap();
+        }
+        eprintln!("blessed {name} ({} files)", files.len());
+        return;
+    }
+
     let mut expected: BTreeMap<String, String> = BTreeMap::new();
     list_golden(&out_dir, &out_dir, &mut expected);
 
@@ -88,3 +103,9 @@ c!(body_flatten, "4.body-flatten");
 // alongside `Commands`; the emitter used to take the children branch and drop
 // the node's `Action`, so the command was unreachable.
 c!(runnable_parent, "5.runnable-parent");
+
+// The merged read command: ONE command with TWO HTTP bindings
+// (`x-openapi.whenArgsPresent`), chosen by whether its optional positional was
+// supplied. Kept byte-comparable with opencli2rust's 9.merged-read so the two
+// backends' handling of the same input stays a comparison, not a claim.
+c!(merged_read, "9.merged-read");

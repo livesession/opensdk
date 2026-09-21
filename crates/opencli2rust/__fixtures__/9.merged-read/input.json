@@ -1,0 +1,42 @@
+{
+  "opencli": "0.1.0",
+  "info": { "title": "acme", "version": "1.0.0" },
+  "x-openapi": { "servers": ["https://api.acme.test"] },
+  "commands": [
+    {
+      "name": "get",
+      "commands": [
+        {
+          "name": "sdk",
+          "aliases": ["sdks"],
+          "description": "List SDKs, or retrieve one by id.",
+          "arguments": [{ "name": "id", "required": false }],
+          "options": [
+            { "name": "limit", "arguments": [{ "name": "limit" }], "x-openapi-in": "query" }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/sdks",
+            "params": [{ "in": "query", "name": "limit", "from": "option:limit" }],
+            "whenArgsPresent": {
+              "method": "get",
+              "path": "/sdks/{id}",
+              "params": [{ "in": "path", "name": "id", "from": "argument:id" }]
+            }
+          },
+          "commands": [
+            {
+              "name": "targets",
+              "arguments": [{ "name": "sdk-id", "required": true }],
+              "x-openapi": {
+                "method": "get",
+                "path": "/sdks/{sdkId}/targets",
+                "params": [{ "in": "path", "name": "sdkId", "from": "argument:sdk-id" }]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

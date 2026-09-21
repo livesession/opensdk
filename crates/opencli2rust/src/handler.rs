@@ -323,7 +323,15 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
 
     // Assemble the request.
     lines.push("let req = runtime::Request {".to_string());
-    lines.push(format!("    method: {method_expr},"));
+    // Field-init shorthand when the expression IS the field name — `path` below
+    // is already written this way. `method: method` is valid Rust but trips
+    // clippy's `redundant_field_names`, and a generated crate built under
+    // `-D warnings` (apitoolchain's CI does exactly that) fails to compile.
+    lines.push(if method_expr == "method" {
+        "    method,".to_string()
+    } else {
+        format!("    method: {method_expr},")
+    });
     lines.push("    path,".to_string());
     lines.push(if !query_flags.is_empty() {
         "    query,".to_string()

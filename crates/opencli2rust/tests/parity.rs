@@ -122,3 +122,16 @@ fn mixed() {
 fn runnable_parent() {
     run_case("8.runnable-parent");
 }
+
+/// The merged read command: ONE command carrying TWO HTTP bindings
+/// (`x-openapi.whenArgsPresent`), chosen by whether its optional positional was
+/// supplied — `get sdks` lists, `get sdk <id>` retrieves.
+///
+/// Neither backend had a fixture for this path, and that gap has already cost
+/// once: the branch emitted `method: method`, which is valid Rust but trips
+/// clippy's `redundant_field_names`. Every golden passed, then a downstream
+/// repo building the generated crate under `-D warnings` went red.
+#[test]
+fn merged_read() {
+    run_case("9.merged-read");
+}
