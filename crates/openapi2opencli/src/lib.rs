@@ -193,8 +193,21 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
             if !operation.is_object() {
                 continue;
             }
-            let built =
-                build_leaf_command(ctx, method, path, operation, &path_item_params, options);
+            let xcli = options::operation_x_cli(path_item, operation, method, path);
+            // `ignore` drops the operation before anything is built, so an
+            // excluded command cannot collide with a live one on the way out.
+            if xcli.ignore == Some(true) {
+                continue;
+            }
+            let built = build_leaf_command(
+                ctx,
+                method,
+                path,
+                operation,
+                &path_item_params,
+                options,
+                &xcli,
+            );
             built_leaves.push((method.clone(), path.to_string(), built));
         }
     }
@@ -209,9 +222,12 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
     // resource whose plural and singular are the SAME WORD — `apis`, and
     // anything else the inflector leaves alone — no longer produces two
     // commands fighting for one name.
-    if options.grammar.unwrap_or_default() == Grammar::VerbNoun {
-        pair_reads(&mut built_leaves);
-    }
+    //
+    // Pairing reads each leaf's OWN grammar rather than the converter-wide one:
+    // with per-operation `x-cli.grammar`, one tree can hold both orders, and
+    // merging a pair whose halves were not both placed verb-first would produce
+    // a command that is not where either of them said it was.
+    pair_reads(&mut built_leaves);
 
     for (_, _, built) in built_leaves {
         tree.insert(&built.resource_path, built.command)
@@ -304,8 +320,15 @@ fn pair_reads(leaves: &mut Vec<(String, String, command::BuiltLeaf)>) {
     // Group GET operations by their static segments, remembering whether the
     // path ends in a parameter (the item) or not (the collection).
     let mut groups: HashMap<String, (Option<usize>, Option<usize>)> = HashMap::new();
-    for (i, (method, path, _)) in leaves.iter().enumerate() {
+    for (i, (method, path, built)) in leaves.iter().enumerate() {
         if method.to_lowercase() != "get" {
+            continue;
+        }
+        // Only verb-first leaves pair. Under noun-verb the two reads are already
+        // distinct actions on one resource node (`sdks list` / `sdks retrieve`)
+        // and merging them would be wrong; with per-operation grammar the two
+        // can now sit side by side in one document.
+        if built.grammar != Grammar::VerbNoun {
             continue;
         }
         let segs: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();

@@ -1,0 +1,62 @@
+openapi: 3.0.0
+info: { title: acme, version: 1.0.0 }
+x-cli:
+  grammar: verb-noun
+paths:
+  # Placed verb-first by the root block, and paired into one command.
+  /sdks:
+    get:
+      operationId: listSdks
+      responses: { "200": { description: ok } }
+  /sdks/{id}:
+    get:
+      operationId: getSdk
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: ok } }
+
+  # MIXING: this pair opts back into noun-verb, so it stays resource-first
+  # (`admin-jobs list` / `admin-jobs retrieve`) in the same tree.
+  /admin/jobs:
+    get:
+      operationId: listAdminJobs
+      x-cli: { grammar: noun-verb }
+      responses: { "200": { description: ok } }
+  /admin/jobs/{jobId}:
+    get:
+      operationId: getAdminJob
+      x-cli: { grammar: noun-verb }
+      responses: { "200": { description: ok } }
+      parameters: [{ name: jobId, in: path, required: true, schema: { type: string } }]
+
+  # The explicit overrides, one per field.
+  /internal/debug:
+    get:
+      operationId: debugDump
+      x-cli:
+        group: diagnostics
+        verb: dump
+        aliases: [dbg]
+        hidden: true
+        description: Dump internal state.
+      responses: { "200": { description: ok } }
+
+  # Dropped from the CLI entirely.
+  /deprecated/thing:
+    get:
+      operationId: oldThing
+      x-cli: { ignore: true }
+      responses: { "200": { description: ok } }
+
+  # A path-item block applies to every operation under it; the DELETE below
+  # overrides the group its path item set.
+  /legacy/widgets/{id}:
+    x-cli: { group: legacy }
+    get:
+      operationId: getLegacyWidget
+      responses: { "200": { description: ok } }
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    delete:
+      operationId: deleteLegacyWidget
+      x-cli: { group: cleanup }
+      responses: { "204": { description: gone } }
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]

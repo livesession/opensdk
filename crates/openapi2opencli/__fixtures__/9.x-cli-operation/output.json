@@ -1,0 +1,158 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "commands": [
+    {
+      "name": "get",
+      "commands": [
+        {
+          "name": "sdk",
+          "aliases": [
+            "sdks"
+          ],
+          "arguments": [
+            {
+              "name": "id"
+            }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/sdks",
+            "operationId": "listSdks",
+            "whenArgsPresent": {
+              "method": "get",
+              "path": "/sdks/{id}",
+              "operationId": "getSdk",
+              "params": [
+                {
+                  "in": "path",
+                  "name": "id",
+                  "from": "argument:id",
+                  "required": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "admin",
+      "commands": [
+        {
+          "name": "jobs",
+          "commands": [
+            {
+              "name": "list",
+              "x-openapi": {
+                "method": "get",
+                "path": "/admin/jobs",
+                "operationId": "listAdminJobs"
+              }
+            },
+            {
+              "name": "retrieve",
+              "aliases": [
+                "get"
+              ],
+              "arguments": [
+                {
+                  "name": "job-id",
+                  "required": true
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/admin/jobs/{jobId}",
+                "operationId": "getAdminJob",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "jobId",
+                    "from": "argument:job-id",
+                    "required": true
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "cleanup",
+      "commands": [
+        {
+          "name": "widget",
+          "arguments": [
+            {
+              "name": "id",
+              "required": true
+            }
+          ],
+          "x-openapi": {
+            "method": "delete",
+            "path": "/legacy/widgets/{id}",
+            "operationId": "deleteLegacyWidget",
+            "params": [
+              {
+                "in": "path",
+                "name": "id",
+                "from": "argument:id",
+                "required": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "diagnostics",
+      "commands": [
+        {
+          "name": "dump",
+          "aliases": [
+            "dbg"
+          ],
+          "description": "Dump internal state.",
+          "hidden": true,
+          "x-openapi": {
+            "method": "get",
+            "path": "/internal/debug",
+            "operationId": "debugDump"
+          }
+        }
+      ]
+    },
+    {
+      "name": "legacy",
+      "commands": [
+        {
+          "name": "widget",
+          "arguments": [
+            {
+              "name": "id",
+              "required": true
+            }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/legacy/widgets/{id}",
+            "operationId": "getLegacyWidget",
+            "params": [
+              {
+                "in": "path",
+                "name": "id",
+                "from": "argument:id",
+                "required": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

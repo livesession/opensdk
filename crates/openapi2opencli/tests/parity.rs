@@ -103,3 +103,10 @@ c!(grammar_verb_noun, "7.grammar-verb-noun");
 // deserializes into the same `Options` type, so this covers the mechanism
 // rather than a chosen subset of keys.
 c!(x_cli_root, "8.x-cli-root");
+
+// Per-operation `x-cli`, and the case it exists for: MIXING. The root block
+// puts the document in verb-noun, and one pair of operations opts back into
+// noun-verb, so both word orders live in one tree — no path-glob matcher, no
+// second dialect. The same fixture pins each explicit override (group, verb,
+// aliases, hidden, description, ignore) and the path-item → operation ladder.
+c!(x_cli_operation, "9.x-cli-operation");

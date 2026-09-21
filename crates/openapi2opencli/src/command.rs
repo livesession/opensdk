@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 use oas_doc::DocCtx;
 
-use crate::action::derive_target;
+use crate::action::{derive_target, effective_grammar};
 use crate::body::map_request_body;
 use crate::model::{Command, XOpenApiCommand};
 use crate::options::Options;
@@ -17,6 +17,10 @@ use crate::response::map_responses;
 pub struct BuiltLeaf {
     pub resource_path: Vec<String>,
     pub command: Command,
+    /// The grammar this leaf was actually placed under — which may differ from
+    /// the converter-wide one, since `x-cli.grammar` is per operation. The
+    /// read-pairing pass reads it so mixing does not merge a noun-verb command.
+    pub grammar: crate::options::Grammar,
 }
 
 /// Merge path-item + operation parameters (operation wins on `in:name`),
@@ -63,8 +67,9 @@ pub fn build_leaf_command(
     operation: &Value,
     path_item_params: &[Value],
     options: &Options,
+    xcli: &crate::options::OperationXCli,
 ) -> BuiltLeaf {
-    let target = derive_target(method, path, operation, options);
+    let target = derive_target(method, path, operation, options, xcli);
     let all_params = merge_parameters(ctx, path_item_params, operation.get("parameters"));
 
     let mut used_flag_names: HashSet<String> = HashSet::new();
@@ -98,8 +103,18 @@ pub fn build_leaf_command(
                 .and_then(|d| d.as_str())
                 .filter(|d| !d.is_empty())
         });
-    if let Some(desc) = description {
-        command.description = Some(desc.to_string());
+    // `x-cli.description` overrides summary/description — the command's help
+    // text and the API's prose are not always the same sentence.
+    match xcli.description.as_deref().filter(|d| !d.is_empty()) {
+        Some(d) => command.description = Some(d.to_string()),
+        None => {
+            if let Some(desc) = description {
+                command.description = Some(desc.to_string());
+            }
+        }
+    }
+    if xcli.hidden == Some(true) {
+        command.hidden = Some(true);
     }
     if !params.arguments.is_empty() {
         command.arguments = Some(params.arguments);
@@ -148,6 +163,7 @@ pub fn build_leaf_command(
     BuiltLeaf {
         resource_path: target.resource_path,
         command,
+        grammar: effective_grammar(options, xcli),
     }
 }
 

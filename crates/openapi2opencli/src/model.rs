@@ -183,6 +183,11 @@ pub struct Command {
     pub options: Option<Vec<Opt>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub commands: Option<Vec<Command>>,
+    /// Keep the command working but out of `--help`. Both backends already read
+    /// this off the OpenCLI JSON; until `x-cli.hidden` there was no way for the
+    /// converter to set it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hidden: Option<bool>,
     #[serde(rename = "x-openapi", skip_serializing_if = "Option::is_none")]
     pub x_openapi: Option<XOpenApiCommand>,
 }

@@ -193,3 +193,110 @@ mod merge_tests {
             .is_none());
     }
 }
+
+/// The per-operation (and per-path-item) `x-cli` block.
+///
+/// Where the root block sets converter-wide defaults, this steers ONE command.
+/// `grammar` is the reason the type exists: placement is decided per operation,
+/// so a spec can mix both word orders in one tree with no extra machinery — no
+/// path-glob matcher, no `{default, overrides}` mini-language. Anything broader
+/// than one operation is already expressible as an OpenAPI Overlay, which
+/// `opensdk_chain` applies and which is a standard rather than another dialect.
+#[derive(Deserialize, Default, Clone, Debug)]
+#[serde(rename_all = "camelCase", default)]
+pub struct OperationXCli {
+    /// Word order for THIS command, overriding the converter-wide `grammar`.
+    pub grammar: Option<Grammar>,
+    /// Replace the derived resource path — space- or slash-separated
+    /// (`"billing invoices"`). Empty string mounts the command at the top level.
+    pub group: Option<String>,
+    /// Replace the derived action verb (the leaf's own name).
+    pub verb: Option<String>,
+    /// Replace the derived aliases. An empty list removes them.
+    pub aliases: Option<Vec<String>>,
+    /// Keep the command working but out of `--help`.
+    pub hidden: Option<bool>,
+    /// Drop this operation from the CLI entirely.
+    pub ignore: Option<bool>,
+    /// Replace the summary/description used as the command's help text.
+    pub description: Option<String>,
+}
+
+impl OperationXCli {
+    /// Field-wise merge with `self` winning. Specificity beats source: the
+    /// operation's own block overrides the path item's.
+    ///
+    /// Spelled out for the same reason as [`Options::over`] — a `..base` rest
+    /// pattern would silently inherit any field added later.
+    fn over(self, base: OperationXCli) -> OperationXCli {
+        OperationXCli {
+            grammar: self.grammar.or(base.grammar),
+            group: self.group.or(base.group),
+            verb: self.verb.or(base.verb),
+            aliases: self.aliases.or(base.aliases),
+            hidden: self.hidden.or(base.hidden),
+            ignore: self.ignore.or(base.ignore),
+            description: self.description.or(base.description),
+        }
+    }
+}
+
+fn parse_x_cli(owner: &serde_json::Value, what: &str) -> OperationXCli {
+    let Some(block) = owner.get("x-cli") else {
+        return OperationXCli::default();
+    };
+    match serde_json::from_value::<OperationXCli>(block.clone()) {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("warning: ignoring the `x-cli` block on {what} — {e}");
+            OperationXCli::default()
+        }
+    }
+}
+
+/// Resolve the `x-cli` block for one operation: its own, over its path item's.
+pub fn operation_x_cli(
+    path_item: &serde_json::Value,
+    operation: &serde_json::Value,
+    method: &str,
+    path: &str,
+) -> OperationXCli {
+    parse_x_cli(operation, &format!("{} {path}", method.to_uppercase()))
+        .over(parse_x_cli(path_item, &format!("path item {path}")))
+}
+
+#[cfg(test)]
+mod operation_x_cli_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn the_operation_beats_its_path_item() {
+        let item = json!({ "x-cli": { "group": "from-item", "hidden": true } });
+        let op = json!({ "x-cli": { "group": "from-op" } });
+        let x = operation_x_cli(&item, &op, "get", "/a");
+        assert_eq!(x.group.as_deref(), Some("from-op"));
+        assert_eq!(x.hidden, Some(true), "path-item value survives");
+    }
+
+    #[test]
+    fn grammar_is_per_operation_which_is_what_makes_mixing_work() {
+        let op = json!({ "x-cli": { "grammar": "verb-noun" } });
+        assert_eq!(
+            operation_x_cli(&json!({}), &op, "get", "/a").grammar,
+            Some(Grammar::VerbNoun)
+        );
+        // A neighbouring operation says nothing and keeps the converter default.
+        assert!(operation_x_cli(&json!({}), &json!({}), "get", "/b")
+            .grammar
+            .is_none());
+    }
+
+    #[test]
+    fn a_malformed_block_is_ignored_not_fatal() {
+        let op = json!({ "x-cli": { "hidden": "yes-please" } });
+        assert!(operation_x_cli(&json!({}), &op, "get", "/a")
+            .hidden
+            .is_none());
+    }
+}

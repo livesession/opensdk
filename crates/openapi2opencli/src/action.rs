@@ -5,7 +5,7 @@
 use serde_json::Value;
 
 use crate::jsrt::{kebab_case, singularize_segment, split_words};
-use crate::options::{Grammar, Options, DEFAULT_CUSTOM_ACTION_VERBS};
+use crate::options::{Grammar, OperationXCli, Options, DEFAULT_CUSTOM_ACTION_VERBS};
 
 struct Segment {
     is_param: bool,
@@ -70,11 +70,40 @@ pub fn derive_target(
     path: &str,
     operation: &Value,
     options: &Options,
+    x: &OperationXCli,
 ) -> DerivedTarget {
-    match options.grammar.unwrap_or_default() {
+    // The operation's own grammar wins over the converter-wide one. Deciding
+    // placement per operation is the whole of grammar mixing: one tree can hold
+    // both word orders without a second mechanism for saying which is which.
+    let grammar = x.grammar.or(options.grammar).unwrap_or_default();
+    let mut target = match grammar {
         Grammar::NounVerb => derive_target_noun_verb(method, path, operation, options),
         Grammar::VerbNoun => derive_target_verb_noun(method, path, operation, options),
+    };
+
+    // Explicit overrides are applied AFTER derivation, so they are stated in
+    // terms of the final tree rather than of whichever rule produced it.
+    if let Some(group) = x.group.as_deref() {
+        target.resource_path = group
+            .split([' ', '/'])
+            .filter(|s| !s.is_empty())
+            .map(kebab_case)
+            .collect();
     }
+    if let Some(verb) = x.verb.as_deref().filter(|v| !v.is_empty()) {
+        target.action = kebab_case(verb);
+    }
+    if let Some(aliases) = x.aliases.as_ref() {
+        target.aliases = aliases.iter().map(|a| kebab_case(a)).collect();
+    }
+    target
+}
+
+/// The grammar actually used for one operation, for callers that need to know
+/// after the fact (the read-pairing pass, which only applies to verb-first
+/// commands).
+pub fn effective_grammar(options: &Options, x: &OperationXCli) -> Grammar {
+    x.grammar.or(options.grammar).unwrap_or_default()
 }
 
 fn derive_target_noun_verb(
