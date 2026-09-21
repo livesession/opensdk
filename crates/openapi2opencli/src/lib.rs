@@ -392,17 +392,40 @@ fn pair_reads(leaves: &mut Vec<(String, String, command::BuiltLeaf)>) {
 
         // The item's positionals, made OPTIONAL — their absence is what selects
         // the list binding at runtime.
+        //
+        // Deduped by name, which is load-bearing rather than tidy. A nested pair
+        // (`/orgs/{orgId}/sdks` + `/orgs/{orgId}/sdks/{sdkId}`) shares `orgId`
+        // between both halves, and appending the item's list wholesale emitted it
+        // TWICE: clap panics on the duplicate name in debug and rejects the item
+        // form in release, and the generated Go does not compile at all
+        // (`orgID := ...` twice). A shared positional is already required by the
+        // collection, so the collection's entry — required, in its original
+        // position — is the one that survives.
         if let Some(args) = item_leaf.arguments.clone() {
-            let optional: Vec<model::Argument> = args
-                .into_iter()
-                .map(|mut a| {
-                    a.required = None;
-                    a
-                })
-                .collect();
             let mut merged = collection_cmd.arguments.clone().unwrap_or_default();
-            merged.extend(optional);
+            for mut a in args {
+                if merged.iter().any(|existing| existing.name == a.name) {
+                    continue;
+                }
+                a.required = None;
+                merged.push(a);
+            }
             collection_cmd.arguments = Some(merged);
+        }
+
+        // The item's own options, likewise. Without this a flag declared only on
+        // the item operation is not on the merged command at all, so clap rejects
+        // `get sdk <id> --include x` even though the retrieve binding's params
+        // still reference `option:include`.
+        if let Some(opts) = item_leaf.options.clone() {
+            let mut merged = collection_cmd.options.clone().unwrap_or_default();
+            for o in opts {
+                if merged.iter().any(|existing| existing.name == o.name) {
+                    continue;
+                }
+                merged.push(o);
+            }
+            collection_cmd.options = Some(merged);
         }
 
         if let Some(item_binding) = item_leaf.x_openapi {

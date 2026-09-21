@@ -1,0 +1,96 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "commands": [
+    {
+      "name": "get",
+      "commands": [
+        {
+          "name": "org",
+          "commands": [
+            {
+              "name": "sdk",
+              "aliases": [
+                "sdks"
+              ],
+              "arguments": [
+                {
+                  "name": "org-id",
+                  "required": true
+                },
+                {
+                  "name": "sdk-id"
+                }
+              ],
+              "options": [
+                {
+                  "name": "limit",
+                  "group": "query",
+                  "arguments": [
+                    {
+                      "name": "integer"
+                    }
+                  ]
+                },
+                {
+                  "name": "include",
+                  "group": "query",
+                  "arguments": [
+                    {
+                      "name": "string"
+                    }
+                  ]
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/orgs/{orgId}/sdks",
+                "operationId": "listOrgSdks",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "orgId",
+                    "from": "argument:org-id",
+                    "required": true
+                  },
+                  {
+                    "in": "query",
+                    "name": "limit",
+                    "from": "option:limit"
+                  }
+                ],
+                "whenArgsPresent": {
+                  "method": "get",
+                  "path": "/orgs/{orgId}/sdks/{sdkId}",
+                  "operationId": "getOrgSdk",
+                  "params": [
+                    {
+                      "in": "path",
+                      "name": "orgId",
+                      "from": "argument:org-id",
+                      "required": true
+                    },
+                    {
+                      "in": "path",
+                      "name": "sdkId",
+                      "from": "argument:sdk-id",
+                      "required": true
+                    },
+                    {
+                      "in": "query",
+                      "name": "include",
+                      "from": "option:include"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

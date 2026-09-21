@@ -91,7 +91,60 @@ fn path_parts(model: &LeafModel) -> PathParts {
     }
 }
 
+/// The option names a binding's `params` actually reference.
+///
+/// A merged read command carries the UNION of both halves' options, so "is this
+/// flag declared on the command" is no longer the same question as "does the
+/// request being sent take it". Without this, a collection-only filter rides
+/// along on the item request — `get sdk <id> --api-id x` sending
+/// `/sdks/<id>?apiId=x`, a parameter that operation never declared.
+fn binding_option_names(binding: Option<&Value>) -> std::collections::HashSet<String> {
+    let mut out = std::collections::HashSet::new();
+    let Some(params) = binding
+        .and_then(|b| b.get("params"))
+        .and_then(|p| p.as_array())
+    else {
+        return out;
+    };
+    for p in params {
+        if p.get("in").and_then(|i| i.as_str()) == Some("path") {
+            continue;
+        }
+        if let Some(name) = p
+            .get("from")
+            .and_then(|f| f.as_str())
+            .and_then(|f| f.strip_prefix("option:"))
+        {
+            out.insert(name.to_string());
+        }
+    }
+    out
+}
+
 /// Guarded param population for query/header/cookie flags.
+///
+/// `gate` wraps each push in an extra condition — used by merged read commands
+/// so a flag only travels on the binding that declares it.
+fn param_lines_gated(
+    flags: &[&FlagModel],
+    target: &str,
+    gate: &dyn Fn(&FlagModel) -> Option<String>,
+) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for f in flags {
+        let inner = param_lines(&[*f], target);
+        match gate(f) {
+            None => out.extend(inner),
+            Some(cond) => {
+                out.push(format!("if {cond} {{"));
+                out.extend(inner.into_iter().map(|l| format!("    {l}")));
+                out.push("}".to_string());
+            }
+        }
+    }
+    out
+}
+
 fn param_lines(flags: &[&FlagModel], target: &str) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
     for f in flags {
@@ -165,6 +218,34 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
             build_leaf_model(&synthetic)
         });
 
+    // A flag travels only on the binding(s) whose params reference it. With no
+    // alternate binding there is nothing to gate and every flag is unconditional,
+    // which is why single-binding output is byte-identical.
+    let primary_opts = binding_option_names(command.get("x-openapi"));
+    let alt_opts = binding_option_names(
+        command
+            .get("x-openapi")
+            .and_then(|x| x.get("whenArgsPresent")),
+    );
+    let has_alt = command
+        .get("x-openapi")
+        .and_then(|x| x.get("whenArgsPresent"))
+        .is_some();
+    let gate = move |f: &FlagModel| -> Option<String> {
+        if !has_alt {
+            return None;
+        }
+        let in_primary = primary_opts.contains(&f.flag_name);
+        let in_alt = alt_opts.contains(&f.flag_name);
+        match (in_primary, in_alt) {
+            // Declared by both, or by neither (a body/fallback flag we cannot
+            // attribute) — leave it unconditional rather than guess.
+            (true, true) | (false, false) => None,
+            (true, false) => Some("!use_alt".to_string()),
+            (false, true) => Some("use_alt".to_string()),
+        }
+    };
+
     let method_expr = match &alt_model {
         None => q(&model.method),
         Some(alt) => {
@@ -201,17 +282,29 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
                     alt_parts.args.join(", ")
                 )
             };
+            // The PRIMARY (collection) binding is chosen when ANY discriminator
+            // is missing, so these are OR-ed — the item path needs every segment
+            // it adds, and a half-supplied positional list cannot address it.
+            //
+            // This is the De Morgan mirror of the Go backend's `a != "" && b != ""`
+            // guarding the ALTERNATE. With one discriminator the two are the same
+            // expression, which is why every fixture agreed while these diverged:
+            // AND-ing here made Rust take the item path on a partial list and
+            // build a URL with an empty segment, where Go stayed on the collection.
             let cond = if discriminators.is_empty() {
                 "true".to_string()
             } else {
-                discriminators.join(" && ")
+                discriminators.join(" || ")
             };
+            // Hoisted: the query/header population below gates on the same
+            // decision, so it must be computed once rather than restated.
+            lines.push(format!("let use_alt = !({cond});"));
             lines.push(format!(
-                "let (method, path) = if {cond} {{ ({}, {}) }} else {{ ({}, {}) }};",
-                q(&model.method),
-                primary_path,
+                "let (method, path) = if use_alt {{ ({}, {}) }} else {{ ({}, {}) }};",
                 q(&alt.method),
-                alt_path
+                alt_path,
+                q(&model.method),
+                primary_path
             ));
             "method".to_string()
         }
@@ -237,7 +330,7 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
         .collect();
     if !query_flags.is_empty() {
         lines.push("let mut query: Vec<(&'static str, String)> = Vec::new();".to_string());
-        lines.extend(param_lines(&query_flags, "query"));
+        lines.extend(param_lines_gated(&query_flags, "query", &gate));
     }
 
     // Header / cookie params.
@@ -248,7 +341,7 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
         .collect();
     if !header_flags.is_empty() {
         lines.push("let mut headers: Vec<(&'static str, String)> = Vec::new();".to_string());
-        lines.extend(param_lines(&header_flags, "headers"));
+        lines.extend(param_lines_gated(&header_flags, "headers", &gate));
     }
 
     // Body.

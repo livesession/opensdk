@@ -109,3 +109,7 @@ c!(runnable_parent, "5.runnable-parent");
 // supplied. Kept byte-comparable with opencli2rust's 9.merged-read so the two
 // backends' handling of the same input stays a comparison, not a claim.
 c!(merged_read, "9.merged-read");
+
+// Nested merged read (shared path param) with differing query params — the
+// shape whose duplicated `orgID :=` made the generated project not compile.
+c!(merged_read_nested, "10.merged-read-nested");

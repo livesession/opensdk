@@ -1,0 +1,28 @@
+# Two shapes that the first merged-read fixture could not reach, and that both
+# produced broken output:
+#
+# 1. A NESTED pair — collection and item share `orgId`. Appending the item's
+#    full argument list emitted it twice: clap panics on the duplicate name and
+#    the generated Go does not compile (`orgID :=` twice).
+# 2. Halves with DIFFERENT query params. The item's own option was dropped from
+#    the merged command entirely, and the collection's filter was sent on the
+#    item request.
+openapi: 3.0.0
+info: { title: acme, version: 1.0.0 }
+x-cli: { grammar: verb-noun, cliName: acme }
+paths:
+  /orgs/{orgId}/sdks:
+    get:
+      operationId: listOrgSdks
+      parameters:
+        - { name: orgId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+      responses: { "200": { description: ok } }
+  /orgs/{orgId}/sdks/{sdkId}:
+    get:
+      operationId: getOrgSdk
+      parameters:
+        - { name: orgId, in: path, required: true, schema: { type: string } }
+        - { name: sdkId, in: path, required: true, schema: { type: string } }
+        - { name: include, in: query, schema: { type: string } }
+      responses: { "200": { description: ok } }

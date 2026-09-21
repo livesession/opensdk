@@ -111,6 +111,13 @@ c!(x_cli_root, "8.x-cli-root");
 // aliases, hidden, description, ignore) and the path-item → operation ladder.
 c!(x_cli_operation, "9.x-cli-operation");
 
+// Merged reads whose halves are NESTED (sharing a path param) and whose query
+// params DIFFER. The first merged-read fixture had neither, and both shapes
+// produced broken output: a duplicated positional (clap panic / Go compile
+// error) and an item command missing its own option while carrying the
+// collection's filter.
+c!(merged_read_nested, "11.merged-read-nested");
+
 // A `$ref`'d request-body schema still flattens into per-field options. This
 // regressed silently once: `ctx.resolve()` on the requestBody unwraps a ref in
 // the object SLOT, not one nested under `content.<media>.schema`, so a normal

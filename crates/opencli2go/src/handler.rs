@@ -83,6 +83,35 @@ fn path_expr(model: &LeafModel, imports: &mut Imports) -> String {
     }
 }
 
+/// The option names a binding's `params` actually reference.
+///
+/// A merged read command carries the UNION of both halves' options, so "declared
+/// on the command" stops meaning "taken by the request being sent". Without this
+/// a collection-only filter rides along on the item request. Mirrors
+/// `opencli2rust::handler::binding_option_names`.
+fn binding_option_names(binding: Option<&Value>) -> std::collections::HashSet<String> {
+    let mut out = std::collections::HashSet::new();
+    let Some(params) = binding
+        .and_then(|b| b.get("params"))
+        .and_then(|p| p.as_array())
+    else {
+        return out;
+    };
+    for p in params {
+        if p.get("in").and_then(|i| i.as_str()) == Some("path") {
+            continue;
+        }
+        if let Some(name) = p
+            .get("from")
+            .and_then(|f| f.as_str())
+            .and_then(|f| f.strip_prefix("option:"))
+        {
+            out.insert(name.to_string());
+        }
+    }
+    out
+}
+
 pub struct RenderedHandler {
     pub name: String,
     pub code: String,
@@ -151,6 +180,26 @@ pub fn render_handler(
             build_leaf_model(&synthetic)
         });
 
+    // A flag travels only on the binding(s) whose params reference it. No
+    // alternate binding -> no gate, so single-binding output is byte-identical.
+    let primary_opts = binding_option_names(command.get("x-openapi"));
+    let alt_opts = binding_option_names(
+        command
+            .get("x-openapi")
+            .and_then(|x| x.get("whenArgsPresent")),
+    );
+    let has_alt = alt_model.is_some();
+    let gate = move |name: &str| -> Option<&'static str> {
+        if !has_alt {
+            return None;
+        }
+        match (primary_opts.contains(name), alt_opts.contains(name)) {
+            (true, true) | (false, false) => None,
+            (true, false) => Some("!useAlt"),
+            (false, true) => Some("useAlt"),
+        }
+    };
+
     let method_expr = match &alt_model {
         None => {
             lines.push(format!("path := {pe}"));
@@ -168,12 +217,17 @@ pub fn render_handler(
                     discriminators.push(format!("{} != \"\"", a.go_var));
                 }
             }
+            // Hoisted: the query/header population gates on the same decision.
+            let cond = if discriminators.is_empty() {
+                "false".to_string()
+            } else {
+                discriminators.join(" && ")
+            };
+            lines.push(format!("useAlt := {cond}"));
             lines.push(format!("method, path := {}, {pe}", q(&model.method)));
-            if !discriminators.is_empty() {
-                lines.push(format!("if {} {{", discriminators.join(" && ")));
-                lines.push(format!("\tmethod, path = {}, {alt_pe}", q(&alt.method)));
-                lines.push("}".to_string());
-            }
+            lines.push("if useAlt {".to_string());
+            lines.push(format!("\tmethod, path = {}, {alt_pe}", q(&alt.method)));
+            lines.push("}".to_string());
             "method".to_string()
         }
     };
@@ -195,7 +249,11 @@ pub fn render_handler(
             } else {
                 read
             };
-            lines.push(format!("if cmd.IsSet({}) {{", q(&f.flag_name)));
+            let cond = match gate(&f.flag_name) {
+                Some(g) => format!("{g} && cmd.IsSet({})", q(&f.flag_name)),
+                None => format!("cmd.IsSet({})", q(&f.flag_name)),
+            };
+            lines.push(format!("if {cond} {{"));
             lines.push(format!("\tquery.Set({}, {})", q(&f.wire_name), val));
             lines.push("}".to_string());
         }

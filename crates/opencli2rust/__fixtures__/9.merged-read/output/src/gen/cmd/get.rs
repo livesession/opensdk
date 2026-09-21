@@ -49,10 +49,13 @@ async fn handle_get_sdk<O: CliOverrides>(
     m: &ArgMatches,
 ) -> ExitCode {
     let id = m.get_one::<String>("id").map(String::as_str).unwrap_or("");
-    let (method, path) = if id.is_empty() { ("GET", "/sdks".to_string()) } else { ("GET", format!("/sdks/{}", runtime::path_escape(id))) };
+    let use_alt = !(id.is_empty());
+    let (method, path) = if use_alt { ("GET", format!("/sdks/{}", runtime::path_escape(id))) } else { ("GET", "/sdks".to_string()) };
     let mut query: Vec<(&'static str, String)> = Vec::new();
-    if let Some(v) = m.get_one::<String>("limit") {
-        query.push(("limit", v.clone()));
+    if !use_alt {
+        if let Some(v) = m.get_one::<String>("limit") {
+            query.push(("limit", v.clone()));
+        }
     }
     let req = runtime::Request {
         method,

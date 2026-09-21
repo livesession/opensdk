@@ -135,3 +135,15 @@ fn runnable_parent() {
 fn merged_read() {
     run_case("9.merged-read");
 }
+
+/// The merged read whose halves are NESTED (sharing `orgId`) and whose query
+/// params differ.
+///
+/// Both shapes produced broken output before: the shared positional was emitted
+/// twice, so clap panicked on the duplicate name; and the collection's `--limit`
+/// was sent on the item request while the item's own `--include` was not
+/// declared at all.
+#[test]
+fn merged_read_nested() {
+    run_case("10.merged-read-nested");
+}

@@ -37,12 +37,13 @@ func NewGetCommand() *cli.Command {
 
 func handleGetSdk(ctx context.Context, cmd *cli.Command) error {
 	id := cmd.Args().Get(0)
+	useAlt := id != ""
 	method, path := "GET", "/sdks"
-	if id != "" {
+	if useAlt {
 		method, path = "GET", "/sdks/" + url.PathEscape(id)
 	}
 	query := url.Values{}
-	if cmd.IsSet("limit") {
+	if !useAlt && cmd.IsSet("limit") {
 		query.Set("limit", cmd.String("limit"))
 	}
 	req := runtime.Request{
