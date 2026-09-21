@@ -42,8 +42,31 @@ fn render_command(
         fields.push(("Hidden".to_string(), go_bool(true)));
     }
 
+    // "Has children" and "is itself runnable" are INDEPENDENT — see the same
+    // restructure in opencli2rust. A node carrying both `commands` and
+    // `x-openapi` used to take the children branch and silently lose its
+    // `Action`, so the command existed but could never be invoked. urfave/cli v3
+    // supports `Action` alongside `Commands`; verified by running a generated
+    // tree, not by reading the docs.
+    //
+    // Field order is unchanged for every single-concern node, which is what
+    // keeps the goldens byte-identical: a pure branch still emits Commands in
+    // this position, a pure leaf still emits Flags then Action.
     let sub_commands = command.get("commands").and_then(|c| c.as_array());
-    if let Some(subs) = sub_commands.filter(|s| !s.is_empty()) {
+    let subs = sub_commands.filter(|s| !s.is_empty());
+
+    if command.get("x-openapi").is_some() {
+        let model = build_leaf_model(command);
+        let flags = render_flags(&model.flags);
+        if !flags.is_empty() {
+            fields.push(("Flags".to_string(), go_slice("cli.Flag", flags)));
+        }
+        let handler = render_handler(path_names, command, module, imports);
+        fields.push(("Action".to_string(), lit(handler.name)));
+        handlers.push(handler.code);
+    }
+
+    if let Some(subs) = subs {
         let rendered: Vec<GoVal> = subs
             .iter()
             .map(|sub| {
@@ -58,15 +81,6 @@ fn render_command(
             })
             .collect();
         fields.push(("Commands".to_string(), go_slice("*cli.Command", rendered)));
-    } else if command.get("x-openapi").is_some() {
-        let model = build_leaf_model(command);
-        let flags = render_flags(&model.flags);
-        if !flags.is_empty() {
-            fields.push(("Flags".to_string(), go_slice("cli.Flag", flags)));
-        }
-        let handler = render_handler(path_names, command, module, imports);
-        fields.push(("Action".to_string(), lit(handler.name)));
-        handlers.push(handler.code);
     }
 
     go_struct("cli.Command", fields, true)

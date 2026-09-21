@@ -1,0 +1,55 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "api",
+    "version": "1.0.0",
+    "description": "A command that is BOTH runnable and a parent of subcommands."
+  },
+  "x-openapi": {
+    "servers": ["https://api.example.com"],
+    "security": [
+      { "kind": "bearer", "scheme": "bearer", "in": "header", "name": "Authorization", "envVar": "API_KEY" }
+    ]
+  },
+  "commands": [
+    {
+      "name": "get",
+      "commands": [
+        {
+          "name": "sdks",
+          "aliases": ["sdk"],
+          "description": "List SDKs, or retrieve one by id",
+          "arguments": [
+            { "name": "id", "description": "SDK id; omit to list" }
+          ],
+          "options": [
+            { "name": "limit", "group": "query", "description": "Page size", "arguments": [{ "name": "limit" }] }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/sdks",
+            "params": [
+              { "in": "query", "name": "limit", "from": "option:limit" }
+            ]
+          },
+          "commands": [
+            {
+              "name": "targets",
+              "description": "List an SDK's targets",
+              "arguments": [
+                { "name": "sdk-id", "required": true }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/sdks/{sdk-id}/targets",
+                "params": [
+                  { "in": "path", "name": "sdk-id", "from": "argument:sdk-id" }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

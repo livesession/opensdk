@@ -95,3 +95,15 @@ fn local_tool() {
 fn mixed() {
     run_case("7.mixed");
 }
+
+/// A command that is BOTH runnable and a parent — the shape a kubectl-style
+/// grammar produces (`get sdks` lists, `get sdk <id>` retrieves, `get sdk
+/// targets <id>` is a child of the same node).
+///
+/// It used to be unrepresentable: the `commands` branch won and the node's
+/// `x-openapi` binding was silently dropped, so the command existed in `--help`
+/// but could never be invoked. This fixture is the regression guard for that.
+#[test]
+fn runnable_parent() {
+    run_case("8.runnable-parent");
+}

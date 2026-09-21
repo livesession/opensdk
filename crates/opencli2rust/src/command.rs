@@ -60,22 +60,33 @@ fn render_command_chain(
         calls.push(("hide".into(), vec![lit("true")]));
     }
 
+    // "Has children" and "is itself runnable" are INDEPENDENT. They used to be
+    // one three-way if/else, which meant a node carrying both `commands` and
+    // `x-openapi` took the children branch and silently dropped its HTTP
+    // binding — the command existed but could never be invoked.
+    //
+    // That shape is what a kubectl-style grammar produces on purpose: `get sdks`
+    // lists, `get sdk <id>` retrieves, and `get sdk targets <id>` is a child of
+    // the same node. Both clap and urfave/cli v3 resolve it correctly (verified
+    // by running it, not by reading the docs).
+    //
+    // Order is preserved exactly for every single-concern node, which is what
+    // keeps the committed goldens byte-identical: a pure branch still emits
+    // subcommand_required → arg_required_else_help → subcommand×n, and a pure
+    // leaf still emits positionals → flags.
     let sub_cmds = command.get("commands").and_then(|c| c.as_array());
-    if let Some(subs) = sub_cmds.filter(|s| !s.is_empty()) {
+    let subs = sub_cmds.filter(|s| !s.is_empty());
+    let has_subs = subs.is_some();
+    let has_binding = command.get("x-openapi").is_some();
+
+    // Only a node with NOTHING of its own demands a subcommand. A runnable
+    // parent must stay invocable on its own, so it gets neither guard.
+    if has_subs && !has_binding {
         calls.push(("subcommand_required".into(), vec![lit("true")]));
         calls.push(("arg_required_else_help".into(), vec![lit("true")]));
-        for sub in subs {
-            let sub_name = sub
-                .get("name")
-                .and_then(|n| n.as_str())
-                .unwrap_or("")
-                .to_string();
-            let mut child_names = path_names.to_vec();
-            child_names.push(sub_name);
-            let child = render_command_chain(sub, &child_names, leaves, state);
-            calls.push(("subcommand".into(), vec![child]));
-        }
-    } else if command.get("x-openapi").is_some() {
+    }
+
+    if has_binding {
         let model = build_leaf_model(command);
         if let Some(cmd_args) = command.get("arguments").and_then(|a| a.as_array()) {
             for arg in cmd_args {
@@ -91,7 +102,7 @@ fn render_command_chain(
             path_names: path_names.to_vec(),
             command: command.clone(),
         });
-    } else {
+    } else if !has_subs {
         // A non-API "runnable leaf" (dev/build/…): a real clap leaf — positionals +
         // local flags, NO subcommand_required — recorded as an action path. Behavior
         // is bound via the `Actions` seam in src/custom/mod.rs and dispatched by
@@ -107,6 +118,20 @@ fn render_command_chain(
             calls.push(("arg".into(), vec![flag_val]));
         }
         state.action_paths.push(path_names.to_vec());
+    }
+
+    if let Some(subs) = subs {
+        for sub in subs {
+            let sub_name = sub
+                .get("name")
+                .and_then(|n| n.as_str())
+                .unwrap_or("")
+                .to_string();
+            let mut child_names = path_names.to_vec();
+            child_names.push(sub_name);
+            let child = render_command_chain(sub, &child_names, leaves, state);
+            calls.push(("subcommand".into(), vec![child]));
+        }
     }
 
     let name = command.get("name").and_then(|n| n.as_str()).unwrap_or("");

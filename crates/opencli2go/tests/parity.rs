@@ -84,3 +84,7 @@ c!(basic, "1.basic");
 c!(crud, "2.crud");
 c!(nested, "3.nested");
 c!(body_flatten, "4.body-flatten");
+// A command that is BOTH runnable and a parent. urfave/cli v3 supports `Action`
+// alongside `Commands`; the emitter used to take the children branch and drop
+// the node's `Action`, so the command was unreachable.
+c!(runnable_parent, "5.runnable-parent");
