@@ -470,6 +470,7 @@ fn run_generate_tree(case: &Path) -> Value {
                 dry_run,
                 no_tests,
                 merge: false,
+                format: false,
             },
             &config,
             &out,
@@ -492,6 +493,7 @@ fn run_generate_tree(case: &Path) -> Value {
                     .get("publish")
                     .map(|p| serde_json::from_value(p.clone()).expect("publish parses")),
                 merge: false,
+                format: false,
             },
             &out,
         )

@@ -6,6 +6,25 @@ use serde_json::{json, Value};
 use crate::ir::Spec;
 use crate::jsrt::{npm_package_name, pascal_case, screaming_snake_case};
 
+/// Where the generated `package.json` points its entry fields.
+///
+/// `Dist` is the historical shape and the default: `main`/`types`/`exports`
+/// resolve into `./dist/`, with `build`/`prepare` scripts that `tsc` them into
+/// existence.
+///
+/// `Source` points them at the emitted TypeScript instead, for consumers that
+/// import the source directly and never run a build. Without it such a consumer
+/// has to rewrite the manifest after every generation — a chore, and a trap:
+/// `package.json` is `MergeJson` (see `opensdk_core::emitter::write_mode_for`),
+/// so the rewrite survives on an already-patched tree but NOT on a fresh clone,
+/// where the dist-pointing manifest lands verbatim and every import resolves
+/// into a `dist/` nobody built.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum NodeEntry {
+    Dist,
+    Source,
+}
+
 pub struct ResolvedNodeOptions {
     pub pkg: String,
     /// Baked into the fetch runtime's `DEFAULT_BASE_URL` (consumed by `runtime`).
@@ -15,6 +34,8 @@ pub struct ResolvedNodeOptions {
     pub default_export: bool,
     /// The resolved error-helper "busybox" config, or `None` when disabled.
     pub busybox: Option<crate::busybox::ResolvedBusybox>,
+    /// `emitterOptions.entry` — `"dist"` (default) or `"source"`.
+    pub entry: NodeEntry,
 }
 
 /// `emitterOptions` over the spec-derived defaults (mirrors `project.ts`'s
@@ -60,12 +81,20 @@ pub fn resolve_node_options(spec: &Spec, options: &Value) -> ResolvedNodeOptions
         client_name,
         default_export: !named,
         busybox: crate::busybox::resolve_busybox(options.get("busybox")),
+        // Anything other than the exact string "source" keeps the dist shape,
+        // including a typo. Silently generating a source-entry manifest because
+        // someone wrote "src" would be far worse than ignoring it: the manifest
+        // is what every consumer resolves through.
+        entry: match opt_str(options, "entry") {
+            Some("source") => NodeEntry::Source,
+            _ => NodeEntry::Dist,
+        },
         pkg,
     }
 }
 
 /// The generated `package.json` (dependency-free, tsc-built).
-pub fn package_json(pkg: &str, spec: &Spec) -> String {
+pub fn package_json(pkg: &str, spec: &Spec, entry: NodeEntry) -> String {
     let info = &spec.info;
     // Build in the exact key order the TS emitter assembles.
     let mut manifest = serde_json::Map::new();
@@ -94,17 +123,35 @@ pub fn package_json(pkg: &str, spec: &Spec) -> String {
         manifest.insert("repository".into(), json!({ "type": "git", "url": repo }));
     }
     manifest.insert("type".into(), json!("module"));
-    manifest.insert("main".into(), json!("./dist/index.js"));
-    manifest.insert("types".into(), json!("./dist/index.d.ts"));
-    manifest.insert(
-        "exports".into(),
-        json!({ ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } }),
-    );
-    manifest.insert("files".into(), json!(["dist", "src"]));
-    manifest.insert(
-        "scripts".into(),
-        json!({ "build": "tsc", "prepare": "tsc" }),
-    );
+    match entry {
+        NodeEntry::Dist => {
+            manifest.insert("main".into(), json!("./dist/index.js"));
+            manifest.insert("types".into(), json!("./dist/index.d.ts"));
+            manifest.insert(
+                "exports".into(),
+                json!({ ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } }),
+            );
+            manifest.insert("files".into(), json!(["dist", "src"]));
+            manifest.insert(
+                "scripts".into(),
+                json!({ "build": "tsc", "prepare": "tsc" }),
+            );
+        }
+        NodeEntry::Source => {
+            manifest.insert("main".into(), json!("./src/index.ts"));
+            manifest.insert("types".into(), json!("./src/index.ts"));
+            manifest.insert(
+                "exports".into(),
+                json!({ ".": { "types": "./src/index.ts", "import": "./src/index.ts" } }),
+            );
+            // No `dist` to ship, and no `prepare`/`build`: a `prepare: "tsc"`
+            // here would be actively wrong, because `npm install` runs it and it
+            // would build a dist/ that nothing points at. `typecheck` keeps tsc
+            // reachable without making it a lifecycle hook.
+            manifest.insert("files".into(), json!(["src"]));
+            manifest.insert("scripts".into(), json!({ "typecheck": "tsc --noEmit" }));
+        }
+    }
     manifest.insert("engines".into(), json!({ "node": ">=18" }));
     manifest.insert("dependencies".into(), json!({}));
     manifest.insert("devDependencies".into(), json!({ "typescript": "^5.6.2" }));

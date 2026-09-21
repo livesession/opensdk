@@ -365,6 +365,17 @@ pub struct ChainTarget {
     /// Emit the SDK's own test suite (default true).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tests: Option<bool>,
+    /// Run the language's formatter over the generated files before writing
+    /// them (default false).
+    ///
+    /// Opt-in rather than automatic: the committed goldens across this repo are
+    /// NOT formatter-clean, so formatting by default would change generated
+    /// output for every existing consumer. Formatting happens BEFORE
+    /// `write_project`, so `.sdk/sdk.lock` records the formatted bytes and the
+    /// regen lifecycle (stale-prune, no-op detection, `--merge`) keeps working —
+    /// which a post-write formatter silently breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<bool>,
 }
 
 /// The declarative `chain.json`: named `sources` → named `targets`, driven by

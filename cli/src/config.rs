@@ -167,6 +167,17 @@ pub fn normalize_sdk_json(raw: &Value, file_path: &str) -> Result<ResolvedConfig
         if !value.is_object() {
             continue;
         }
+        // `sources`/`targets` are the CHAIN shape, not languages. They are not
+        // SdkJson declared keys, so they land in `rest` and would otherwise be
+        // read as language sections named "sources"/"targets" — which fails
+        // late and unhelpfully ("Unknown opensdk language: sources"), or, when a
+        // source/target happens to be named `output`, fails HARD in the branch
+        // below. That hard failure fires on every command, including `run`,
+        // which does not read this config at all. Skipping them is what lets one
+        // sdk.json carry a chain.
+        if key == "sources" || key == "targets" {
+            continue;
+        }
         let Some((_, section)) = sections.iter().find(|(k, _)| k == key) else {
             // The config crate could not read this object as a LanguageSection
             // (e.g. `output: 42`). The TS would carry the bad value through and

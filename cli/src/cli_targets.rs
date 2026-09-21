@@ -189,6 +189,8 @@ pub struct CliTargetOptions {
     pub grouping_file: Option<String>,
     pub dry_run: bool,
     pub merge: bool,
+    /// Run the language formatter over the file map before writing it.
+    pub format: bool,
 }
 
 /// `console.warn` is fired at most once per process, matching the TS module-level flag.
@@ -269,6 +271,13 @@ pub fn generate_cli_target(opts: &CliTargetOptions, cwd: &Path) -> Result<()> {
         return Ok(());
     }
     let out_dir = crate::paths::resolve(cwd, &opts.output);
+    // BEFORE write_project, never after — the lock must hash what lands on disk.
+    // See cli/src/format.rs for what a post-write formatter breaks.
+    let mut files = files;
+    if opts.format {
+        let changed = crate::format::format_file_map(&mut files)?;
+        println!("Formatted {changed} file(s)");
+    }
     let result = write_project(
         &files,
         &out_dir,

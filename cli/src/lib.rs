@@ -34,6 +34,7 @@ pub mod config;
 pub mod diff;
 pub mod error;
 pub mod exec;
+mod format;
 pub mod generate;
 pub mod grouping;
 pub mod init;

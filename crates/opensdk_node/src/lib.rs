@@ -101,7 +101,10 @@ fn generate_from_spec(
     };
 
     // generateProject (no ownership header on .json / .md)
-    add("package.json", project::package_json(&opts.pkg, spec));
+    add(
+        "package.json",
+        project::package_json(&opts.pkg, spec, opts.entry),
+    );
     add("tsconfig.json", project::tsconfig_json());
     add(
         "README.md",
@@ -134,6 +137,16 @@ fn generate_from_spec(
     // Absent unless `emitterOptions.busybox` is set, so goldens are untouched.
     if opts.busybox.is_some() {
         add("src/busybox.ts", crate::busybox::render_busybox_file());
+    }
+
+    // Source-entry packages are consumed in place, so the generated directory IS
+    // a checked-in package rather than a build artifact — which makes the two
+    // things that must never be committed (installed deps, and the regen
+    // manifest write_project keeps) the generator's business. Gated on the
+    // option so every existing golden is untouched, and written SkipIfExists
+    // (see `write_mode_for`) so a hand-tuned .gitignore is never clobbered.
+    if opts.entry == project::NodeEntry::Source {
+        add(".gitignore", "node_modules\n.sdk\n".to_string());
     }
 
     // generateTypes

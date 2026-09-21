@@ -168,3 +168,66 @@ fn the_busybox_file_itself_is_emitted_once_and_compiles_shape() {
         );
     }
 }
+
+// --- entry: "source" ---------------------------------------------------------
+//
+// The option exists so a consumer that imports TypeScript source directly stops
+// having to rewrite the manifest after every generation. The rewrite is not
+// merely a chore: `package.json` is MergeJson, so a hand-patch survives on an
+// already-patched tree but NOT on a fresh clone — where the dist-pointing
+// manifest lands verbatim and every import resolves into a dist/ nobody built.
+// That asymmetry is exactly the kind of bug a golden cannot see, so these pin it.
+
+fn manifest(options: Value) -> Value {
+    serde_json::from_str(&gen(options)["package.json"]).unwrap()
+}
+
+#[test]
+fn entry_source_points_the_manifest_at_typescript() {
+    let m = manifest(json!({ "entry": "source" }));
+    assert_eq!(m["main"], "./src/index.ts");
+    assert_eq!(m["types"], "./src/index.ts");
+    assert_eq!(m["exports"]["."]["types"], "./src/index.ts");
+    assert_eq!(m["exports"]["."]["import"], "./src/index.ts");
+    assert_eq!(m["files"], json!(["src"]));
+}
+
+#[test]
+fn entry_source_drops_the_build_lifecycle_hooks() {
+    // `prepare: "tsc"` is what `npm install` runs. Leaving it under a source
+    // entry would build a dist/ that nothing points at — and `publish_node`
+    // shells out to `npm install`, so it would fire there too.
+    let scripts = &manifest(json!({ "entry": "source" }))["scripts"];
+    assert!(scripts.get("prepare").is_none(), "prepare must be gone");
+    assert!(scripts.get("build").is_none(), "build must be gone");
+    assert_eq!(scripts["typecheck"], "tsc --noEmit");
+}
+
+#[test]
+fn entry_source_scaffolds_a_gitignore() {
+    // Source-entry output is committed rather than built, so the two things that
+    // must never be committed are the generator's business.
+    let files = gen(json!({ "entry": "source" }));
+    assert_eq!(
+        files.get(".gitignore").map(String::as_str),
+        Some("node_modules\n.sdk\n")
+    );
+}
+
+#[test]
+fn entry_dist_is_the_default_and_is_byte_identical_to_no_options() {
+    let base = generate_node(&fixture());
+    assert_eq!(gen(json!({ "entry": "dist" })), base);
+    // The whole compat claim in one assertion: asking for the default explicitly,
+    // and not asking at all, produce the same tree — including no .gitignore.
+    assert!(!base.contains_key(".gitignore"));
+}
+
+#[test]
+fn an_unrecognised_entry_value_keeps_the_dist_shape() {
+    // "src" is the obvious typo for "source". Silently emitting a source-entry
+    // manifest for it would redirect every consumer's imports on a guess.
+    let base = generate_node(&fixture());
+    assert_eq!(gen(json!({ "entry": "src" })), base);
+    assert_eq!(gen(json!({ "entry": true })), base);
+}

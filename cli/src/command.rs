@@ -159,6 +159,16 @@ pub fn command() -> Command {
                              generation instead of overwriting (writes .sdk/base; conflicts get \
                              <<<<<<< markers)",
                         ),
+                )
+                .arg(
+                    Arg::new("format")
+                        .long("format")
+                        .action(ArgAction::SetTrue)
+                        .help(
+                            "Run the language formatter (rustfmt) over the generated files BEFORE \
+                             writing them, so .sdk/sdk.lock records the formatted bytes and \
+                             regeneration stays a byte-stable no-op",
+                        ),
                 ),
         )
         .subcommand(
@@ -348,12 +358,28 @@ fn run_generate(m: &ArgMatches, config: Option<&ResolvedConfig>, cwd: &Path) -> 
     let dry_run = flag(m, "dry-run");
     let no_tests = flag(m, "no-tests");
     let merge = flag(m, "merge") || config.and_then(|c| c.merge).unwrap_or(false);
+    let format = flag(m, "format");
 
     // DIVERGENCE (additive): commander declares `--spec` as a REQUIRED option,
     // which makes the `opts.spec ?? config?.spec` fallback two lines below it
     // unreachable from the CLI (it only ever fires for programmatic callers).
     // Here `--spec` is optional so the documented sdk.json `api`/`spec` key
     // actually works. Passing `--spec` behaves identically to the TS.
+    // BEFORE the spec check: a chain-shaped config has no `spec` key (each
+    // source names its own inputs), so it would otherwise be reported as a
+    // missing spec — which is both wrong and unactionable for a file that is
+    // perfectly valid. Deliberately NOT re-routing to the chain: that would
+    // silently drop this command's --lang/--output/--format semantics.
+    if opt(m, "spec").is_none() && config.and_then(|c| c.spec.as_ref()).is_none() {
+        if let Some(chain) = opensdk_chain::detect_chain(cwd, None) {
+            return Err(Error::msg(format!(
+                "{} declares a chain (sources -> targets), which `generate` does not consume. \
+                 Run `opensdk run` instead — it discovers this file — or `opensdk run --target \
+                 <name>` for a single target.",
+                chain.display()
+            )));
+        }
+    }
     let spec = opt(m, "spec").or_else(|| config.and_then(|c| c.spec.clone()));
     let Some(spec) = spec else {
         return Err(Error::msg(
@@ -387,6 +413,7 @@ fn run_generate(m: &ArgMatches, config: Option<&ResolvedConfig>, cwd: &Path) -> 
                     dry_run,
                     no_tests,
                     merge,
+                    format,
                 },
                 cwd,
             )?;
@@ -406,6 +433,7 @@ fn run_generate(m: &ArgMatches, config: Option<&ResolvedConfig>, cwd: &Path) -> 
                     dry_run,
                     no_tests,
                     merge,
+                    format,
                 },
                 config,
                 cwd,

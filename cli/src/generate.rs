@@ -97,6 +97,9 @@ fn to_file_map(files: BTreeMap<String, GeneratedFile>) -> FileMap {
 }
 
 /// Emit an IR through one language's emitter to disk (or print on dry-run).
+// Three of these are write-lifecycle booleans travelling together; the crate's
+// existing convention for this shape is the allow, not a params struct.
+#[allow(clippy::too_many_arguments)]
 fn emit_to_disk(
     ir: &Value,
     lang: &str,
@@ -104,6 +107,7 @@ fn emit_to_disk(
     output: &str,
     dry_run: bool,
     merge: bool,
+    format: bool,
     cwd: &Path,
 ) -> Result<()> {
     let emitter = get_emitter(lang)?; // resolves aliases (typescript -> node, ...)
@@ -118,6 +122,12 @@ fn emit_to_disk(
         return Ok(());
     }
     let out_dir = paths::resolve(cwd, output);
+    // BEFORE write_project — see cli/src/format.rs for why after is wrong.
+    let mut files = files;
+    if format {
+        let changed = crate::format::format_file_map(&mut files)?;
+        println!("Formatted {changed} file(s)");
+    }
     let result = write_project(
         &files,
         &out_dir,
@@ -147,6 +157,8 @@ pub struct GenerateCommandOptions {
     pub publish: Option<PublishTarget>,
     /// 3-way merge hand-edits into regenerated files instead of overwriting.
     pub merge: bool,
+    /// Run the language formatter over the file map before writing it.
+    pub format: bool,
 }
 
 /// `opensdk generate --lang <x>` — single target.
@@ -168,6 +180,7 @@ pub fn generate_command(opts: &GenerateCommandOptions, cwd: &Path) -> Result<()>
                 grouping_file: opts.inputs.grouping.clone(),
                 dry_run: opts.dry_run,
                 merge: opts.merge,
+                format: opts.format,
             },
             cwd,
         );
@@ -190,6 +203,7 @@ pub fn generate_command(opts: &GenerateCommandOptions, cwd: &Path) -> Result<()>
         &opts.output,
         opts.dry_run,
         opts.merge,
+        opts.format,
         cwd,
     )
 }
@@ -204,6 +218,8 @@ fn set_key(ir: &mut Value, key: &str, value: Value) {
 /// Options for `opensdk generate` with no `--lang` (multi target).
 #[derive(Debug, Clone, Default)]
 pub struct GenerateTargetsOptions {
+    /// Run the language formatter over each file map before writing it.
+    pub format: bool,
     pub inputs: ConverterInputs,
     pub spec: String,
     pub output: String,
@@ -257,6 +273,12 @@ pub fn generate_targets(
                 grouping_file: opts.inputs.grouping.clone(),
                 dry_run: opts.dry_run,
                 merge: target.and_then(|t| t.merge).unwrap_or(opts.merge),
+                // Deliberately NOT read off `ResolvedTarget`: that struct's
+                // projected shape is frozen by TypeScript-minted goldens, and a
+                // per-section `format` would have to be added to it to be read
+                // here. The command-level flag covers every target in the run,
+                // which is what a chain target's `format` already sets.
+                format: opts.format,
             },
             cwd,
         )?;
@@ -304,6 +326,7 @@ pub fn generate_targets(
             &output,
             opts.dry_run,
             target.and_then(|t| t.merge).unwrap_or(opts.merge),
+            opts.format,
             cwd,
         )?;
     }

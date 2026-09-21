@@ -152,6 +152,7 @@ pub fn run_chain(opts: &RunOptions, cwd: &Path) -> Result<()> {
                 output: output.clone(),
                 dry_run: opts.dry_run,
                 no_tests: t.tests == Some(false),
+                format: t.format.unwrap_or(false),
                 emitter_options: t.options.clone(),
                 publish: publish.clone(),
                 merge: false,

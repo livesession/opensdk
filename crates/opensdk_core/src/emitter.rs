@@ -113,6 +113,8 @@ pub fn write_mode_for(language: &str, path: &str) -> Option<WriteMode> {
     match (language, path) {
         ("node", "package.json") => Some(WriteMode::MergeJson),
         ("node", "tsconfig.json") | ("node", "README.md") => Some(WriteMode::SkipIfExists),
+        // Only emitted under `entry: "source"`; scaffolded once, never reimposed.
+        ("node", ".gitignore") => Some(WriteMode::SkipIfExists),
         ("python", "pyproject.toml") => Some(WriteMode::SkipIfExists),
         ("java", "pom.xml") => Some(WriteMode::SkipIfExists),
         ("rust", "Cargo.toml") => Some(WriteMode::SkipIfExists),
