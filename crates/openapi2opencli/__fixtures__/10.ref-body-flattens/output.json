@@ -1,0 +1,79 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "commands": [
+    {
+      "name": "sdks",
+      "commands": [
+        {
+          "name": "create",
+          "options": [
+            {
+              "name": "language",
+              "required": true,
+              "description": "Target language.",
+              "group": "body",
+              "arguments": [
+                {
+                  "name": "string"
+                }
+              ]
+            },
+            {
+              "name": "package-name",
+              "group": "body",
+              "arguments": [
+                {
+                  "name": "string"
+                }
+              ]
+            },
+            {
+              "name": "version",
+              "group": "body",
+              "arguments": [
+                {
+                  "name": "string"
+                }
+              ]
+            }
+          ],
+          "x-openapi": {
+            "method": "post",
+            "path": "/sdks",
+            "operationId": "createSdk",
+            "contentType": "application/json",
+            "body": {
+              "style": "flatten",
+              "contentType": "application/json",
+              "properties": [
+                {
+                  "name": "language",
+                  "from": "option:language",
+                  "jsonPath": "language",
+                  "encoding": "string",
+                  "required": true
+                },
+                {
+                  "name": "packageName",
+                  "from": "option:package-name",
+                  "jsonPath": "packageName",
+                  "encoding": "string"
+                },
+                {
+                  "name": "version",
+                  "from": "option:version",
+                  "jsonPath": "version",
+                  "encoding": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -82,7 +82,7 @@ pub fn build_leaf_command(
 
     let request_body = operation
         .get("requestBody")
-        .map(|rb| ctx.resolve(rb).clone());
+        .map(|rb| resolve_content_schemas(ctx, ctx.resolve(rb)));
     let body = map_request_body(request_body.as_ref(), &mut used_flag_names, options);
 
     let mut command = Command {
@@ -167,6 +167,38 @@ pub fn build_leaf_command(
     }
 }
 
+/// Resolve the `content.<media>.schema` of a requestBody/response object.
+///
+/// `ctx.resolve()` on the object itself only unwraps a `$ref` in the object
+/// SLOT — a requestBody written inline with a `$ref`'d schema, which is what a
+/// normal spec looks like, comes back untouched with the schema still a
+/// reference. Downstream then sees no `properties` and gives up: a body whose
+/// fields should each be a flag degrades to a single `--body '<json>'`.
+///
+/// For an already-dereferenced document this is identity, which is why the gap
+/// stayed invisible — the converter used to be handed deref'd input.
+fn resolve_content_schemas(ctx: &DocCtx, obj: &Value) -> Value {
+    let Some(content) = obj.get("content").and_then(|c| c.as_object()) else {
+        return obj.clone();
+    };
+    let mut media_out = serde_json::Map::new();
+    for (media, mt) in content {
+        match mt.get("schema") {
+            Some(schema) => {
+                let mut mt_out = mt.as_object().cloned().unwrap_or_default();
+                mt_out.insert("schema".to_string(), ctx.resolve(schema).clone());
+                media_out.insert(media.clone(), Value::Object(mt_out));
+            }
+            None => {
+                media_out.insert(media.clone(), mt.clone());
+            }
+        }
+    }
+    let mut out = obj.as_object().cloned().unwrap_or_default();
+    out.insert("content".to_string(), Value::Object(media_out));
+    Value::Object(out)
+}
+
 /// Deep-resolve the responses object one level (status → response, and each
 /// response's content media schemas) so the sampler sees concrete schemas.
 /// For already-dereferenced docs this is identity.
@@ -176,7 +208,7 @@ fn resolve_responses(ctx: &DocCtx, responses: &Value) -> Value {
     };
     let mut out = serde_json::Map::new();
     for (status, r) in map {
-        out.insert(status.clone(), ctx.resolve(r).clone());
+        out.insert(status.clone(), resolve_content_schemas(ctx, ctx.resolve(r)));
     }
     Value::Object(out)
 }

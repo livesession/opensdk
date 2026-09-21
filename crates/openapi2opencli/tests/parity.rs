@@ -110,3 +110,10 @@ c!(x_cli_root, "8.x-cli-root");
 // second dialect. The same fixture pins each explicit override (group, verb,
 // aliases, hidden, description, ignore) and the path-item → operation ladder.
 c!(x_cli_operation, "9.x-cli-operation");
+
+// A `$ref`'d request-body schema still flattens into per-field options. This
+// regressed silently once: `ctx.resolve()` on the requestBody unwraps a ref in
+// the object SLOT, not one nested under `content.<media>.schema`, so a normal
+// spec produced a single `--body '<json>'` where four flags belonged. It was
+// invisible because the converter used to be handed pre-dereferenced input.
+c!(ref_body_flattens, "10.ref-body-flattens");

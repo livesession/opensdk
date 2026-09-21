@@ -1,0 +1,24 @@
+# The shape a normal spec has: the requestBody is inline, its SCHEMA is a $ref.
+# Body flattening has to resolve one level deeper than the object slot, or every
+# field collapses into a single --body JSON flag.
+openapi: 3.0.0
+info: { title: acme, version: 1.0.0 }
+paths:
+  /sdks:
+    post:
+      operationId: createSdk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSdkInput' }
+      responses: { "201": { description: created } }
+components:
+  schemas:
+    CreateSdkInput:
+      type: object
+      required: [language]
+      properties:
+        language: { type: string, description: Target language. }
+        packageName: { type: string }
+        version: { type: string }
