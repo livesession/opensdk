@@ -306,10 +306,17 @@ pub fn openapi2opencli_from_json_str(
 ///
 /// The pair is identified by the STATIC path segments, which are identical for
 /// `/sdks` and `/sdks/{id}` — the surviving handle after singularization has
-/// already made the two commands' names differ. The collection wins the name
-/// (plural, so `get sdks` reads as a list), the item's name becomes an alias
-/// (so `get sdk <id>` works), and the item's binding rides along under
-/// `whenArgsPresent` together with its positional, made optional.
+/// already made the two commands' names differ.
+///
+/// The SINGULAR wins the name and the plural becomes the alias, so `get sdk`,
+/// `get sdks`, `get sdk <id>` and `get sdks <id>` all resolve. It has to be that
+/// way round: sub-resources reach the same node through N1 (`/sdks/{id}/targets`
+/// nests under a node named `sdk`), so a plural-canonical command would sit
+/// beside its own singular sibling, which clap rejects. See the inline note at
+/// the rename.
+///
+/// The item's binding rides along under `whenArgsPresent`, together with its
+/// positional made optional, and its own options are merged in.
 ///
 /// Anything that is not exactly one collection + one item is left alone: two
 /// item GETs on differently-named params, or a lone collection, have no pair to
