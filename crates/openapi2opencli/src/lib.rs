@@ -255,7 +255,9 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
 
 /// Convert a dereferenced OpenAPI document (as a JSON Value) to an OpenCLI doc.
 pub fn openapi2opencli(doc: &Value, options: Option<Options>) -> Result<Spec, Error> {
-    let options = options.unwrap_or_default();
+    // The spec may carry its own defaults in a root `x-cli` block; an
+    // explicit converter option overrides them.
+    let options = options.unwrap_or_default().over(options::root_options(doc));
     // preprocess materializes $ref-with-siblings merges; DocCtx resolves refs.
     let (processed, stamps) = DocCtx::preprocess(doc);
     let ctx = DocCtx::with_merged_stamps(&processed, &stamps);

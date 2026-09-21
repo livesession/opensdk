@@ -273,6 +273,7 @@ dependencies = [
 name = "openapi2opensdk"
 version = "0.0.0"
 dependencies = [
+ "opensdk_cli_common",
  "opensdk_core",
  "parity_kit",
  "serde",

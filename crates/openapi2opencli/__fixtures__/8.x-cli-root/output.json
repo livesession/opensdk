@@ -1,0 +1,56 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "commands": [
+    {
+      "name": "get",
+      "commands": [
+        {
+          "name": "api",
+          "aliases": [
+            "apis"
+          ],
+          "arguments": [
+            {
+              "name": "api-id"
+            }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/apis",
+            "operationId": "listApis",
+            "whenArgsPresent": {
+              "method": "get",
+              "path": "/apis/{apiId}",
+              "operationId": "getApi",
+              "params": [
+                {
+                  "in": "path",
+                  "name": "apiId",
+                  "from": "argument:api-id",
+                  "required": true
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create",
+      "commands": [
+        {
+          "name": "widget",
+          "x-openapi": {
+            "method": "post",
+            "path": "/widgets",
+            "operationId": "createWidget"
+          }
+        }
+      ]
+    }
+  ]
+}

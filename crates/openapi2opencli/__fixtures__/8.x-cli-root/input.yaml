@@ -1,0 +1,20 @@
+openapi: 3.0.0
+info: { title: some long product name, version: 1.0.0 }
+x-cli:
+  cliName: acme
+  grammar: verb-noun
+  singularOverrides: { apis: api }
+paths:
+  /apis:
+    get:
+      operationId: listApis
+      responses: { "200": { description: ok } }
+  /apis/{apiId}:
+    get:
+      operationId: getApi
+      parameters: [{ name: apiId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { description: ok } }
+  /widgets:
+    post:
+      operationId: createWidget
+      responses: { "201": { description: created } }

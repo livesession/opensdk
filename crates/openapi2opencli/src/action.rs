@@ -240,7 +240,7 @@ fn derive_target_verb_noun(
     // is worse: a wrongly promoted noun lands at the top level, the most
     // visible surface in `--help`, whereas an unpromoted verb merely reads
     // awkwardly inside the right namespace. `customActionVerbs` and
-    // `x-opencli.verb` are the intended fixes, and both are explicit.
+    // `x-cli.verb` are the intended fixes, and both are explicit.
     let last_is_static = segments.last().map(|s| !s.is_param).unwrap_or(false);
     let trailing = statics.last().copied();
     let promoted = match trailing {

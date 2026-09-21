@@ -96,3 +96,10 @@ c!(root_command, "6.root-command");
 //     part of the fixture rather than a footnote
 //   - `usage` and other already-singular nouns pass through untouched
 c!(grammar_verb_noun, "7.grammar-verb-noun");
+
+// The spec configuring its own CLI through a root `x-cli` block, with NO
+// converter options passed. Pins that every option is reachable from the spec
+// (name, grammar and the override table all take effect here) — the block
+// deserializes into the same `Options` type, so this covers the mechanism
+// rather than a chosen subset of keys.
+c!(x_cli_root, "8.x-cli-root");

@@ -67,7 +67,7 @@ impl std::fmt::Display for Collision {
         write!(
             f,
             "two operations both map to the command `{}` — rename one with \
-             `x-opencli.verb`/`x-opencli.group`, or exclude it with `includePaths`",
+             `x-cli.verb`/`x-cli.group`, or exclude it with `includePaths`",
             full.join(" ")
         )
     }
