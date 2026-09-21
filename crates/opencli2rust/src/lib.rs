@@ -40,6 +40,20 @@ pub struct Options {
     pub module_name: Option<String>,
     /// Hand-owned impl module (`src/<implModule>/mod.rs`). Default: `"custom"`.
     pub impl_module: Option<String>,
+    /// Where `--version` reads from: `"spec"` (default) bakes the OpenCLI
+    /// document's `info.version`; `"crate"` emits `env!("CARGO_PKG_VERSION")`.
+    ///
+    /// These are different things, and conflating them is how a release ships a
+    /// binary that misreports itself. `info.version` is the API's version;
+    /// the crate version is the BINARY's, and it is what a tag and a release
+    /// artifact are named after. A generated crate whose Cargo.toml is
+    /// hand-maintained (the `SkipIfExists` scaffold) wants `"crate"`, so
+    /// `--version` cannot drift from the manifest CI checks the tag against.
+    ///
+    /// Default stays `"spec"`: xyd's own generated CLI carries a meaningful
+    /// `info.version` and a workspace version of 0.0.0, so flipping the default
+    /// would silently downgrade what it reports.
+    pub version_from: Option<String>,
 }
 
 /// A generated file: its content and how `writeProject` should treat it.
@@ -101,6 +115,7 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
         .edition
         .clone()
         .unwrap_or_else(|| "2021".to_string());
+    let version_from = cli::VersionFrom::parse(options.version_from.as_deref());
     let base_url = options.base_url.clone().unwrap_or_else(|| {
         spec.get("x-openapi")
             .and_then(|x| x.get("servers"))
@@ -161,7 +176,13 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
     ));
     files.push((
         format!("src/{module_name}/cli.rs"),
-        owned(render_cli(spec, &bin_name, &resources, &action_paths)),
+        owned(render_cli(
+            spec,
+            &bin_name,
+            &resources,
+            &action_paths,
+            version_from,
+        )),
     ));
     files.push((format!("src/{module_name}/mod.rs"), owned(gen_mod_rs())));
     files.push((

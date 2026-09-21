@@ -39,7 +39,7 @@ impl CliBackend {
     pub fn backend_keys(self) -> &'static [&'static str] {
         match self {
             CliBackend::Go => &["modulePath", "binName", "goVersion", "baseURL"],
-            CliBackend::Rust => &["crateName", "binName", "edition", "baseURL"],
+            CliBackend::Rust => &["crateName", "binName", "edition", "baseURL", "versionFrom"],
         }
     }
 

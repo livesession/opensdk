@@ -4,7 +4,8 @@
     "crateName",
     "binName",
     "edition",
-    "baseURL"
+    "baseURL",
+    "versionFrom"
   ],
   "converterKeys": [
     "cliName",

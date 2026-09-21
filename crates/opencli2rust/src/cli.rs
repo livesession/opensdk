@@ -6,11 +6,41 @@ use serde_json::Value;
 use crate::command::ResourceFile;
 use crate::rslit::{chain, indent, json_str, lit, rs_file, rs_str, RsVal, Uses};
 
+/// Which version string `--version` reports. See `Options::version_from`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum VersionFrom {
+    /// The OpenCLI document's `info.version` — the API's version.
+    #[default]
+    Spec,
+    /// `env!("CARGO_PKG_VERSION")` — the binary's own version.
+    Crate,
+}
+
+impl VersionFrom {
+    /// Unknown values fall back to the default rather than failing the build:
+    /// this is a cosmetic string, and a typo in it should not stop a generation
+    /// that is otherwise fine. It does warn, so the typo is not silent.
+    pub fn parse(v: Option<&str>) -> Self {
+        match v {
+            None => VersionFrom::Spec,
+            Some("spec") => VersionFrom::Spec,
+            Some("crate") => VersionFrom::Crate,
+            Some(other) => {
+                eprintln!(
+                    "warning: unknown versionFrom {other:?} — expected \"spec\" or \"crate\"; using \"spec\""
+                );
+                VersionFrom::Spec
+            }
+        }
+    }
+}
+
 pub fn render_cli(
     spec: &Value,
     bin_name: &str,
     resources: &[ResourceFile],
     action_paths: &[Vec<String>],
+    version_from: VersionFrom,
 ) -> String {
     let has_actions = !action_paths.is_empty();
     let info = spec.get("info");
@@ -21,8 +51,17 @@ pub fn render_cli(
     if let Some(usage) = usage {
         calls.push(("about".into(), vec![rs_str(usage)]));
     }
-    if let Some(version) = info.and_then(|i| i.get("version").and_then(|v| v.as_str())) {
-        calls.push(("version".into(), vec![rs_str(version)]));
+    match version_from {
+        // Compile-time, so it cannot drift from Cargo.toml — which is what the
+        // release tag is verified against.
+        VersionFrom::Crate => {
+            calls.push(("version".into(), vec![lit("env!(\"CARGO_PKG_VERSION\")")]));
+        }
+        VersionFrom::Spec => {
+            if let Some(version) = info.and_then(|i| i.get("version").and_then(|v| v.as_str())) {
+                calls.push(("version".into(), vec![rs_str(version)]));
+            }
+        }
     }
     calls.push(("subcommand_required".into(), vec![lit("true")]));
     calls.push(("arg_required_else_help".into(), vec![lit("true")]));
