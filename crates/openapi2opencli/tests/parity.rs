@@ -16,7 +16,19 @@ fn run_case(name: &str) {
     let input = case.join("input.yaml");
     assert!(input.exists(), "{name}: no input.yaml");
 
-    let spec = openapi2opencli_from_file(input.to_str().unwrap(), None)
+    // Converter options come from an OPTIONAL `options.json` beside the input.
+    // The five original cases have none, so they still convert with `None` and
+    // stay byte-identical; a case that exercises an option is self-describing
+    // rather than needing a parallel table in this file.
+    let options_path = case.join("options.json");
+    let options = options_path.exists().then(|| {
+        let raw = std::fs::read_to_string(&options_path)
+            .unwrap_or_else(|e| panic!("{name}: reading options.json: {e}"));
+        serde_json::from_str(&raw)
+            .unwrap_or_else(|e| panic!("{name}: options.json is not valid Options: {e}"))
+    });
+
+    let spec = openapi2opencli_from_file(input.to_str().unwrap(), options)
         .unwrap_or_else(|e| panic!("{name}: convert failed: {e}"));
     let actual = serde_json::to_value(&spec).expect("serialize");
     let oracle: Value = parity_kit::read_oracle(&case);
@@ -71,3 +83,7 @@ c!(crud, "2.crud");
 c!(nested, "3.nested");
 c!(body_flatten, "4.body-flatten");
 c!(responses, "5.responses");
+// `rootCommand` wraps the whole tree under one parent. Same spec as 2.crud, so
+// the only difference between the two goldens IS the wrapper — which is what
+// makes this readable as a diff.
+c!(root_command, "6.root-command");

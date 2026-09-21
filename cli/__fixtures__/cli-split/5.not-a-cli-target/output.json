@@ -14,7 +14,8 @@
     "customActionVerbs",
     "includePaths",
     "maxBodyDepth",
-    "authEnvVar"
+    "authEnvVar",
+    "rootCommand"
   ],
   "split": null,
   "error": "Not a CLI target: go"

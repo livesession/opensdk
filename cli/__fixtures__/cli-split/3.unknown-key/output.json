@@ -19,8 +19,9 @@
     "customActionVerbs",
     "includePaths",
     "maxBodyDepth",
-    "authEnvVar"
+    "authEnvVar",
+    "rootCommand"
   ],
   "split": null,
-  "error": "Unknown option(s) for \"go-cli\": packageName. Valid: cliName, version, grouping, bodyStrategy, includeMethods, includeHeaders, flagCase, actionAliases, verbMap, customActionVerbs, includePaths, maxBodyDepth, authEnvVar, modulePath, binName, goVersion, baseURL"
+  "error": "Unknown option(s) for \"go-cli\": packageName. Valid: cliName, version, grouping, bodyStrategy, includeMethods, includeHeaders, flagCase, actionAliases, verbMap, customActionVerbs, includePaths, maxBodyDepth, authEnvVar, rootCommand, modulePath, binName, goVersion, baseURL"
 }

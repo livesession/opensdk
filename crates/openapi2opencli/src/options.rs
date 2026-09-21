@@ -54,4 +54,15 @@ pub struct Options {
     pub include_paths: Option<Vec<String>>,
     pub max_body_depth: Option<u32>,
     pub auth_env_var: Option<String>,
+    /// Wrap every generated command under one named parent, so `api get sdks`
+    /// becomes `api <root> get sdks`.
+    ///
+    /// For a CLI whose generated surface is only part of what the binary does —
+    /// the rest being hand-written commands — this keeps the two from competing
+    /// for the top level. Unset (the default) emits the tree unwrapped, exactly
+    /// as before.
+    ///
+    /// Note for the backends: both emit one source file per TOP-LEVEL command,
+    /// so a wrapper collapses the whole CLI into a single generated file.
+    pub root_command: Option<String>,
 }

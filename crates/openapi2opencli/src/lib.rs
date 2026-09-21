@@ -22,7 +22,7 @@ mod tree;
 use serde_json::{Map, Value};
 
 use command::build_leaf_command;
-use jsrt::{js_object_keys, slug};
+use jsrt::{js_object_keys, kebab_case, slug};
 use model::{Command, Info, Spec, XOpenApiRoot};
 use oas_doc::DocCtx;
 use security::security_schemes_to_x_openapi;
@@ -194,7 +194,28 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
         }
     }
 
-    let commands: Vec<Command> = tree.emit();
+    let mut commands: Vec<Command> = tree.emit();
+
+    // `rootCommand` wraps the finished tree rather than prefixing every insert.
+    // Post-processing is the better seam for three reasons: the wrapper can
+    // carry a description (nodes built during insertion cannot — `emit_node`
+    // fills them from `Default`), the child sort and collision handling have
+    // already run so wrapping provably cannot perturb them, and an empty tree
+    // stays empty instead of emitting a wrapper around nothing.
+    if let Some(root) = options
+        .root_command
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        if !commands.is_empty() {
+            commands = vec![Command {
+                name: kebab_case(root),
+                commands: Some(commands),
+                ..Default::default()
+            }];
+        }
+    }
 
     Ok(Spec {
         opencli: "1.0.0".to_string(),

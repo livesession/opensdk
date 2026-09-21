@@ -110,6 +110,7 @@ pub const CLI_CONVERTER_KEYS: &[&str] = &[
     "includePaths",
     "maxBodyDepth",
     "authEnvVar",
+    "rootCommand",
 ];
 
 /// The backend option keys for a CLI target id (empty for a non-CLI id).

@@ -19,7 +19,8 @@
     "customActionVerbs",
     "includePaths",
     "maxBodyDepth",
-    "authEnvVar"
+    "authEnvVar",
+    "rootCommand"
   ],
   "split": {
     "converter": {
