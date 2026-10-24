@@ -3,7 +3,7 @@
     "files"
   ],
   "action": "upload",
-  "usage": "package main\n\nimport (\n\t\"bytes\"\n\t\"context\"\n\t\"fmt\"\n\t\"io\"\n\n\t\"github.com/example/wirekitchen\"\n\t\"github.com/example/wirekitchen/option\"\n\t\"github.com/example/wirekitchen/packages/param\"\n)\n\nfunc main() {\n\tclient := wirekitchen.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Files.Upload(\n\t\tcontext.TODO(),\n\t\twirekitchen.FileUploadParams{\n\t\t\tFile: io.Reader(bytes.NewBuffer([]byte(\"Example data\"))),\n\t\t\tPurpose: \"string\",\n\t\t\tDescription: param.NewOpt[string](\"string\"),\n\t\t\tIdempotencyKey: \"idempotency_key\",\n\t\t\tRequestPriority: param.NewOpt[string](\"request_priority\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"bytes\"\n\t\"context\"\n\t\"fmt\"\n\t\"io\"\n\t\"os\"\n\n\t\"github.com/example/wirekitchen\"\n\t\"github.com/example/wirekitchen/option\"\n\t\"github.com/example/wirekitchen/packages/param\"\n)\n\nfunc main() {\n\tclient := wirekitchen.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"WIRE_API_KEY\")),\n\t)\n\tresult, err := client.Files.Upload(\n\t\tcontext.TODO(),\n\t\twirekitchen.FileUploadParams{\n\t\t\tFile: io.Reader(bytes.NewBuffer([]byte(\"Example data\"))),\n\t\t\tPurpose: \"string\",\n\t\t\tDescription: param.NewOpt[string](\"string\"),\n\t\t\tIdempotencyKey: \"idempotency_key\",\n\t\t\tRequestPriority: param.NewOpt[string](\"request_priority\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Files.Upload(ctx, params) (*File, error)",
     "request": {

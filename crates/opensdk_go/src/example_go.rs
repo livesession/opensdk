@@ -1070,15 +1070,18 @@ pub(crate) fn go_type_reference(
 /// suite uses, minus the mock/assert/guard scaffolding. `segments` is the
 /// resource-name chain the method hangs off (root→owner).
 ///
-/// `base_url_env` is a DOCS-ONLY option: when set (only during a snippet-run
-/// test) the client reads its base URL from that env var so the snippet's
-/// request can be captured; unset → the byte-identical docs snippet.
+/// The client reads its credential from `env_var` (`os.Getenv`), never from a
+/// literal — a snippet is meant to be pasted and run, and a literal key is the
+/// one thing a reader must not copy. `base_url_env` is a DOCS-ONLY option: when
+/// set (only during a snippet-run test) the client also reads its base URL from
+/// that env var so the snippet's request can be captured.
 pub(crate) fn go_usage(
     method: &Value,
     segments: &[String],
     types: &Map<String, Value>,
     module_path: &str,
     pkg: &str,
+    env_var: &str,
     base_url_env: Option<&str>,
 ) -> String {
     let mut imports = Imports::new();
@@ -1120,9 +1123,13 @@ pub(crate) fn go_usage(
     if has_result {
         ctx.imports.add("fmt", None);
     }
-    let mut client_opts = vec![format!("\t\t{}.WithAPIKey(\"My API Key\"),", ctx.option_q)];
+    let os_q = ctx.imports.add("os", None);
+    let mut client_opts = vec![format!(
+        "\t\t{}.WithAPIKey({os_q}.Getenv({})),",
+        ctx.option_q,
+        json_string(env_var)
+    )];
     if let Some(env) = base_url_env {
-        let os_q = ctx.imports.add("os", None);
         client_opts.push(format!(
             "\t\t{}.WithBaseURL({os_q}.Getenv({})),",
             ctx.option_q,

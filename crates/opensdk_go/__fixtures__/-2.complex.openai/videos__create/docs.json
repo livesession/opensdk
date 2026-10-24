@@ -3,7 +3,7 @@
     "videos"
   ],
   "action": "create",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Videos.New(\n\t\tcontext.TODO(),\n\t\topenai.VideoNewParams{\n\t\t\tModel: \"string\",\n\t\t\tPrompt: \"string\",\n\t\t\tInputReference: openai.ImageRefParam2{ImageURL: \"https://example.com\", FileID: \"string\"},\n\t\t\tSeconds: openai.VideoSeconds4,\n\t\t\tSize: openai.VideoSize720x1280,\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Videos.New(\n\t\tcontext.TODO(),\n\t\topenai.VideoNewParams{\n\t\t\tModel: \"string\",\n\t\t\tPrompt: \"string\",\n\t\t\tInputReference: openai.ImageRefParam2{ImageURL: \"https://example.com\", FileID: \"string\"},\n\t\t\tSeconds: openai.VideoSeconds4,\n\t\t\tSize: openai.VideoSize720x1280,\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Videos.New(ctx, body) (*VideoResource, error)",
     "request": {

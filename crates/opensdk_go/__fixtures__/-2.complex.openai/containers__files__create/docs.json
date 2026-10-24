@@ -4,7 +4,7 @@
     "files"
   ],
   "action": "create",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Containers.Files.New(\n\t\tcontext.TODO(),\n\t\t\"container_id\",\n\t\topenai.ContainerFileNewParams{\n\t\t\tFileID: param.NewOpt[string](\"string\"),\n\t\t\tFile: param.NewOpt[string](\"Example data\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Containers.Files.New(\n\t\tcontext.TODO(),\n\t\t\"container_id\",\n\t\topenai.ContainerFileNewParams{\n\t\t\tFileID: param.NewOpt[string](\"string\"),\n\t\t\tFile: param.NewOpt[string](\"Example data\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Containers.Files.New(ctx, containerID, body) (*ContainerFileResource, error)",
     "request": {

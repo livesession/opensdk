@@ -4,7 +4,7 @@
     "speech"
   ],
   "action": "create",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Audio.Speech.New(\n\t\tcontext.TODO(),\n\t\topenai.AudioSpeechNewParams{\n\t\t\tModel: \"string\",\n\t\t\tInput: \"string\",\n\t\t\tInstructions: param.NewOpt[string](\"string\"),\n\t\t\tVoice: \"string\",\n\t\t\tResponseFormat: openai.CreateSpeechRequestResponseFormatMp3,\n\t\t\tSpeed: param.NewOpt[float64](1),\n\t\t\tStreamFormat: openai.CreateSpeechRequestStreamFormatSse,\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Audio.Speech.New(\n\t\tcontext.TODO(),\n\t\topenai.AudioSpeechNewParams{\n\t\t\tModel: \"string\",\n\t\t\tInput: \"string\",\n\t\t\tInstructions: param.NewOpt[string](\"string\"),\n\t\t\tVoice: \"string\",\n\t\t\tResponseFormat: openai.CreateSpeechRequestResponseFormatMp3,\n\t\t\tSpeed: param.NewOpt[float64](1),\n\t\t\tStreamFormat: openai.CreateSpeechRequestStreamFormatSse,\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Audio.Speech.New(ctx, body) (*http.Response, error)",
     "request": {

@@ -4,7 +4,7 @@
     "roles"
   ],
   "action": "update",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Projects.Roles.Update(\n\t\tcontext.TODO(),\n\t\t\"project_id\",\n\t\t\"role_id\",\n\t\topenai.ProjectRoleUpdateParams{\n\t\t\tPermissions: []string{\"string\"},\n\t\t\tDescription: param.NewOpt[string](\"string\"),\n\t\t\tRoleName: param.NewOpt[string](\"string\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Projects.Roles.Update(\n\t\tcontext.TODO(),\n\t\t\"project_id\",\n\t\t\"role_id\",\n\t\topenai.ProjectRoleUpdateParams{\n\t\t\tPermissions: []string{\"string\"},\n\t\t\tDescription: param.NewOpt[string](\"string\"),\n\t\t\tRoleName: param.NewOpt[string](\"string\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Projects.Roles.Update(ctx, projectID, roleID, body) (*Role, error)",
     "request": {

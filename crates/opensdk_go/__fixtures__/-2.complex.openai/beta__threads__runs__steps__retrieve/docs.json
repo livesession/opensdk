@@ -6,7 +6,7 @@
     "steps"
   ],
   "action": "retrieve",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Beta.Threads.Runs.Steps.Get(\n\t\tcontext.TODO(),\n\t\t\"thread_id\",\n\t\t\"run_id\",\n\t\t\"step_id\",\n\t\topenai.BetaThreadRunStepGetParams{\n\t\t\tInclude: []string{\"step_details.tool_calls[*].file_search.results[*].content\"},\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Beta.Threads.Runs.Steps.Get(\n\t\tcontext.TODO(),\n\t\t\"thread_id\",\n\t\t\"run_id\",\n\t\t\"step_id\",\n\t\topenai.BetaThreadRunStepGetParams{\n\t\t\tInclude: []string{\"step_details.tool_calls[*].file_search.results[*].content\"},\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Beta.Threads.Runs.Steps.Get(ctx, threadID, runID, stepID, query) (*RunStepObject, error)",
     "request": {

@@ -4,7 +4,7 @@
     "threads"
   ],
   "action": "update",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Beta.Threads.Update(\n\t\tcontext.TODO(),\n\t\t\"thread_id\",\n\t\topenai.BetaThreadUpdateParams{\n\t\t\tToolResources: openai.ModifyThreadRequestToolResources{CodeInterpreter: openai.ModifyThreadRequestToolResourcesCodeInterpreter{FileIds: []string{\"string\"}}, FileSearch: openai.ModifyThreadRequestToolResourcesFileSearch{VectorStoreIds: []string{\"string\"}}},\n\t\t\tMetadata: map[string]string{\"key\": \"string\"},\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Beta.Threads.Update(\n\t\tcontext.TODO(),\n\t\t\"thread_id\",\n\t\topenai.BetaThreadUpdateParams{\n\t\t\tToolResources: openai.ModifyThreadRequestToolResources{CodeInterpreter: openai.ModifyThreadRequestToolResourcesCodeInterpreter{FileIds: []string{\"string\"}}, FileSearch: openai.ModifyThreadRequestToolResourcesFileSearch{VectorStoreIds: []string{\"string\"}}},\n\t\t\tMetadata: map[string]string{\"key\": \"string\"},\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Beta.Threads.Update(ctx, threadID, body) (*ThreadObject, error)",
     "request": {

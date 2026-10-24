@@ -192,7 +192,9 @@ pub fn generate_go_with(
 /// (`Value::Null` for none). Only `packageName` / `modulePath` (which name the
 /// generated package) and the docs-only `baseUrlEnv` (make the snippet read its
 /// base URL from that env var, so a snippet-run test can capture the request)
-/// affect the output.
+/// affect the output. The credential is read from the SDK's env var (the
+/// security scheme's `envVar`, else `<PKG>_API_KEY`), the same variable the
+/// generated `NewClient` seeds itself from.
 pub fn generate_go_usage(
     spec: &Value,
     chain: &[String],
@@ -201,12 +203,25 @@ pub fn generate_go_usage(
 ) -> String {
     let opts = resolve_options(spec, options);
     let types = symbol_table(spec);
+    let env_var = spec
+        .get("security")
+        .and_then(|s| s.as_array())
+        .and_then(|arr| {
+            arr.iter().find_map(|s| {
+                s.get("envVar")
+                    .and_then(|e| e.as_str())
+                    .filter(|e| !e.is_empty())
+            })
+        })
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("{}_API_KEY", naming::screaming_snake_case(&opts.pkg)));
     example_go::go_usage(
         method,
         chain,
         &types,
         &opts.module_path,
         &opts.pkg,
+        &env_var,
         opensdk_core::emitter::opt_str(options, "baseUrlEnv"),
     )
 }
