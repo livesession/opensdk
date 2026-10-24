@@ -418,7 +418,7 @@ fn constants_block(ctx: &JavaCtx) -> String {
         ),
     };
 
-    let lines = [
+    let mut lines = vec![
         format!(
             "  private static final String DEFAULT_BASE_URL = {};",
             json_str(&ctx.base_url)
@@ -465,7 +465,53 @@ fn constants_block(ctx: &JavaCtx) -> String {
         ),
         timeout_block,
     ];
+    // sdk.defaultHeaders — only when configured, so the no-headers runtime is
+    // byte-identical to what it was before the feature existed. `Map.ofEntries`
+    // rather than `Map.of`: the latter stops at ten pairs.
+    let headers = opensdk_core::behavior::default_headers(b);
+    if !headers.is_empty() {
+        let entries: Vec<String> = headers
+            .iter()
+            .map(|(name, value)| format!("Map.entry({}, {})", json_str(name), json_str(value)))
+            .collect();
+        lines.push(format!(
+            "  private static final Map<String, String> DEFAULT_HEADERS = Map.ofEntries({});",
+            entries.join(", ")
+        ));
+    }
     lines.join("\n")
+}
+
+/// The four `__XYD_DEFAULT_HEADERS_*__` seams of the transport: the field, its
+/// initialisation in the two-argument constructor, a third constructor taking
+/// per-client overrides, and the per-request application (skipping any header
+/// the request already carries, so a per-call header wins). All empty when
+/// `sdk.defaultHeaders` is not configured.
+fn default_headers_seams(ctx: &JavaCtx) -> [(&'static str, &'static str); 4] {
+    let configured = !opensdk_core::behavior::default_headers(&ctx.behavior).is_empty();
+    let pick = |on: &'static str| if configured { on } else { "" };
+    [
+        (
+            "__XYD_DEFAULT_HEADERS_FIELD__",
+            pick("  private final Map<String, String> defaultHeaders;\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_INIT__",
+            pick("    this.defaultHeaders = DEFAULT_HEADERS;\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_CTOR__",
+            pick(
+                "\n  /** A transport whose per-client {@code defaultHeaders} layer over the SDK's built-in ones. */\n  public Transport(String baseUrl, String apiKey, Map<String, String> defaultHeaders) {\n    this.baseUrl = (baseUrl == null || baseUrl.isEmpty()) ? DEFAULT_BASE_URL : baseUrl;\n    this.apiKey = apiKey;\n    this.http = HttpClient.newHttpClient();\n    Map<String, String> merged = new LinkedHashMap<>(DEFAULT_HEADERS);\n    if (defaultHeaders != null) {\n      merged.putAll(defaultHeaders);\n    }\n    this.defaultHeaders = java.util.Collections.unmodifiableMap(merged);\n  }\n",
+            ),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_APPLY__",
+            pick(
+                "    for (Map.Entry<String, String> entry : defaultHeaders.entrySet()) {\n      if (!request.headers.containsKey(entry.getKey())) {\n        builder.header(entry.getKey(), entry.getValue());\n      }\n    }\n",
+            ),
+        ),
+    ]
 }
 
 fn user_agent_body(ctx: &JavaCtx) -> String {
@@ -551,7 +597,7 @@ fn transport_body(ctx: &JavaCtx, needs_form: bool) -> String {
         String::new()
     };
 
-    TRANSPORT_TEMPLATE
+    let mut out = TRANSPORT_TEMPLATE
         .trim_end_matches('\n')
         .replace("__XYD_CONSTANTS__", &constants_block(ctx))
         .replace("__XYD_UA_BODY__", &user_agent_body(ctx))
@@ -560,5 +606,9 @@ fn transport_body(ctx: &JavaCtx, needs_form: bool) -> String {
         .replace("__XYD_RETRY_AFTER_CALL__", &retry_after_call)
         .replace("__XYD_RETRY_AFTER_HELPER__", &retry_after_helper)
         .replace("__XYD_AUTH_QUERY__", &auth_query_block(ctx))
-        .replace("__XYD_ENCODERS__", &encoders)
+        .replace("__XYD_ENCODERS__", &encoders);
+    for (seam, text) in default_headers_seams(ctx) {
+        out = out.replace(seam, text);
+    }
+    out
 }

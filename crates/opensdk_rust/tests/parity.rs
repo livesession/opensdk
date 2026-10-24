@@ -133,6 +133,14 @@ fn sdk_behavior() {
 fn sdk_behavior_pagination() {
     run_case("11.sdk-behavior-pagination");
 }
+// 12.default-headers: `sdk.defaultHeaders` (one static, one resolved from the
+// document's `info.x-release`) reach the runtime and the client, and a list
+// operation converted under the `pagination: false` hint keeps its declared
+// envelope type while its sibling stays auto-paginated.
+#[test]
+fn default_headers() {
+    run_case("12.default-headers");
+}
 
 // ---- Test 2: per-method regen guard (`<op>/output.rs`) --------------------
 

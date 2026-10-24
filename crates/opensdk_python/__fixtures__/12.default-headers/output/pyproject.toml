@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "widgetco"
+version = "2.3.0"
+description = "A widget catalogue whose list responses nest their paging markers under `list`."
+requires-python = ">=3.9"
+
+[tool.setuptools.packages.find]
+include = ["widgetco"]

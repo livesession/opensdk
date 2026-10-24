@@ -21,8 +21,15 @@ pub fn render_client_file(spec: &Value, ctx: &JavaCtx) -> String {
         ));
     }
 
-    let mut ctor_lines: Vec<String> =
-        vec!["    this.transport = new Transport(baseUrl, apiKey);".to_string()];
+    // With sdk.defaultHeaders the client takes per-client overrides as a third
+    // constructor argument (and the builder grows `defaultHeader`); without them
+    // the client is exactly what it always was.
+    let with_default_headers = !opensdk_core::behavior::default_headers(&ctx.behavior).is_empty();
+    let mut ctor_lines: Vec<String> = vec![if with_default_headers {
+        "    this.transport = new Transport(baseUrl, apiKey, defaultHeaders);".to_string()
+    } else {
+        "    this.transport = new Transport(baseUrl, apiKey);".to_string()
+    }];
     for r in &resources {
         let n = rname(r);
         ctor_lines.push(format!(
@@ -31,10 +38,17 @@ pub fn render_client_file(spec: &Value, ctx: &JavaCtx) -> String {
             service_type_name(std::slice::from_ref(&n))
         ));
     }
-    let ctor = format!(
-        "  public Client(String apiKey, String baseUrl) {{\n{}\n  }}",
-        ctor_lines.join("\n")
-    );
+    let ctor = if with_default_headers {
+        format!(
+            "  public Client(String apiKey, String baseUrl) {{\n    this(apiKey, baseUrl, null);\n  }}\n\n  /** A client whose {{@code defaultHeaders}} layer over the SDK's built-in default headers on every request. */\n  public Client(String apiKey, String baseUrl, Map<String, String> defaultHeaders) {{\n{}\n  }}",
+            ctor_lines.join("\n")
+        )
+    } else {
+        format!(
+            "  public Client(String apiKey, String baseUrl) {{\n{}\n  }}",
+            ctor_lines.join("\n")
+        )
+    };
 
     let accessors = resources
         .iter()
@@ -68,10 +82,18 @@ pub fn render_client_file(spec: &Value, ctx: &JavaCtx) -> String {
         ),
     };
 
-    let builder = [
+    let mut builder_lines = vec![
         "  public static final class Builder {".to_string(),
         "    private String apiKey;".to_string(),
         format!("    private String baseUrl = {default_base_url};"),
+    ];
+    if with_default_headers {
+        builder_lines.push(
+            "    private final Map<String, String> defaultHeaders = new LinkedHashMap<>();"
+                .to_string(),
+        );
+    }
+    builder_lines.extend([
         "".to_string(),
         "    public Builder apiKey(String apiKey) {".to_string(),
         "      this.apiKey = apiKey;".to_string(),
@@ -82,14 +104,30 @@ pub fn render_client_file(spec: &Value, ctx: &JavaCtx) -> String {
         "      this.baseUrl = baseUrl;".to_string(),
         "      return this;".to_string(),
         "    }".to_string(),
+    ]);
+    if with_default_headers {
+        builder_lines.extend([
+            "".to_string(),
+            "    /** Send {@code value} as the {@code name} header on every request (overrides the SDK's built-in default of the same name). */".to_string(),
+            "    public Builder defaultHeader(String name, String value) {".to_string(),
+            "      this.defaultHeaders.put(name, value);".to_string(),
+            "      return this;".to_string(),
+            "    }".to_string(),
+        ]);
+    }
+    builder_lines.extend([
         "".to_string(),
         "    public Client build() {".to_string(),
         format!("      String key = {key_expr};"),
-        "      return new Client(key, baseUrl);".to_string(),
+        if with_default_headers {
+            "      return new Client(key, baseUrl, defaultHeaders);".to_string()
+        } else {
+            "      return new Client(key, baseUrl);".to_string()
+        },
         "    }".to_string(),
         "  }".to_string(),
-    ]
-    .join("\n");
+    ]);
+    let builder = builder_lines.join("\n");
 
     let doc = java_doc(
         Some(&format!(
@@ -118,5 +156,10 @@ pub fn render_client_file(spec: &Value, ctx: &JavaCtx) -> String {
     .join("\n\n");
 
     let body = format!("{head}public final class Client {{\n{members}\n}}");
-    java_file(&ctx.full_package, &[], &body)
+    let imports: Vec<String> = if with_default_headers {
+        vec!["java.util.LinkedHashMap".into(), "java.util.Map".into()]
+    } else {
+        Vec::new()
+    };
+    java_file(&ctx.full_package, &imports, &body)
 }

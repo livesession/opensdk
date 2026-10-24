@@ -375,20 +375,35 @@ pub fn client_py(spec: &Value, env_var: &str) -> String {
     out.push_str(&format!("from .resources import {imports}\n"));
     out.push('\n');
     out.push('\n');
+    // `default_headers` rides along only when the SDK carries sdk.defaultHeaders
+    // (the knob to override them per client); otherwise the constructor is the
+    // one it always was.
+    let with_default_headers =
+        !opensdk_core::behavior::default_headers(&opensdk_core::behavior::resolve_behavior(spec))
+            .is_empty();
     out.push_str("class Client:\n");
     out.push_str("    def __init__(\n");
     out.push_str("        self,\n");
     out.push_str("        api_key: Optional[str] = None,\n");
     out.push_str("        base_url: Optional[str] = None,\n");
     out.push_str("        timeout: Optional[float] = None,\n");
+    if with_default_headers {
+        out.push_str("        default_headers: Optional[dict[str, str]] = None,\n");
+    }
     out.push_str("    ) -> None:\n");
     out.push_str(&format!(
         "        key = api_key if api_key is not None else os.environ.get({})\n",
         pystr(env_var)
     ));
-    out.push_str(
-        "        self._transport = Transport(base_url=base_url, api_key=key, timeout=timeout)\n",
-    );
+    if with_default_headers {
+        out.push_str(
+            "        self._transport = Transport(\n            base_url=base_url, api_key=key, timeout=timeout, default_headers=default_headers\n        )\n",
+        );
+    } else {
+        out.push_str(
+            "        self._transport = Transport(base_url=base_url, api_key=key, timeout=timeout)\n",
+        );
+    }
     out.push_str(&attr_lines.join("\n"));
     out.push('\n');
     out

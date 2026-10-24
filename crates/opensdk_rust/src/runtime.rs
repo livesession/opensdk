@@ -214,7 +214,7 @@ fn constants_block(spec: &Value, behavior: &Value, crate_: &str, base_url: &str)
         })
         .unwrap_or_default();
 
-    let lines = [
+    let mut lines = vec![
         format!(
             "pub const DEFAULT_BASE_URL: &str = {};",
             rs_string(base_url)
@@ -263,17 +263,67 @@ fn constants_block(spec: &Value, behavior: &Value, crate_: &str, base_url: &str)
         ),
         format!("const AI_AGENT_ENV_VARS: &[(&str, &str)] = &[{ai_agents}];"),
     ];
+    // sdk.defaultHeaders — only when configured, so the no-headers runtime is
+    // byte-identical to what it was before the feature existed.
+    let headers = opensdk_core::behavior::default_headers(behavior);
+    if !headers.is_empty() {
+        let entries: Vec<String> = headers
+            .iter()
+            .map(|(name, value)| format!("({}, {})", rs_string(name), rs_string(value)))
+            .collect();
+        lines.push(format!(
+            "pub const DEFAULT_HEADERS: &[(&str, &str)] = &[{}];",
+            entries.join(", ")
+        ));
+    }
     lines.join("\n")
+}
+
+/// The five `__XYD_DEFAULT_HEADERS_*__` seams of the transport: the field, the
+/// `new` parameter, the merge of the per-client list over the built-in defaults
+/// (by name, case-insensitively), the struct literal, and the per-request
+/// application (skipping any header the request already carries, so a per-call
+/// header wins). All empty when `sdk.defaultHeaders` is not configured.
+fn default_headers_seams(behavior: &Value) -> [(&'static str, &'static str); 5] {
+    let configured = !opensdk_core::behavior::default_headers(behavior).is_empty();
+    let pick = |on: &'static str| if configured { on } else { "" };
+    [
+        (
+            "__XYD_DEFAULT_HEADERS_FIELD__",
+            pick("    default_headers: Vec<(String, String)>,\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_PARAM__",
+            pick(", default_headers: Vec<(String, String)>"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_INIT__",
+            pick(
+                "        let mut default_headers = default_headers;\n        for (name, value) in DEFAULT_HEADERS {\n            if !default_headers.iter().any(|(given, _)| given.eq_ignore_ascii_case(name)) {\n                default_headers.push((name.to_string(), value.to_string()));\n            }\n        }\n",
+            ),
+        ),
+        ("__XYD_DEFAULT_HEADERS_CTOR__", pick(", default_headers")),
+        (
+            "__XYD_DEFAULT_HEADERS_APPLY__",
+            pick(
+                "            for (key, value) in &self.transport.default_headers {\n                if !self.headers.iter().any(|(name, _)| name.eq_ignore_ascii_case(key)) {\n                    rb = rb.header(key.as_str(), value.as_str());\n                }\n            }\n",
+            ),
+        ),
+    ]
 }
 
 /// Emit `src/transport.rs` body: the async reqwest transport, request builder and
 /// Page (no ownership header — the caller's `with_header` prepends it).
 pub fn render_transport_file(spec: &Value, crate_: &str, base_url: &str) -> String {
     let behavior = resolve_behavior(spec);
-    TRANSPORT_TEMPLATE
+    let mut out = TRANSPORT_TEMPLATE
         .replace(
             "__XYD_CONSTANTS__",
             &constants_block(spec, &behavior, crate_, base_url),
         )
-        .replace("__XYD_AUTH__", &auth_statements(spec))
+        .replace("__XYD_AUTH__", &auth_statements(spec));
+    for (seam, text) in default_headers_seams(&behavior) {
+        out = out.replace(seam, text);
+    }
+    out
 }

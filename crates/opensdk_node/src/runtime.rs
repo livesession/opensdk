@@ -341,7 +341,59 @@ fn constants_block(spec_json: &Value, behavior: &Value, base_url: &str, pkg: &st
             json_string(get_str(behavior, &["idempotency", "headerName"]))
         ),
     ]);
+    // sdk.defaultHeaders — only when configured, so the no-headers runtime is
+    // byte-identical to what it was before the feature existed.
+    let headers = opensdk_core::behavior::default_headers(behavior);
+    if !headers.is_empty() {
+        let entries: Vec<String> = headers
+            .iter()
+            .map(|(name, value)| format!("{}: {}", json_string(name), json_string(value)))
+            .collect();
+        lines.push(format!(
+            "const DEFAULT_HEADERS: Record<string, string> = {{ {} }};",
+            entries.join(", ")
+        ));
+    }
     lines.join("\n")
+}
+
+/// The four `__XYD_DEFAULT_HEADERS_*__` seams of the request module: the client
+/// option, the field, its construction, and the per-request application. All
+/// empty when `sdk.defaultHeaders` is not configured.
+///
+/// Layering, lowest to highest: the SDK's built-in `DEFAULT_HEADERS`, the
+/// client's `defaultHeaders` option, then the per-call headers (the resource
+/// method's and the caller's `RequestOptions`), which `request()` assigns after
+/// this block — so a per-call header always wins.
+fn default_headers_seams(behavior: &Value) -> [(&'static str, String); 4] {
+    let configured = !opensdk_core::behavior::default_headers(behavior).is_empty();
+    let pick = |on: &str| -> String {
+        if configured {
+            on.to_string()
+        } else {
+            String::new()
+        }
+    };
+    [
+        (
+            "__XYD_DEFAULT_HEADERS_OPTION__",
+            pick(
+                "  /** Headers sent on every request, layered over the SDK's built-in defaults; per-call headers override both. */\n  defaultHeaders?: Record<string, string>;\n",
+            ),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_FIELD__",
+            pick("  protected readonly defaultHeaders: Record<string, string>;\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_INIT__",
+            pick("    this.defaultHeaders = { ...DEFAULT_HEADERS, ...(options.defaultHeaders ?? {}) };\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_APPLY__",
+            pick("    assignHeaders(headers, this.defaultHeaders);\n"),
+        ),
+    ]
 }
 
 fn request_ts(spec_json: &Value, behavior: &Value, base_url: &str, pkg: &str) -> String {
@@ -357,12 +409,16 @@ fn request_ts(spec_json: &Value, behavior: &Value, base_url: &str, pkg: &str) ->
         String::new()
     };
 
-    REQUEST_TEMPLATE
+    let mut out = REQUEST_TEMPLATE
         .replace(
             "__XYD_CONSTANTS__",
             &constants_block(spec_json, behavior, base_url, pkg),
         )
         .replace("__XYD_RUNTIME_VERSION__", &runtime_version)
         .replace("__XYD_TIMEOUT_BODY__", &timeout_body)
-        .replace("__XYD_AUTH__", &auth_statement(spec_json))
+        .replace("__XYD_AUTH__", &auth_statement(spec_json));
+    for (seam, text) in default_headers_seams(behavior) {
+        out = out.replace(seam, &text);
+    }
+    out
 }

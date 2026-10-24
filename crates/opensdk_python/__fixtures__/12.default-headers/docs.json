@@ -1,0 +1,40 @@
+{
+  "chain": [
+    "gadgets"
+  ],
+  "action": "list",
+  "usage": "import os\n\nfrom widgetco import Client\n\nclient = Client(\n    api_key=os.environ.get(\"WIDGETCO_API_KEY\"),\n)\n\nresult = client.gadgets.list(limit=10, cursor=\"cur_abc\")\nprint(result)\n",
+  "typeReference": {
+    "signature": "client.gadgets.list(limit=..., cursor=...) -> GadgetList",
+    "request": {
+      "fields": [
+        {
+          "name": "limit",
+          "langType": "Optional[int]",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "langType": "Optional[str]",
+          "required": false
+        }
+      ]
+    },
+    "response": {
+      "typeName": "GadgetList",
+      "fields": [
+        {
+          "name": "data",
+          "langType": "list[Gadget]",
+          "required": true
+        },
+        {
+          "name": "list",
+          "langType": "ListInfo",
+          "required": true,
+          "refTypeName": "ListInfo"
+        }
+      ]
+    }
+  }
+}
