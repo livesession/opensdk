@@ -291,17 +291,14 @@ pub fn generate_targets(
         sdk: config.sdk.clone(),
         ..opts.inputs.clone()
     };
-    let mut ir = load_ir(&opts.spec, &converter_options(&inputs, cwd)?)?;
+    let source = load_source(&opts.spec, &converter_options(&inputs, cwd)?)?;
+    let mut ir = source.ir.clone();
     // Snapshot the converter's info so each language re-derives identity from a
     // clean base (a per-language publish never leaks into the next language).
     let base_info = ir.get("info").cloned().unwrap_or(Value::Null);
     for lang in sdk_langs {
         let target = config.target_for(lang);
-        let behavior = merge_behavior_overrides(&[
-            config.sdk.as_ref(),
-            target.and_then(|t| t.behavior.as_ref()),
-        ]);
-        set_key(&mut ir, "sdk", behavior);
+        restamp_behavior(&mut ir, &source, target.and_then(|t| t.behavior.as_ref()));
         let publish = merge_publish_targets(&[
             config.publish.as_ref(),
             target.and_then(|t| t.publish.as_ref()),
@@ -333,20 +330,73 @@ pub fn generate_targets(
     Ok(())
 }
 
+/// What `--spec` resolved to: the IR every emitter consumes and, when the
+/// source was an OpenAPI document rather than a pre-parsed IR, that document.
+///
+/// The document is kept because one behavior key is resolved AGAINST it:
+/// `headersFromExtension` names an `x-*` extension whose value becomes a
+/// default header. The converter resolves the global block; a per-language
+/// `behavior` layer re-stamped later needs the document again
+/// ([`restamp_behavior`]).
+#[derive(Debug, Clone)]
+pub struct LoadedSource {
+    pub ir: Value,
+    /// `None` when `--spec` was an OpenSDK IR (`.json` carrying `opensdk`).
+    pub doc: Option<Value>,
+}
+
 /// Accept either an OpenAPI spec (yaml/json) or an already-parsed OpenSDK IR json.
-pub fn load_ir(source: &str, options: &Map<String, Value>) -> Result<Value> {
+pub fn load_source(source: &str, options: &Map<String, Value>) -> Result<LoadedSource> {
     if source.ends_with(".json") {
         let raw = std::fs::read_to_string(source)
             .map_err(|e| Error::msg(format!("read {source}: {e}")))?;
         let doc: Value =
             serde_json::from_str(&raw).map_err(|e| Error::msg(format!("parse {source}: {e}")))?;
         if doc.get("opensdk").and_then(Value::as_str).is_some() {
-            return Ok(doc);
+            return Ok(LoadedSource { ir: doc, doc: None });
         }
-        return convert(&doc, options);
+        let ir = convert(&doc, options)?;
+        return Ok(LoadedSource { ir, doc: Some(doc) });
     }
     let doc = oas_doc::read_spec(source).map_err(|e| Error::msg(e.to_string()))?;
-    convert(&doc, options)
+    let ir = convert(&doc, options)?;
+    Ok(LoadedSource { ir, doc: Some(doc) })
+}
+
+/// [`load_source`] for callers that want only the IR.
+pub fn load_ir(source: &str, options: &Map<String, Value>) -> Result<Value> {
+    load_source(source, options).map(|s| s.ir)
+}
+
+/// Stamp one language's effective behavior onto `ir.sdk`.
+///
+/// The base is the CONVERTER's resolved block (`source.ir.sdk`: the defaults,
+/// the global overrides, and the global `headersFromExtension` already resolved
+/// against the document), so nothing the conversion computed is lost; the
+/// language's `behavior` layer is deep-merged over it (its `pagination: "none"`
+/// shorthand expanded first, like every other layer). When the document is at
+/// hand, `headersFromExtension` is resolved again so an entry the LANGUAGE
+/// layer adds reaches `defaultHeaders` too; from a pre-parsed IR there is no
+/// document, and only the already-resolved global headers survive.
+///
+/// Emitters read `sdk` through `resolve_behavior` (defaults ⊕ `sdk`), so a
+/// fully-populated block and an override-only one emit the same bytes.
+pub fn restamp_behavior(ir: &mut Value, source: &LoadedSource, lang_behavior: Option<&Value>) {
+    let mut behavior = source
+        .ir
+        .get("sdk")
+        .filter(|s| s.is_object())
+        .cloned()
+        .unwrap_or_else(|| Value::Object(Map::new()));
+    if let Some(layer) = lang_behavior {
+        let mut layer = layer.clone();
+        opensdk_core::behavior::normalize_behavior_shorthands(&mut layer);
+        behavior = deep_merge(&behavior, &layer);
+    }
+    if let Some(doc) = source.doc.as_ref() {
+        openapi2opensdk::resolve_headers_from_extension(&mut behavior, doc);
+    }
+    set_key(ir, "sdk", behavior);
 }
 
 fn convert(doc: &Value, options: &Map<String, Value>) -> Result<Value> {

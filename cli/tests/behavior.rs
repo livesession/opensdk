@@ -15,7 +15,7 @@ use serde_json::{json, Map, Value};
 use opensdk::cli_targets::{
     cli_backend_keys, generate_cli_target, is_cli_target, CliTargetOptions, CLI_CONVERTER_KEYS,
 };
-use opensdk::config::resolve_config;
+use opensdk::config::{resolve_config, ResolvedConfig};
 use opensdk::diff::{diff_command, DiffCommandOptions, DiffFailOn};
 use opensdk::exec::EmitterPublishOptions;
 use opensdk::generate::{
@@ -923,11 +923,15 @@ fn init_scaffolds_the_mjs_bundle_with_format_mjs() {
 fn xsdk_writes_an_enriched_spec_with_root_and_per_operation_artifacts() {
     let dir = tmp("xsdk");
     let out = dir.join("enriched.json").to_string_lossy().to_string();
-    xsdk_command(&XsdkCommandOptions {
-        spec: spec(),
-        output: Some(out.clone()),
-        langs: None,
-    })
+    xsdk_command(
+        &XsdkCommandOptions {
+            spec: spec(),
+            output: Some(out.clone()),
+            langs: None,
+            ..Default::default()
+        },
+        &dir,
+    )
     .unwrap();
     let doc: Value = serde_json::from_str(&std::fs::read_to_string(&out).unwrap()).unwrap();
     assert_eq!(
@@ -958,11 +962,15 @@ fn xsdk_writes_an_enriched_spec_with_root_and_per_operation_artifacts() {
 fn xsdk_honors_langs_and_picks_yaml_output_from_the_extension() {
     let dir = tmp("xsdk-yaml");
     let out = dir.join("enriched.yaml").to_string_lossy().to_string();
-    xsdk_command(&XsdkCommandOptions {
-        spec: spec(),
-        output: Some(out.clone()),
-        langs: Some(vec!["go".into(), "python".into()]),
-    })
+    xsdk_command(
+        &XsdkCommandOptions {
+            spec: spec(),
+            output: Some(out.clone()),
+            langs: Some(vec!["go".into(), "python".into()]),
+            ..Default::default()
+        },
+        &dir,
+    )
     .unwrap();
     let raw = std::fs::read_to_string(&out).unwrap();
     let doc: Value = serde_yaml::from_str(&raw).unwrap();
@@ -978,6 +986,181 @@ fn xsdk_honors_langs_and_picks_yaml_output_from_the_extension() {
     assert_eq!(keys, vec!["go", "python"]);
     // The enriched spec must remain a VALID spec: $refs survive as maps, not anchors.
     assert!(!raw.contains("&ref"), "yaml anchors leaked");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+/// The widget catalogue (the converter's `10.pagination-hint` fixture): a list
+/// with top-level markers (`GET /widgets`), one that nests them under `list`
+/// (`GET /gadgets`), a bearer scheme, and `info.x-release`.
+fn widgetco_spec() -> String {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../crates/openapi2opensdk/__fixtures__/10.pagination-hint/input.json")
+        .canonicalize()
+        .expect("widgetco fixture")
+        .to_string_lossy()
+        .to_string()
+}
+
+/// The converter inputs `dispatch` derives from a resolved config.
+fn inputs_from(config: &ResolvedConfig) -> ConverterInputs {
+    ConverterInputs {
+        sdk_name: config.sdk_name.clone(),
+        mount_rules: config.mount_rules.clone(),
+        operation_hints: config.operation_hints.clone(),
+        grouping: None,
+        sdk: config.sdk.clone(),
+    }
+}
+
+#[test]
+fn xsdk_with_a_config_documents_the_configured_sdk() {
+    let dir = tmp("xsdk-config");
+    write(
+        &dir,
+        "sdk.json",
+        &json!({
+            "version": 1,
+            "sdkName": "Widgetco",
+            "grouping": { "operationHints": {
+                "GET /gadgets": { "pagination": false, "action": "search" }
+            } },
+            "typescript": { "packageName": "@acme/widgets", "output": "./ts" },
+            "python": { "packageName": "acme_widgets" },
+            "go": { "packageName": "widgets", "modulePath": "github.com/acme/widgets-go" },
+            "ruby": { "packageName": "acme-widgets", "moduleName": "AcmeWidgets" },
+            "java": { "packageName": "widgets", "basePackage": "com.acme" },
+            "csharp": { "namespace": "Acme.Widgets" }
+        }),
+    );
+    let config = resolve_config(&dir, None).unwrap().unwrap();
+    let out = dir.join("enriched.json").to_string_lossy().to_string();
+    xsdk_command(
+        &XsdkCommandOptions {
+            spec: widgetco_spec(),
+            output: Some(out.clone()),
+            langs: None,
+            inputs: inputs_from(&config),
+            config: Some(config),
+        },
+        &dir,
+    )
+    .unwrap();
+    let doc: Value = serde_json::from_str(&std::fs::read_to_string(&out).unwrap()).unwrap();
+    let gadgets = &doc["paths"]["/gadgets"]["get"]["x-sdk"];
+    let widgets = &doc["paths"]["/widgets"]["get"]["x-sdk"];
+    let usage = |lang: &str| gadgets[lang]["usage"].as_str().unwrap().to_string();
+
+    // The package identity each section configures, and the hinted method name.
+    let ts = usage("typescript");
+    assert!(ts.contains("from \"@acme/widgets\""), "{ts}");
+    assert!(ts.contains("client.gadgets.search("), "{ts}");
+    let py = usage("python");
+    assert!(py.contains("from acme_widgets import Client"), "{py}");
+    assert!(py.contains("client.gadgets.search("), "{py}");
+    let go = usage("go");
+    assert!(go.contains("\"github.com/acme/widgets-go\""), "{go}");
+    assert!(go.contains("client.Gadgets.Search("), "{go}");
+    let rb = usage("ruby");
+    assert!(rb.contains("require \"acme-widgets\""), "{rb}");
+    assert!(rb.contains("AcmeWidgets::Client.new("), "{rb}");
+    let java = usage("java");
+    assert!(java.contains("com.acme.widgets"), "{java}");
+    let cs = usage("csharp");
+    assert!(cs.contains("Acme.Widgets"), "{cs}");
+
+    // Every language reads the credential from the sdkName-derived variable;
+    // none pastes a literal.
+    for (lang, read) in [
+        ("typescript", "process.env[\"WIDGETCO_API_KEY\"]"),
+        ("python", "os.environ.get(\"WIDGETCO_API_KEY\")"),
+        ("go", "os.Getenv(\"WIDGETCO_API_KEY\")"),
+        ("ruby", "ENV[\"WIDGETCO_API_KEY\"]"),
+        ("java", "System.getenv(\"WIDGETCO_API_KEY\")"),
+        (
+            "csharp",
+            "Environment.GetEnvironmentVariable(\"WIDGETCO_API_KEY\")",
+        ),
+    ] {
+        let u = usage(lang);
+        assert!(u.contains(read), "{lang}: {u}");
+        assert!(!u.contains("My API Key"), "{lang}: {u}");
+    }
+
+    // The `pagination: false` hint: the gadgets list keeps its declared envelope
+    // in every signature, while the un-hinted widgets list is still a page.
+    for lang in ["typescript", "python", "go", "ruby", "java", "csharp"] {
+        let sig = gadgets[lang]["signature"].as_str().unwrap();
+        assert!(sig.contains("GadgetList"), "{lang}: {sig}");
+        assert!(!sig.contains("Page"), "{lang}: {sig}");
+        let wsig = widgets[lang]["signature"].as_str().unwrap();
+        assert!(wsig.contains("Page"), "{lang}: {wsig}");
+    }
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn multi_target_resolves_default_headers_per_language_against_the_document() {
+    let dir = tmp("sdkjson-headers");
+    let out = dir.join("out");
+    write(
+        &dir,
+        "sdk.json",
+        &json!({
+            "version": 1,
+            "sdkName": "Widgetco",
+            "behavior": {
+                "defaultHeaders": { "X-Some-Version": "1.0" },
+                "headersFromExtension": { "X-Release": "x-release" }
+            },
+            "typescript": {
+                "output": out.join("ts").to_string_lossy(),
+                "behavior": {
+                    "defaultHeaders": { "X-Only-Ts": "yes" },
+                    "headersFromExtension": { "X-Flavor": "x-release" }
+                }
+            },
+            "go": { "modulePath": "github.com/acme/widgets-go",
+                    "output": out.join("go").to_string_lossy() }
+        }),
+    );
+    let config = resolve_config(&dir, None).unwrap().unwrap();
+    generate_targets(
+        &GenerateTargetsOptions {
+            inputs: inputs_from(&config),
+            spec: widgetco_spec(),
+            output: out.to_string_lossy().to_string(),
+            ..Default::default()
+        },
+        &config,
+        &dir,
+    )
+    .unwrap();
+    // TypeScript: the global static header, the global extension header, and
+    // both of its own — the per-language extension entry is resolved against
+    // the document too.
+    let ts = read(&out, "ts/src/core/request.ts");
+    for pair in [
+        "\"X-Some-Version\": \"1.0\"",
+        "\"X-Release\": \"2024-10-01\"",
+        "\"X-Only-Ts\": \"yes\"",
+        "\"X-Flavor\": \"2024-10-01\"",
+    ] {
+        assert!(ts.contains(pair), "{pair}\n{ts}");
+    }
+    // Go: only the global pair — a sibling's layer never leaks.
+    let go = read(&out, "go/internal/requestconfig/config.go");
+    assert!(
+        go.contains("\"X-Some-Version\":") && go.contains("\"1.0\""),
+        "{go}"
+    );
+    assert!(
+        go.contains("\"X-Release\":") && go.contains("\"2024-10-01\""),
+        "{go}"
+    );
+    assert!(
+        !go.contains("X-Only-Ts") && !go.contains("X-Flavor"),
+        "{go}"
+    );
     std::fs::remove_dir_all(&dir).ok();
 }
 
