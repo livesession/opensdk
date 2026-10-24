@@ -1,0 +1,16 @@
+{
+  "sdkName": "Widgetco",
+  "operationHints": {
+    "GET /gadgets": {
+      "pagination": false
+    }
+  },
+  "sdkBehavior": {
+    "defaultHeaders": {
+      "X-Some-Version": "1.0"
+    },
+    "headersFromExtension": {
+      "X-Release": "x-release"
+    }
+  }
+}

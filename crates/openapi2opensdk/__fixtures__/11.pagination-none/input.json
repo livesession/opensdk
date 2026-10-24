@@ -1,0 +1,215 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Widgetco",
+    "version": "2.3.0",
+    "description": "A widget catalogue whose list responses nest their paging markers under `list`.",
+    "x-release": "2024-10-01"
+  },
+  "servers": [
+    {
+      "url": "https://api.widgetco.test/v2"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Widget": {
+        "type": "object",
+        "description": "A widget in the catalogue.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wgt_1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Sprocket"
+          },
+          "weight_grams": {
+            "type": "integer",
+            "example": 120
+          }
+        }
+      },
+      "ListInfo": {
+        "type": "object",
+        "description": "Paging markers, nested beside the items.",
+        "required": [
+          "has_more"
+        ],
+        "properties": {
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "WidgetList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Widget"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Gadget": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "gdt_1"
+          },
+          "label": {
+            "type": "string",
+            "example": "Flux capacitor"
+          }
+        }
+      },
+      "GadgetList": {
+        "type": "object",
+        "required": [
+          "data",
+          "list"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Gadget"
+            }
+          },
+          "list": {
+            "$ref": "#/components/schemas/ListInfo"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/widgets": {
+      "get": {
+        "operationId": "listWidgets",
+        "summary": "List widgets",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 20
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "wgt_0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of widgets with top-level markers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WidgetList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets/{widget_id}": {
+      "get": {
+        "operationId": "getWidget",
+        "summary": "Retrieve a widget",
+        "parameters": [
+          {
+            "name": "widget_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "wgt_1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The widget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Widget"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gadgets": {
+      "get": {
+        "operationId": "listGadgets",
+        "summary": "List gadgets",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 10
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "cur_abc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of gadgets with its `list` block.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GadgetList"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

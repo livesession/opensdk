@@ -37,6 +37,10 @@ pub struct VerbMap {
 pub struct OperationHint {
     pub mount_on: Option<String>,
     pub action: Option<String>,
+    /// `false`: keep this operation's declared response type (no `Page<T>`
+    /// wrap); `true`: force the pagination heuristic even when
+    /// `sdkBehavior.pagination.mode` is `"none"`. Absent: the mode decides.
+    pub pagination: Option<bool>,
 }
 
 #[derive(Deserialize, Default)]

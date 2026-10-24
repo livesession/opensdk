@@ -79,6 +79,12 @@ pub struct OperationHint {
     /// Override the derived action verb.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
+    /// Pagination detection for this one operation: `false` keeps the declared
+    /// response type as is (no `Page<T>` wrap, the whole envelope survives),
+    /// `true` forces the heuristic even under `behavior.pagination.mode:
+    /// "none"`. Absent = the behavior-level mode decides.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pagination: Option<bool>,
 }
 
 /// A publish target: how one language's generated SDK is published to its
@@ -525,6 +531,32 @@ mod tests {
         let hint = &g.operation_hints.as_ref().unwrap()["POST /threads/runs"];
         assert_eq!(hint.mount_on.as_deref(), Some("beta/threads"));
         assert_eq!(hint.action.as_deref(), Some("new-and-run"));
+        assert_eq!(hint.pagination, None);
+    }
+
+    #[test]
+    fn the_pagination_hint_round_trips_and_is_absent_by_default() {
+        let g: SdkGrouping = serde_json::from_value(json!({
+            "operationHints": {
+                "GET /widgets": { "pagination": false },
+                "GET /gadgets": { "pagination": true, "action": "search" }
+            }
+        }))
+        .unwrap();
+        let hints = g.operation_hints.as_ref().unwrap();
+        assert_eq!(hints["GET /widgets"].pagination, Some(false));
+        assert_eq!(hints["GET /gadgets"].pagination, Some(true));
+        assert_eq!(hints["GET /gadgets"].action.as_deref(), Some("search"));
+        // Serializes back to exactly the keys that were set — the converter's
+        // twin reads this same shape off the options bag.
+        assert_eq!(
+            serde_json::to_value(&hints["GET /widgets"]).unwrap(),
+            json!({ "pagination": false })
+        );
+        assert_eq!(
+            serde_json::to_value(OperationHint::default()).unwrap(),
+            json!({})
+        );
     }
 
     #[test]

@@ -24,7 +24,7 @@ use nominal::SymbolTable;
 use resource_tree::ResourceTree;
 use security::security_schemes;
 
-pub use behavior::{default_sdk_behavior, merge_sdk_behavior};
+pub use behavior::{default_sdk_behavior, merge_sdk_behavior, resolve_headers_from_extension};
 pub use model::Spec as OpensdkSpec;
 pub use options::Options;
 
@@ -151,6 +151,7 @@ fn apply_mounts(
     if let Some(action) = hint.and_then(|h| h.action.as_deref()) {
         target.action = kebab_case(action);
     }
+    target.pagination = hint.and_then(|h| h.pagination);
 
     // A spec-level group override supersedes config remapping entirely.
     let hint_mounted = hint.map(|h| h.mount_on.is_some()).unwrap_or(false);
@@ -258,8 +259,11 @@ pub fn openapi2opensdk(doc: &Value, options: Option<Options>) -> Result<Spec, Er
         .unwrap_or_default();
     let security = security_schemes(doc, &sdk_name, options.auth_env_var.as_deref());
 
-    // The effective runtime behavior (idempotency policy steers param handling).
-    let sdk = merge_sdk_behavior(options.sdk_behavior.as_ref());
+    // The effective runtime behavior (idempotency policy steers param handling;
+    // `pagination.mode` gates the heuristic; `headersFromExtension` is resolved
+    // against this document into `defaultHeaders`).
+    let mut sdk = merge_sdk_behavior(options.sdk_behavior.as_ref());
+    resolve_headers_from_extension(&mut sdk, doc);
 
     let mut symbols = SymbolTable::new(doc);
     let mut tree = ResourceTree::new();

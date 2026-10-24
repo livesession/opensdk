@@ -1,0 +1,11 @@
+{
+  "sdkName": "Widgetco",
+  "operationHints": {
+    "GET /widgets": {
+      "pagination": true
+    }
+  },
+  "sdkBehavior": {
+    "pagination": "none"
+  }
+}
