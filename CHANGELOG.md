@@ -26,6 +26,17 @@ on their GitHub release pages.
   `default_headers` / `defaultHeader(..)` / `default_header(..)`). The
   multi-target `generate` re-resolves a per-language layer's extension headers
   against the document.
+- A per-language `behavior` layer is applied by running the converter again for
+  that language (multi-target `generate` and `xsdk` alike), so the keys the
+  converter decides on — `pagination`, `idempotency`, `headersFromExtension` —
+  take effect per language exactly as on `generate --lang`; the `pagination`
+  shorthand is expanded in every layer before the layers merge. A `null` under
+  `defaultHeaders` cancels a header whether it is static or extension-derived.
+- `generate` from a pre-parsed IR (`--spec ir.json`) applies the config's
+  `behavior` (global and per-language) over the IR's `sdk` block on both the
+  single- and the multi-target path; `headersFromExtension` entries the IR
+  carries no value for are reported, there being no document to resolve them
+  against.
 - The Go usage sample reads the credential from the environment
   (`os.Getenv("<SDKNAME>_API_KEY")`) like the other five languages; no sample
   pastes a literal key.

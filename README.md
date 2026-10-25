@@ -58,7 +58,11 @@ One file drives `generate`, `publish` and `xsdk`. The top-level keys are
 `behavior`, `grouping` and `publish`; every other top-level object is a
 language section (`typescript`, `python`, `go`, `ruby`, `java`, `csharp`,
 `rust`, `go-cli`, `rust-cli`) carrying that emitter's options plus an optional
-`output`, `behavior` (a per-language override) and `publish`.
+`output`, `behavior` (a per-language override) and `publish`. A per-language
+`behavior` is layered over the top-level one and applied by running the
+converter again for that language, so it may set any key — the ones the
+converter decides on (`pagination`, `idempotency`, `headersFromExtension`)
+included.
 
 ```jsonc
 {
@@ -98,7 +102,8 @@ of the declared response type, so sibling fields of the envelope (a nested
 reachable from the typed return. `operationHints["GET /x"].pagination: false`
 keeps that one operation's declared type; `behavior.pagination: "none"` turns
 the heuristic off for every operation (a hint of `true` re-enables it for
-one). The hint is honoured by every emitter and by the docs samples.
+one), at the top level or in one language's `behavior`. The hint is honoured by
+every emitter and by the docs samples.
 
 **Default headers.** `behavior.defaultHeaders` is a static map; each entry of
 `behavior.headersFromExtension` names a header and the `x-*` extension (read
@@ -109,7 +114,11 @@ per-call headers, and every client exposes an override (`defaultHeaders` on the
 TypeScript/Python/C# client, `default_headers:` in Ruby, `defaultHeader(name,
 value)` on the Java builder, `default_header(name, value)` on the Rust
 builder; Go's `option.WithHeader` already wins over an SDK default). A
-per-language `behavior` layer may add or cancel entries (`null` drops one).
+per-language `behavior` layer may add or cancel entries: `null` drops one,
+whether it is static or comes from an extension. Generating from a pre-parsed
+IR (`--spec ir.json`) still applies the config's `behavior`, but there is no
+document to read `headersFromExtension` from — a header the IR does not already
+carry is not sent, and `generate` says so.
 
 **Docs samples (`xsdk`).** `opensdk xsdk --config sdk.json --spec openapi.yaml
 --output openapi.sdk.yaml` embeds an `x-sdk` block per operation. The docs
