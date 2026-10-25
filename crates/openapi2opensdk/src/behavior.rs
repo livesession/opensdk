@@ -117,10 +117,14 @@ pub fn merge_sdk_behavior(overrides: Option<&Value>) -> Value {
 /// string, number or boolean value becomes the header's value. A PRESENT
 /// extension wins over a static `defaultHeaders` entry of the same name — the
 /// static value is the fallback for a document that lacks the extension — and an
-/// absent or non-scalar extension changes nothing.
+/// absent or non-scalar extension changes nothing. An explicit `null` under
+/// `defaultHeaders` is a tombstone: that header is cancelled, extension or not
+/// (the way a per-language layer drops an inherited entry), and the `null` is
+/// left in place so the emitters skip it and a later pass sees the same
+/// cancellation.
 ///
-/// Public because the CLI re-stamps the IR's `sdk` block per language after the
-/// conversion and must re-resolve against the same document.
+/// Public so a caller holding an IR and its document can re-resolve a `sdk`
+/// block it has layered more behavior onto.
 pub fn resolve_headers_from_extension(sdk: &mut Value, doc: &Value) {
     let Some(from_ext) = sdk
         .get("headersFromExtension")
@@ -135,6 +139,9 @@ pub fn resolve_headers_from_extension(sdk: &mut Value, doc: &Value) {
         .cloned()
         .unwrap_or_default();
     for (header, ext) in &from_ext {
+        if matches!(headers.get(header), Some(Value::Null)) {
+            continue;
+        }
         let Some(ext) = ext.as_str().filter(|e| !e.is_empty()) else {
             continue;
         };
@@ -196,6 +203,32 @@ mod tests {
                 "X-Num": "7"
             })
         );
+    }
+
+    #[test]
+    fn a_null_default_header_cancels_the_extension_entry_too() {
+        let doc = json!({ "info": { "title": "t", "x-release": "2024-10-01" } });
+        let mut sdk = json!({
+            "defaultHeaders": { "X-Release": null, "X-Keep": "k" },
+            "headersFromExtension": { "X-Release": "x-release", "X-Other": "x-release" }
+        });
+        resolve_headers_from_extension(&mut sdk, &doc);
+        // The tombstone stays (the emitters drop a null), the sibling resolves.
+        assert_eq!(
+            sdk["defaultHeaders"],
+            json!({ "X-Release": null, "X-Keep": "k", "X-Other": "2024-10-01" })
+        );
+        assert_eq!(
+            opensdk_core::behavior::default_headers(&sdk),
+            vec![
+                ("X-Keep".to_string(), "k".to_string()),
+                ("X-Other".to_string(), "2024-10-01".to_string()),
+            ]
+        );
+        // Resolving twice is the same as once.
+        let again = sdk.clone();
+        resolve_headers_from_extension(&mut sdk, &doc);
+        assert_eq!(sdk, again);
     }
 
     #[test]
