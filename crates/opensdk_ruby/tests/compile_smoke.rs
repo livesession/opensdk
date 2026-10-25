@@ -111,3 +111,46 @@ fn default_headers_sdk_compiles() {
     }
     compile_case("12.default-headers");
 }
+
+// The knob the Client exposes when the SDK carries default headers: a
+// per-client `default_headers:` must reach the Transport, win over the built-in
+// entry of the same name and keep the others. `ruby -c` cannot see that, so this
+// one RUNS the generated code.
+#[test]
+fn default_headers_knob_reaches_the_transport() {
+    if gated_skip() {
+        return;
+    }
+    let input = fixtures_dir().join("12.default-headers").join("input.json");
+    let ir: Value = serde_json::from_str(
+        &std::fs::read_to_string(&input)
+            .unwrap_or_else(|e| panic!("read {}: {e}", input.display())),
+    )
+    .expect("parse IR");
+    let dir = std::env::temp_dir().join("xyd_rb_smoke_12_knob");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    write_project(&generate_ruby(&ir), &dir);
+
+    let script = r#"
+require "widgetco"
+client = Widgetco::Client.new(api_key: "k", default_headers: { "X-Some-Version" => "9.9", "X-Extra" => "e" })
+headers = client.instance_variable_get(:@transport).instance_variable_get(:@default_headers)
+expected = { "X-Some-Version" => "9.9", "X-Release" => "2024-10-01", "X-Extra" => "e" }
+abort("default headers: #{headers.inspect}") unless headers == expected
+plain = Widgetco::Client.new(api_key: "k").instance_variable_get(:@transport).instance_variable_get(:@default_headers)
+abort("built-in defaults: #{plain.inspect}") unless plain == Widgetco::DEFAULT_HEADERS
+"#;
+    let out = std::process::Command::new("ruby")
+        .args(["-Ilib", "-e", script])
+        .current_dir(&dir)
+        .output()
+        .expect("run ruby");
+    let _ = std::fs::remove_dir_all(&dir);
+    assert!(
+        out.status.success(),
+        "the default_headers: knob is not wired:\n{}\n{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+}

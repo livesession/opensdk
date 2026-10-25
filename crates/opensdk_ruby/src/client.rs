@@ -22,11 +22,25 @@ pub fn render_client_file(spec: &Value, module_name: &str, env_var: &str) -> Str
         members.push(format!("attr_reader {}", readers.join(", ")));
     }
 
+    // `default_headers:` rides along only when the SDK carries sdk.defaultHeaders
+    // (the knob to override them per client, handed straight to the Transport);
+    // otherwise the constructor is the one it always was.
+    let with_default_headers =
+        !opensdk_core::behavior::default_headers(&opensdk_core::behavior::resolve_behavior(spec))
+            .is_empty();
+    let (ctor_param, transport_arg) = if with_default_headers {
+        (
+            ", default_headers: nil",
+            ", default_headers: default_headers",
+        )
+    } else {
+        ("", "")
+    };
     let mut ctor = vec![
-        "def initialize(api_key: nil, base_url: nil, timeout: nil)".to_string(),
+        format!("def initialize(api_key: nil, base_url: nil, timeout: nil{ctor_param})"),
         indent(&format!("api_key = ENV[{}] if api_key.nil?", rb_string(env_var))),
         indent(&format!(
-            "@transport = {module_name}::Transport.new(api_key: api_key, base_url: base_url, timeout: timeout)"
+            "@transport = {module_name}::Transport.new(api_key: api_key, base_url: base_url, timeout: timeout{transport_arg})"
         )),
     ];
     for r in &resources {

@@ -5,9 +5,9 @@ module Widgetco
   class Client
     attr_reader :gadgets, :widgets
 
-    def initialize(api_key: nil, base_url: nil, timeout: nil)
+    def initialize(api_key: nil, base_url: nil, timeout: nil, default_headers: nil)
       api_key = ENV["WIDGETCO_API_KEY"] if api_key.nil?
-      @transport = Widgetco::Transport.new(api_key: api_key, base_url: base_url, timeout: timeout)
+      @transport = Widgetco::Transport.new(api_key: api_key, base_url: base_url, timeout: timeout, default_headers: default_headers)
       @gadgets = Widgetco::Resources::Gadgets.new(@transport)
       @widgets = Widgetco::Resources::Widgets.new(@transport)
     end
