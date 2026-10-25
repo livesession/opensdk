@@ -6,7 +6,7 @@ use std::path::Path;
 use serde_json::{Map, Value};
 
 use opensdk_config::{merge_publish_targets, PublishTarget};
-use opensdk_core::behavior::deep_merge;
+use opensdk_core::behavior::{deep_merge, normalize_behavior_shorthands};
 use opensdk_core::emitter::{GeneratedFile, WriteMode as CoreWriteMode};
 use opensdk_framework::{write_project, FileEntry, FileMap, WriteMode, WriteProjectOptions};
 
@@ -19,7 +19,9 @@ use crate::registry::{get_emitter, resolve_lang};
 use crate::write_report::report_write_result;
 
 /// `mergeBehaviorOverrides(...layers)` — deep-merge behavior layers, skipping
-/// absent ones; arrays and scalars replace.
+/// absent ones; arrays and scalars replace. Each layer's shorthands
+/// (`pagination: "none"`) are expanded first, so a shorthand in one layer and
+/// the object form in the next MERGE instead of one replacing the other.
 ///
 /// Not in `opensdk_config` (which only ports `config.ts`), so it is folded
 /// here over `opensdk_core::behavior::deep_merge` — the same primitive the
@@ -27,7 +29,9 @@ use crate::write_report::report_write_result;
 pub fn merge_behavior_overrides(layers: &[Option<&Value>]) -> Value {
     let mut out = Value::Object(Map::new());
     for layer in layers.iter().flatten() {
-        out = deep_merge(&out, layer);
+        let mut layer = (*layer).clone();
+        normalize_behavior_shorthands(&mut layer);
+        out = deep_merge(&out, &layer);
     }
     out
 }
@@ -185,7 +189,12 @@ pub fn generate_command(opts: &GenerateCommandOptions, cwd: &Path) -> Result<()>
             cwd,
         );
     }
-    let mut ir = load_ir(&opts.spec, &converter_options(&opts.inputs, cwd)?)?;
+    // `inputs.sdk` is the caller's merged behavior (global ⊕ the language's
+    // layer). The converter applies it to a document; a pre-parsed IR gets it
+    // stamped onto its `sdk` block instead, so both sources honour the config.
+    let converter = converter_options(&opts.inputs, cwd)?;
+    let source = load_source(&opts.spec, &converter)?;
+    let mut ir = ir_for_language(&source, &converter, opts.inputs.sdk.as_ref(), None)?;
     let info = apply_publish_identity(
         ir.get("info").unwrap_or(&Value::Null),
         opts.publish.as_ref(),
@@ -230,12 +239,12 @@ pub struct GenerateTargetsOptions {
 
 /// `opensdk generate` (no `--lang`) — MULTI target.
 ///
-/// Converts the spec ONCE (with the global behavior) then emits every declared
-/// language, re-stamping `ir.sdk` per language so per-language behavior
-/// overrides land. Emitters read the behavior lazily at emit time, so the
-/// re-stamp is sufficient — no re-conversion. Caveat (inherited from the TS):
-/// idempotency param-stripping is baked at convert time, so it always uses the
-/// GLOBAL behavior.
+/// Converts the spec once with the global behavior, then emits every declared
+/// language from [`ir_for_language`]: the global conversion for a language
+/// without a `behavior` layer, a second conversion with the merged block for one
+/// that has a layer (so the keys the CONVERTER reads — `pagination.mode`,
+/// `idempotency`, `headersFromExtension` — hold per language, exactly as on
+/// `generate --lang`), or the stamped IR when `--spec` was a pre-parsed IR.
 pub fn generate_targets(
     opts: &GenerateTargetsOptions,
     config: &ResolvedConfig,
@@ -291,19 +300,23 @@ pub fn generate_targets(
         sdk: config.sdk.clone(),
         ..opts.inputs.clone()
     };
-    let source = load_source(&opts.spec, &converter_options(&inputs, cwd)?)?;
-    let mut ir = source.ir.clone();
-    // Snapshot the converter's info so each language re-derives identity from a
-    // clean base (a per-language publish never leaks into the next language).
-    let base_info = ir.get("info").cloned().unwrap_or(Value::Null);
+    let converter = converter_options(&inputs, cwd)?;
+    let source = load_source(&opts.spec, &converter)?;
     for lang in sdk_langs {
         let target = config.target_for(lang);
-        restamp_behavior(&mut ir, &source, target.and_then(|t| t.behavior.as_ref()));
+        // A fresh IR per language: its `info` is the converter's, so a
+        // per-language publish identity never leaks into the next language.
+        let mut ir = ir_for_language(
+            &source,
+            &converter,
+            config.sdk.as_ref(),
+            target.and_then(|t| t.behavior.as_ref()),
+        )?;
         let publish = merge_publish_targets(&[
             config.publish.as_ref(),
             target.and_then(|t| t.publish.as_ref()),
         ]);
-        let info = apply_publish_identity(&base_info, publish.as_ref());
+        let info = apply_publish_identity(ir.get("info").unwrap_or(&Value::Null), publish.as_ref());
         set_key(&mut ir, "info", info);
 
         let output = target
@@ -333,11 +346,10 @@ pub fn generate_targets(
 /// What `--spec` resolved to: the IR every emitter consumes and, when the
 /// source was an OpenAPI document rather than a pre-parsed IR, that document.
 ///
-/// The document is kept because one behavior key is resolved AGAINST it:
-/// `headersFromExtension` names an `x-*` extension whose value becomes a
-/// default header. The converter resolves the global block; a per-language
-/// `behavior` layer re-stamped later needs the document again
-/// ([`restamp_behavior`]).
+/// The document is kept because a per-language `behavior` layer is applied by
+/// running the converter AGAIN over it with the merged block
+/// ([`ir_for_language`]); a pre-parsed IR has no document, so its layers are
+/// stamped onto the IR instead.
 #[derive(Debug, Clone)]
 pub struct LoadedSource {
     pub ir: Value,
@@ -368,33 +380,104 @@ pub fn load_ir(source: &str, options: &Map<String, Value>) -> Result<Value> {
     load_source(source, options).map(|s| s.ir)
 }
 
-/// Stamp one language's effective behavior onto `ir.sdk`.
+/// One language's IR from what `--spec` resolved to.
 ///
-/// The base is the CONVERTER's resolved block (`source.ir.sdk`: the defaults,
-/// the global overrides, and the global `headersFromExtension` already resolved
-/// against the document), so nothing the conversion computed is lost; the
-/// language's `behavior` layer is deep-merged over it (its `pagination: "none"`
-/// shorthand expanded first, like every other layer). When the document is at
-/// hand, `headersFromExtension` is resolved again so an entry the LANGUAGE
-/// layer adds reaches `defaultHeaders` too; from a pre-parsed IR there is no
-/// document, and only the already-resolved global headers survive.
+/// Every path applies the same effective behavior — the config's global block
+/// with the language's `behavior` layer merged over it, the way `generate
+/// --lang` and a chain target already have it — so a per-language layer may set
+/// ANY key, the ones the converter reads (`pagination.mode`, `idempotency`,
+/// `headersFromExtension`) included:
 ///
-/// Emitters read `sdk` through `resolve_behavior` (defaults ⊕ `sdk`), so a
-/// fully-populated block and an override-only one emit the same bytes.
-pub fn restamp_behavior(ir: &mut Value, source: &LoadedSource, lang_behavior: Option<&Value>) {
-    let mut behavior = source
-        .ir
+/// * an OpenAPI document and a language layer: the converter runs again with
+///   the merged block (a conversion is cheap; the second pass is what makes a
+///   per-language `pagination: "none"` or extension header real);
+/// * a document and no layer: the global conversion is the language's;
+/// * a pre-parsed IR: nothing to convert, the layers are stamped over the IR's
+///   own `sdk` block ([`restamp_behavior`]).
+pub fn ir_for_language(
+    source: &LoadedSource,
+    converter: &Map<String, Value>,
+    global_behavior: Option<&Value>,
+    lang_behavior: Option<&Value>,
+) -> Result<Value> {
+    match (source.doc.as_ref(), lang_behavior) {
+        (Some(doc), Some(_)) => convert(
+            doc,
+            &converter_options_for_language(converter, lang_behavior),
+        ),
+        (Some(_), None) => Ok(source.ir.clone()),
+        (None, _) => {
+            let mut ir = source.ir.clone();
+            restamp_behavior(&mut ir, global_behavior, lang_behavior);
+            Ok(ir)
+        }
+    }
+}
+
+/// The converter bag for one language: `base` with its `sdkBehavior` replaced by
+/// the global block ⊕ the language's layer (through [`merge_behavior_overrides`],
+/// so every path merges the same way). `base` as is without a layer.
+pub fn converter_options_for_language(
+    base: &Map<String, Value>,
+    lang_behavior: Option<&Value>,
+) -> Map<String, Value> {
+    let Some(layer) = lang_behavior else {
+        return base.clone();
+    };
+    let mut out = base.clone();
+    out.insert(
+        "sdkBehavior".into(),
+        merge_behavior_overrides(&[base.get("sdkBehavior"), Some(layer)]),
+    );
+    out
+}
+
+/// Stamp the config's behavior onto a pre-parsed IR's `sdk` block: the global
+/// block, then the language's layer, deep-merged over whatever the IR carries
+/// (shorthands expanded first). Emitters read `sdk` through `resolve_behavior`
+/// (defaults ⊕ `sdk`), so an override-only block and a fully populated one emit
+/// the same bytes.
+///
+/// `headersFromExtension` is resolved against the OpenAPI document, which a
+/// pre-parsed IR no longer has: an entry the IR does not already carry a value
+/// for (resolved when it was parsed with the same config) stays unsent, and is
+/// named on stderr rather than dropped silently. An explicit `null` under
+/// `defaultHeaders` is a cancellation, not a missing value.
+pub fn restamp_behavior(
+    ir: &mut Value,
+    global_behavior: Option<&Value>,
+    lang_behavior: Option<&Value>,
+) {
+    let base = ir
         .get("sdk")
         .filter(|s| s.is_object())
         .cloned()
         .unwrap_or_else(|| Value::Object(Map::new()));
-    if let Some(layer) = lang_behavior {
-        let mut layer = layer.clone();
-        opensdk_core::behavior::normalize_behavior_shorthands(&mut layer);
-        behavior = deep_merge(&behavior, &layer);
-    }
-    if let Some(doc) = source.doc.as_ref() {
-        openapi2opensdk::resolve_headers_from_extension(&mut behavior, doc);
+    let layers = merge_behavior_overrides(&[global_behavior, lang_behavior]);
+    let behavior = deep_merge(&base, &layers);
+    let unresolved: Vec<&str> = behavior
+        .get("headersFromExtension")
+        .and_then(Value::as_object)
+        .map(|from_ext| {
+            from_ext
+                .keys()
+                .filter(|header| {
+                    behavior
+                        .get("defaultHeaders")
+                        .and_then(|h| h.get(header.as_str()))
+                        .is_none()
+                })
+                .map(String::as_str)
+                .collect()
+        })
+        .unwrap_or_default();
+    if !unresolved.is_empty() {
+        eprintln!(
+            "Warning: headersFromExtension is resolved against the OpenAPI document, and --spec \
+             is a pre-parsed IR — no value for {}. Parse the document with the same config, or \
+             generate from the document.",
+            unresolved.join(", ")
+        );
     }
     set_key(ir, "sdk", behavior);
 }
@@ -482,6 +565,73 @@ mod tests {
         );
         // No layers at all → `{}` (which the emitters re-merge over defaults).
         assert_eq!(merge_behavior_overrides(&[None, None]), json!({}));
+    }
+
+    #[test]
+    fn behavior_overrides_expand_the_pagination_shorthand_in_every_layer() {
+        // A shorthand in one layer and the object form in the next must MERGE:
+        // unexpanded, the object would replace the string and lose the mode.
+        let global = json!({ "pagination": "none" });
+        let per_lang = json!({ "pagination": { "autoPageDelayMs": 5 } });
+        assert_eq!(
+            merge_behavior_overrides(&[Some(&global), Some(&per_lang)]),
+            json!({ "pagination": { "mode": "none", "autoPageDelayMs": 5 } })
+        );
+        assert_eq!(
+            merge_behavior_overrides(&[Some(&per_lang), Some(&global)]),
+            json!({ "pagination": { "autoPageDelayMs": 5, "mode": "none" } })
+        );
+    }
+
+    #[test]
+    fn the_language_bag_merges_its_layer_over_the_global_sdk_behavior() {
+        let mut base = Map::new();
+        base.insert("sdkName".into(), json!("Widgetco"));
+        base.insert(
+            "sdkBehavior".into(),
+            json!({ "retry": { "maxRetries": 3 }, "pagination": "auto" }),
+        );
+        let layer = json!({ "pagination": "none", "retry": { "maxRetries": 7 } });
+        let bag = converter_options_for_language(&base, Some(&layer));
+        assert_eq!(bag["sdkName"], json!("Widgetco"));
+        assert_eq!(bag["sdkBehavior"]["retry"]["maxRetries"], json!(7));
+        assert_eq!(bag["sdkBehavior"]["pagination"]["mode"], json!("none"));
+        // Without a layer the bag is the global one, untouched.
+        assert_eq!(converter_options_for_language(&base, None), base);
+        // A layer over a bag with no global block is the layer alone.
+        let bare = converter_options_for_language(&Map::new(), Some(&layer));
+        assert_eq!(bare["sdkBehavior"]["pagination"]["mode"], json!("none"));
+    }
+
+    #[test]
+    fn restamping_a_pre_parsed_ir_layers_global_then_language_over_its_sdk_block() {
+        let mut ir = json!({
+            "opensdk": "1.0.0",
+            "sdk": {
+                "retry": { "maxRetries": 1, "backoff": { "initialDelayMs": 9 } },
+                "defaultHeaders": { "X-Release": "2024-10-01" }
+            }
+        });
+        let global = json!({
+            "retry": { "maxRetries": 3 },
+            "pagination": "none",
+            "defaultHeaders": { "X-Some-Version": "1.0" },
+            "headersFromExtension": { "X-Release": "x-release" }
+        });
+        let lang = json!({ "retry": { "maxRetries": 7 } });
+        restamp_behavior(&mut ir, Some(&global), Some(&lang));
+        let sdk = &ir["sdk"];
+        // Language over global over the IR; untouched IR keys survive.
+        assert_eq!(sdk["retry"]["maxRetries"], json!(7));
+        assert_eq!(sdk["retry"]["backoff"]["initialDelayMs"], json!(9));
+        assert_eq!(sdk["pagination"]["mode"], json!("none"));
+        // The IR's already-resolved extension header is kept beside the static one.
+        assert_eq!(sdk["defaultHeaders"]["X-Release"], json!("2024-10-01"));
+        assert_eq!(sdk["defaultHeaders"]["X-Some-Version"], json!("1.0"));
+        // No layers, no `sdk`: an empty block, never a panic.
+        let mut bare = json!({ "opensdk": "1.0.0" });
+        restamp_behavior(&mut bare, None, None);
+        assert_eq!(bare["sdk"], json!({}));
     }
 
     #[test]

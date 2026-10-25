@@ -29,12 +29,15 @@
 //! * each language's SECTION (`packageName`, `modulePath`, `envVar`, ...) is
 //!   the options bag its docs capability receives, exactly as the generator's
 //!   emitter receives it;
-//! * a language's `behavior` override is re-stamped onto the IR's `sdk` block
-//!   before its docs pass, the way the multi-target `generate` does it.
+//! * a language's `behavior` override is applied by running the converter
+//!   again with the global block ⊕ that layer before its docs pass, the way
+//!   the multi-target `generate` does it — so the keys the converter reads
+//!   (`pagination`, `headersFromExtension`) hold per language here too.
 //!
 //! The same contract applies to any other caller of `docs_map` (the docs
-//! engine's generate mode): convert with the converter bag, then call the
-//! language's docs with that language's section.
+//! engine's generate mode): convert with the converter bag (the language's
+//! layer merged into `sdkBehavior` when it has one), then call the language's
+//! docs with that language's section.
 
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -46,7 +49,7 @@ use opensdk_core::emitter::{resolve_language, EmitterFns, OperationDocs};
 
 use crate::config::ResolvedConfig;
 use crate::error::{Error, Result};
-use crate::generate::{restamp_behavior, LoadedSource};
+use crate::generate::converter_options_for_language;
 use crate::grouping::{converter_options, ConverterInputs};
 
 /// One SDK language in the switcher. `id` is the public `x-sdk` key (the coder
@@ -105,9 +108,9 @@ pub struct EmbedXSdkOptions {
     /// `output`/`behavior`/`publish`), keyed by CANONICAL emitter id (`node`,
     /// `dotnet`, ...). A language without a section runs with no options.
     pub emitter_options: BTreeMap<String, Map<String, Value>>,
-    /// Each language's `behavior` override, keyed by canonical emitter id. It
-    /// is deep-merged over the converter's resolved `sdk` block before that
-    /// language's docs pass.
+    /// Each language's `behavior` override, keyed by canonical emitter id. The
+    /// converter runs again with it merged over the global `sdkBehavior`
+    /// before that language's docs pass.
     pub behaviors: BTreeMap<String, Value>,
 }
 
@@ -162,11 +165,7 @@ pub fn embed_xsdk(
     options: &EmbedXSdkOptions,
 ) -> Result<EmbedXSdkResult> {
     // `openapi2opensdk` needs `$ref` identity, so it runs on the RAW doc.
-    let converter_opts = serde_json::from_value(Value::Object(options.converter.clone()))
-        .map_err(|e| Error::msg(format!("bad converter options: {e}")))?;
-    let ir = openapi2opensdk::openapi2opensdk(raw_doc, Some(converter_opts))
-        .map_err(|_| Error::msg("embedXSdk: unsupported OpenAPI document (not 3.x / no paths)"))?;
-    let ir = serde_json::to_value(&ir).map_err(|e| Error::msg(e.to_string()))?;
+    let ir = convert_raw(raw_doc, &options.converter)?;
 
     let selected: Vec<SdkLang> = match langs {
         Some(wanted) => sdk_langs()
@@ -185,19 +184,18 @@ pub fn embed_xsdk(
     // One docs pass per language over the whole IR (the batch surface), keyed
     // `"<method> <path>"` exactly like the operation loop below looks it up.
     // Each language sees ITS section as the options bag and, when it carries a
-    // behavior override, an IR whose `sdk` block has that override stamped on.
-    let source = LoadedSource {
-        ir: ir.clone(),
-        doc: Some(raw_doc.clone()),
-    };
+    // behavior override, an IR converted with that override merged over the
+    // global block (the multi-target `generate`'s per-language conversion).
     let mut docs: Vec<(&'static str, BTreeMap<String, OperationDocs>)> = Vec::new();
     for lang in &selected {
         let canonical = resolve_language(lang.id);
         let lang_options = options.options_for(&canonical);
         let map = match options.behaviors.get(&canonical) {
             Some(behavior) => {
-                let mut ir_for_lang = ir.clone();
-                restamp_behavior(&mut ir_for_lang, &source, Some(behavior));
+                let ir_for_lang = convert_raw(
+                    raw_doc,
+                    &converter_options_for_language(&options.converter, Some(behavior)),
+                )?;
                 lang.emitter.docs_map(&ir_for_lang, &lang_options)
             }
             None => lang.emitter.docs_map(&ir, &lang_options),
@@ -268,6 +266,15 @@ pub fn embed_xsdk(
         operations,
         languages,
     })
+}
+
+/// Run the converter over the RAW document with `bag` as its options.
+fn convert_raw(raw_doc: &Value, bag: &Map<String, Value>) -> Result<Value> {
+    let converter_opts = serde_json::from_value(Value::Object(bag.clone()))
+        .map_err(|e| Error::msg(format!("bad converter options: {e}")))?;
+    let ir = openapi2opensdk::openapi2opensdk(raw_doc, Some(converter_opts))
+        .map_err(|_| Error::msg("embedXSdk: unsupported OpenAPI document (not 3.x / no paths)"))?;
+    serde_json::to_value(&ir).map_err(|e| Error::msg(e.to_string()))
 }
 
 #[derive(Debug, Clone, Default)]

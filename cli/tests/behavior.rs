@@ -1164,6 +1164,187 @@ fn multi_target_resolves_default_headers_per_language_against_the_document() {
     std::fs::remove_dir_all(&dir).ok();
 }
 
+#[test]
+fn multi_target_from_a_pre_parsed_ir_carries_the_global_behavior() {
+    let dir = tmp("sdkjson-ir-behavior");
+    let out = dir.join("out");
+    // The IR is parsed WITHOUT the config, so nothing of `behavior` is in it:
+    // whatever reaches the runtimes below came from the config at generate time.
+    let ir = dir.join("ir.json").to_string_lossy().to_string();
+    parse_command(
+        &ParseCommandOptions {
+            inputs: ConverterInputs::default(),
+            spec: widgetco_spec(),
+            output: Some(ir.clone()),
+        },
+        &dir,
+    )
+    .unwrap();
+    write(
+        &dir,
+        "sdk.json",
+        &json!({
+            "version": 1,
+            "sdkName": "Widgetco",
+            "behavior": {
+                "retry": { "maxRetries": 3 },
+                "defaultHeaders": { "X-Some-Version": "1.0" },
+                "headersFromExtension": { "X-Release": "x-release" }
+            },
+            "typescript": { "output": out.join("ts").to_string_lossy(),
+                            "behavior": { "retry": { "maxRetries": 7 } } },
+            "go": { "modulePath": "github.com/acme/widgets-go",
+                    "output": out.join("go").to_string_lossy() }
+        }),
+    );
+    let config = resolve_config(&dir, None).unwrap().unwrap();
+    generate_targets(
+        &GenerateTargetsOptions {
+            inputs: inputs_from(&config),
+            spec: ir,
+            output: out.to_string_lossy().to_string(),
+            ..Default::default()
+        },
+        &config,
+        &dir,
+    )
+    .unwrap();
+    // The global block reaches the IR path: the static header in both
+    // languages, the retry count layered (ts 7, go the global 3).
+    let ts = read(&out, "ts/src/core/request.ts");
+    assert!(ts.contains("\"X-Some-Version\": \"1.0\""), "{ts}");
+    assert!(ts.contains("MAX_RETRIES = 7"), "{ts}");
+    let go = read(&out, "go/internal/requestconfig/config.go");
+    assert!(
+        go.contains("\"X-Some-Version\":") && go.contains("\"1.0\""),
+        "{go}"
+    );
+    assert!(go.contains("MaxRetries") && go.contains("3"), "{go}");
+    // `headersFromExtension` is resolved against the document, which a
+    // pre-parsed IR no longer has: that header is not sent (and is reported).
+    assert!(
+        !ts.contains("X-Release") && !go.contains("X-Release"),
+        "{ts}\n{go}"
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn a_per_language_pagination_mode_re_runs_the_converter_for_that_language() {
+    let dir = tmp("sdkjson-lang-pagination");
+    let out = dir.join("out");
+    write(
+        &dir,
+        "sdk.json",
+        &json!({
+            "version": 1,
+            "sdkName": "Widgetco",
+            "python": { "output": out.join("py").to_string_lossy(),
+                        "behavior": { "pagination": "none" } },
+            "typescript": { "output": out.join("ts").to_string_lossy() }
+        }),
+    );
+    let config = resolve_config(&dir, None).unwrap().unwrap();
+    generate_targets(
+        &GenerateTargetsOptions {
+            inputs: inputs_from(&config),
+            spec: widgetco_spec(),
+            output: out.to_string_lossy().to_string(),
+            ..Default::default()
+        },
+        &config,
+        &dir,
+    )
+    .unwrap();
+    // Python asked for no pagination: the widgets list keeps its declared
+    // envelope — a converter-level decision, so the layer re-ran the converter.
+    let py = read(&out, "py/widgetco/resources.py");
+    assert!(!py.contains("CursorPage["), "{py}");
+    assert!(py.contains("-> WidgetList:"), "{py}");
+    // TypeScript (no layer) still gets the heuristic's page.
+    let ts = read(&out, "ts/src/resources/widgets.ts");
+    assert!(ts.contains("CursorPage<Widget>"), "{ts}");
+
+    // The docs pass agrees: the Python signature drops the page, the others keep it.
+    let enriched = dir.join("enriched.json").to_string_lossy().to_string();
+    xsdk_command(
+        &XsdkCommandOptions {
+            spec: widgetco_spec(),
+            output: Some(enriched.clone()),
+            langs: None,
+            inputs: inputs_from(&config),
+            config: Some(config),
+        },
+        &dir,
+    )
+    .unwrap();
+    let doc: Value = serde_json::from_str(&std::fs::read_to_string(&enriched).unwrap()).unwrap();
+    let widgets = &doc["paths"]["/widgets"]["get"]["x-sdk"];
+    let py_sig = widgets["python"]["signature"].as_str().unwrap();
+    assert!(
+        py_sig.contains("WidgetList") && !py_sig.contains("Page"),
+        "{py_sig}"
+    );
+    let ts_sig = widgets["typescript"]["signature"].as_str().unwrap();
+    assert!(ts_sig.contains("Page"), "{ts_sig}");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn a_null_in_a_language_layer_cancels_an_extension_header() {
+    let dir = tmp("sdkjson-header-tombstone");
+    let out = dir.join("out");
+    write(
+        &dir,
+        "sdk.json",
+        &json!({
+            "version": 1,
+            "sdkName": "Widgetco",
+            "behavior": {
+                "defaultHeaders": { "X-Some-Version": "1.0" },
+                "headersFromExtension": { "X-Release": "x-release" }
+            },
+            "ruby": { "output": out.join("rb").to_string_lossy(),
+                      "behavior": { "defaultHeaders": { "X-Release": null } } },
+            "go": { "modulePath": "github.com/acme/widgets-go",
+                    "output": out.join("go").to_string_lossy() }
+        }),
+    );
+    let config = resolve_config(&dir, None).unwrap().unwrap();
+    generate_targets(
+        &GenerateTargetsOptions {
+            inputs: inputs_from(&config),
+            spec: widgetco_spec(),
+            output: out.to_string_lossy().to_string(),
+            ..Default::default()
+        },
+        &config,
+        &dir,
+    )
+    .unwrap();
+    // Ruby cancelled the extension header; the static one stays, and the
+    // Client exposes the per-client override knob.
+    let rb = read(&out, "rb/lib/widgetco/transport.rb");
+    assert!(rb.contains("\"X-Some-Version\" => \"1.0\""), "{rb}");
+    assert!(!rb.contains("X-Release"), "{rb}");
+    let client = read(&out, "rb/lib/widgetco/client.rb");
+    assert!(
+        client.contains("timeout: nil, default_headers: nil)"),
+        "{client}"
+    );
+    assert!(
+        client.contains("default_headers: default_headers)"),
+        "{client}"
+    );
+    // Go, with no layer, still sends the resolved extension header.
+    let go = read(&out, "go/internal/requestconfig/config.go");
+    assert!(
+        go.contains("\"X-Release\":") && go.contains("\"2024-10-01\""),
+        "{go}"
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 // ── the regen lifecycle wiring ───────────────────────────────────────────────
 
 #[test]
