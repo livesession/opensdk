@@ -294,7 +294,40 @@ fn constants_block(spec: &Value, behavior: &Value, pkg: &str, base_url: &str) ->
         lines.push(format!("ERROR_DOC_URL_TEMPLATE = {}", pystr(tpl)));
     }
     lines.push(format!("GUARDED_OPTION_KEYS = {}", py_frozenset(&guarded)));
+    // sdk.defaultHeaders — only when configured, so the no-headers runtime is
+    // byte-identical to what it was before the feature existed.
+    let headers = opensdk_core::behavior::default_headers(behavior);
+    if !headers.is_empty() {
+        let entries: Vec<String> = headers
+            .iter()
+            .map(|(name, value)| format!("{}: {}", pystr(name), pystr(value)))
+            .collect();
+        lines.push(format!("DEFAULT_HEADERS = {{{}}}", entries.join(", ")));
+    }
     lines.join("\n")
+}
+
+/// The three `__XYD_DEFAULT_HEADERS_*__` seams of `_transport.py`: the
+/// `Transport.__init__` parameter, its merge over the built-in defaults, and the
+/// per-request application (`setdefault`, so a per-call header wins). All empty
+/// when `sdk.defaultHeaders` is not configured.
+fn default_headers_seams(behavior: &Value) -> [(&'static str, &'static str); 3] {
+    let configured = !opensdk_core::behavior::default_headers(behavior).is_empty();
+    let pick = |on: &'static str| if configured { on } else { "" };
+    [
+        (
+            "__XYD_DEFAULT_HEADERS_PARAM__",
+            pick("        default_headers: Optional[dict[str, str]] = None,\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_INIT__",
+            pick("        self.default_headers = {**DEFAULT_HEADERS, **(default_headers or {})}\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_APPLY__",
+            pick("        for key, value in self.default_headers.items():\n            request_headers.setdefault(key, value)\n"),
+        ),
+    ]
 }
 
 // ---- the auth statement (first security scheme) ----------------------------
@@ -363,7 +396,7 @@ pub fn transport_py(spec: &Value, pkg: &str, base_url: &str) -> String {
             .to_string()
     };
 
-    TRANSPORT_TEMPLATE
+    let mut out = TRANSPORT_TEMPLATE
         .replace("__XYD_PLATFORM_IMPORT__", platform_import)
         .replace(
             "__XYD_CONSTANTS__",
@@ -373,7 +406,11 @@ pub fn transport_py(spec: &Value, pkg: &str, base_url: &str) -> String {
         .replace("__XYD_ERROR_CLASSES__", &error_classes_block(&behavior))
         .replace("__XYD_RUNTIME_VERSION__", runtime_version)
         .replace("__XYD_DEFAULT_TIMEOUT_BODY__", &default_timeout_body)
-        .replace("__XYD_AUTH_BLOCK__", &auth_block(spec))
+        .replace("__XYD_AUTH_BLOCK__", &auth_block(spec));
+    for (seam, text) in default_headers_seams(&behavior) {
+        out = out.replace(seam, text);
+    }
+    out
 }
 
 /// The vendored `_pagination.py` (verbatim; no interpolation).

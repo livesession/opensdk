@@ -1,8 +1,16 @@
 //! Tier-1 fixture parity for the OpenAPI → OpenSDK IR converter.
-//! All 9 fixtures run — the converter is pure data-in/data-out with no
+//! Every fixture runs — the converter is pure data-in/data-out with no
 //! JS-closure post-processing, so there is no skip-list.
+//!
+//! A fixture may carry an `options.json` beside its `input.json`: the converter
+//! options bag (`sdkName`, `operationHints`, `sdkBehavior`, ...) exactly as the
+//! CLI assembles it. Fixtures 1–9 have none (the TypeScript-minted oracles were
+//! captured with no options); 10+ exercise the option-driven paths.
+//!
+//! `XYD_BLESS=1` writes `output.json` instead of checking it — mint a new
+//! fixture's oracle with it, then review the diff. Never set it in CI.
 
-use openapi2opensdk::openapi2opensdk_from_json_file;
+use openapi2opensdk::{openapi2opensdk_from_json_file, Options};
 use parity_kit::canon;
 use serde_json::Value;
 
@@ -12,9 +20,22 @@ fn run_case(name: &str) {
     let input = case.join("input.json");
     assert!(input.exists(), "{name}: no input.json");
 
-    let spec = openapi2opensdk_from_json_file(input.to_str().unwrap(), None)
+    let options: Option<Options> = match std::fs::read_to_string(case.join("options.json")) {
+        Ok(raw) => Some(
+            serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{name}: bad options.json: {e}")),
+        ),
+        Err(_) => None,
+    };
+    let spec = openapi2opensdk_from_json_file(input.to_str().unwrap(), options)
         .unwrap_or_else(|e| panic!("{name}: convert failed: {e}"));
     let actual = serde_json::to_value(&spec).expect("serialize");
+
+    if std::env::var("XYD_BLESS").as_deref() == Ok("1") {
+        let pretty = serde_json::to_string_pretty(&actual).unwrap();
+        std::fs::write(case.join("output.json"), format!("{pretty}\n")).unwrap();
+        eprintln!("{name}: BLESSED output.json");
+        return;
+    }
 
     let oracle: Value = parity_kit::read_oracle(&case);
 
@@ -72,3 +93,14 @@ parity_case!(offset_pagination, "6.offset-pagination");
 parity_case!(allof_envelope, "7.allof-envelope");
 parity_case!(idempotency, "8.idempotency");
 parity_case!(x_open_sdk, "9.x-open-sdk");
+// Option-driven paths (each carries an `options.json`):
+// 10 — `operationHints["GET /gadgets"].pagination: false` keeps the nested
+//      `{ data, list }` envelope as the declared response type while the
+//      sibling `GET /widgets` (top-level `has_more`) is still auto-paginated;
+//      `sdkBehavior.defaultHeaders` + `headersFromExtension` resolve against
+//      `info.x-release` into `sdk.defaultHeaders`.
+// 11 — `sdkBehavior.pagination: "none"` (the string shorthand) turns the
+//      heuristic off for every operation; the `pagination: true` hint on
+//      `GET /widgets` forces it back on for that one.
+parity_case!(pagination_hint, "10.pagination-hint");
+parity_case!(pagination_none, "11.pagination-none");

@@ -16,7 +16,15 @@ pub struct DotnetClientCtx<'a> {
 
 /// Emit `Client.cs`.
 pub fn render_client_file(spec: &Value, ctx: &DotnetClientCtx) -> String {
-    let usings = vec!["System".to_string(), "System.Net.Http".to_string()];
+    // With sdk.defaultHeaders the constructor takes per-client overrides as a
+    // trailing optional argument; without them it is exactly what it always was.
+    let with_default_headers =
+        !opensdk_core::behavior::default_headers(&opensdk_core::behavior::resolve_behavior(spec))
+            .is_empty();
+    let mut usings = vec!["System".to_string(), "System.Net.Http".to_string()];
+    if with_default_headers {
+        usings.push("System.Collections.Generic".to_string());
+    }
     let resources = spec
         .get("resources")
         .and_then(Value::as_array)
@@ -42,8 +50,13 @@ pub fn render_client_file(spec: &Value, ctx: &DotnetClientCtx) -> String {
         ));
     }
     ctor_lines.push(format!(
-        "_transport = new Transport(baseUrl ?? {}, apiKey, httpClient);",
-        json_string(ctx.base_url)
+        "_transport = new Transport(baseUrl ?? {}, apiKey, httpClient{});",
+        json_string(ctx.base_url),
+        if with_default_headers {
+            ", defaultHeaders"
+        } else {
+            ""
+        }
     ));
     for r in &resources {
         let name = r.get("name").and_then(Value::as_str).unwrap_or("");
@@ -54,15 +67,25 @@ pub fn render_client_file(spec: &Value, ctx: &DotnetClientCtx) -> String {
         ));
     }
 
-    let ctor_doc = match ctx.env_var {
+    let mut ctor_doc = match ctx.env_var {
         Some(env_var) => format!(
             "Creates a client. When apiKey is null the credential is read from the {env_var} environment variable."
         ),
         None => "Creates a client with the given credential and base URL.".to_string(),
     };
+    if with_default_headers {
+        ctor_doc.push_str(
+            " defaultHeaders are sent on every request, layered over the SDK's built-in default headers.",
+        );
+    }
     let ctor = format!(
-        "{}\npublic {class_name}(string? apiKey = null, string? baseUrl = null, HttpClient? httpClient = null)\n{{\n{}\n}}",
+        "{}\npublic {class_name}(string? apiKey = null, string? baseUrl = null, HttpClient? httpClient = null{})\n{{\n{}\n}}",
         cs_doc(Some(&ctor_doc)),
+        if with_default_headers {
+            ", IReadOnlyDictionary<string, string>? defaultHeaders = null"
+        } else {
+            ""
+        },
         indent(&ctor_lines.join("\n"))
     );
 

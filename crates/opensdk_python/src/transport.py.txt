@@ -241,12 +241,12 @@ class Transport:
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: Optional[float] = None,
-    ) -> None:
+__XYD_DEFAULT_HEADERS_PARAM__    ) -> None:
         self.base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
         self.api_key = api_key
         self.timeout = timeout if timeout is not None else _default_timeout()
         self.user_agent = _user_agent()
-
+__XYD_DEFAULT_HEADERS_INIT__
     def request(
         self,
         method: str,
@@ -264,7 +264,7 @@ class Transport:
         params = {k: _query_value(v) for k, v in (query or {}).items() if v is not None}
         request_headers: dict[str, str] = {k: _text(v) for k, v in (headers or {}).items() if v is not None}
         request_headers.setdefault("User-Agent", self.user_agent)
-        data = None
+__XYD_DEFAULT_HEADERS_APPLY__        data = None
         if body is not None:
             payload = {k: encode(v) for k, v in body.items() if v is not None}
             if encoding == "multipart":

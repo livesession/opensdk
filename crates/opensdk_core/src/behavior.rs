@@ -123,9 +123,70 @@ pub fn deep_merge_in_place(target: &mut Value, source: &Value) {
 pub fn resolve_behavior(spec: &Value) -> Value {
     let mut behavior = default_behavior();
     if let Some(sdk) = spec.get("sdk").filter(|v| v.is_object()) {
-        deep_merge_in_place(&mut behavior, sdk);
+        let mut sdk = sdk.clone();
+        normalize_behavior_shorthands(&mut sdk);
+        deep_merge_in_place(&mut behavior, &sdk);
     }
     behavior
+}
+
+/// Expand the shorthands a behavior block may carry, in place.
+///
+/// `pagination: "none" | "auto"` is accepted as a shorthand for
+/// `pagination: { "mode": "none" | "auto" }`. Left as a string it would REPLACE
+/// the default `pagination` object on merge (scalars replace objects) and take
+/// `autoPageDelayMs` away from every emitter — so it is expanded here, before
+/// any merge sees it. A no-op for every other shape, so calling it twice is
+/// safe.
+pub fn normalize_behavior_shorthands(behavior: &mut Value) {
+    let Some(obj) = behavior.as_object_mut() else {
+        return;
+    };
+    if let Some(Value::String(mode)) = obj.get("pagination") {
+        let mode = mode.clone();
+        obj.insert("pagination".into(), json!({ "mode": mode }));
+    }
+}
+
+/// The pagination DETECTION mode (`sdk.pagination.mode`): `"auto"` runs the
+/// converter's heuristic over every `GET … list` operation (the default);
+/// `"none"` keeps every operation's declared response type. Any other value
+/// reads as `"auto"`. A per-operation `pagination` hint overrides either.
+pub fn pagination_mode(behavior: &Value) -> &'static str {
+    match behavior
+        .get("pagination")
+        .and_then(|p| p.get("mode"))
+        .and_then(Value::as_str)
+    {
+        Some("none") => "none",
+        _ => "auto",
+    }
+}
+
+/// The static headers every request carries (`sdk.defaultHeaders`), as ordered
+/// `(name, value)` pairs — the object's own key order, which is what every
+/// emitter writes into its runtime. Number and boolean values are stringified;
+/// a `null` value drops the header (the way to cancel an inherited entry from a
+/// per-language layer); anything else is skipped. Empty when the block is
+/// absent or not an object.
+pub fn default_headers(behavior: &Value) -> Vec<(String, String)> {
+    behavior
+        .get("defaultHeaders")
+        .and_then(Value::as_object)
+        .map(|m| {
+            m.iter()
+                .filter_map(|(name, value)| {
+                    let text = match value {
+                        Value::String(s) => s.clone(),
+                        Value::Number(n) => n.to_string(),
+                        Value::Bool(b) => b.to_string(),
+                        _ => return None,
+                    };
+                    Some((name.clone(), text))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// Pure deep merge: plain objects merge recursively; arrays and scalars replace.
@@ -228,6 +289,64 @@ mod tests {
             Value::Null,
             "pure returns the source"
         );
+    }
+
+    #[test]
+    fn pagination_shorthand_expands_to_the_mode_object() {
+        let mut b = json!({ "pagination": "none", "retry": { "maxRetries": 1 } });
+        normalize_behavior_shorthands(&mut b);
+        assert_eq!(b["pagination"], json!({ "mode": "none" }));
+        assert_eq!(b["retry"]["maxRetries"], 1);
+        // Idempotent, and an object form is left alone.
+        normalize_behavior_shorthands(&mut b);
+        assert_eq!(b["pagination"], json!({ "mode": "none" }));
+        let mut untouched = json!({ "pagination": { "autoPageDelayMs": 5 } });
+        normalize_behavior_shorthands(&mut untouched);
+        assert_eq!(untouched["pagination"], json!({ "autoPageDelayMs": 5 }));
+        // Non-objects are a no-op rather than a panic.
+        let mut scalar = json!(42);
+        normalize_behavior_shorthands(&mut scalar);
+        assert_eq!(scalar, json!(42));
+    }
+
+    #[test]
+    fn resolve_keeps_the_pagination_defaults_under_the_shorthand() {
+        // The whole point of the shorthand expansion: `"none"` must not take
+        // `autoPageDelayMs` away from the emitters.
+        let b = resolve_behavior(&json!({ "sdk": { "pagination": "none" } }));
+        assert_eq!(b["pagination"]["mode"], "none");
+        assert_eq!(b["pagination"]["autoPageDelayMs"], 0);
+        assert_eq!(pagination_mode(&b), "none");
+        assert_eq!(pagination_mode(&default_behavior()), "auto");
+        assert_eq!(
+            pagination_mode(&json!({ "pagination": { "mode": "whatever" } })),
+            "auto"
+        );
+    }
+
+    #[test]
+    fn default_headers_keep_order_stringify_scalars_and_drop_nulls() {
+        let b = json!({
+            "defaultHeaders": {
+                "X-Some-Version": "1.0",
+                "X-Retries": 3,
+                "X-Beta": true,
+                "X-Cancelled": null,
+                "X-Object": { "no": "way" }
+            }
+        });
+        assert_eq!(
+            default_headers(&b),
+            vec![
+                ("X-Some-Version".to_string(), "1.0".to_string()),
+                ("X-Retries".to_string(), "3".to_string()),
+                ("X-Beta".to_string(), "true".to_string()),
+            ]
+        );
+        assert!(default_headers(&json!({})).is_empty());
+        assert!(default_headers(&json!({ "defaultHeaders": "nope" })).is_empty());
+        // The defaults carry no headers, so an unconfigured SDK sends none.
+        assert!(default_headers(&default_behavior()).is_empty());
     }
 
     #[test]

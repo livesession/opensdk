@@ -34,6 +34,8 @@ const FIXTURES: &[&str] = &[
     "9.x-open-sdk",
     "10.sdk-behavior",
     "11.sdk-behavior-pagination",
+    // sdk.defaultHeaders + a `pagination: false` list kept as its envelope type.
+    "12.default-headers",
 ];
 
 fn fixtures_dir() -> PathBuf {

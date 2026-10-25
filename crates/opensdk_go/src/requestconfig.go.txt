@@ -188,7 +188,7 @@ func (cfg *RequestConfig) attempt(endpoint string, body []byte, contentType stri
 	if req.Header.Get("User-Agent") == "" {
 		req.Header.Set("User-Agent", defaultUserAgent)
 	}
-	cfg.applyAuth(req)
+__XYD_RC_DEFAULT_HEADERS__	cfg.applyAuth(req)
 
 	client := cfg.HTTPClient
 	if client == nil {

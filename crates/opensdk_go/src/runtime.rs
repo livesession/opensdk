@@ -32,6 +32,12 @@ const REQUESTCONFIG_GO: &str = include_str!("requestconfig.go.txt");
 /// request body is form-encoded (`__XYD_RC_FORM_BRANCH__`).
 const FORM_BRANCH: &str = "\tswitch cfg.Encoding {\n\tcase \"multipart\":\n\t\treturn apiform.MarshalMultipart(cfg.Body)\n\tcase \"form\":\n\t\tbody, err = apiform.MarshalForm(cfg.Body)\n\t\treturn body, \"application/x-www-form-urlencoded\", err\n\t}\n";
 
+/// The per-request application of `defaultHeaders` (`__XYD_RC_DEFAULT_HEADERS__`),
+/// emitted only when `sdk.defaultHeaders` names at least one header. Runs AFTER
+/// the per-request `cfg.Header` loop and sets only what is still unset, so a
+/// header given through `option.WithHeader(...)` wins over the SDK default.
+const DEFAULT_HEADERS_APPLY: &str = "\tfor key, value := range defaultHeaders {\n\t\tif req.Header.Get(key) == \"\" {\n\t\t\treq.Header.Set(key, value)\n\t\t}\n\t}\n";
+
 /// The dependency-free UUIDv4 helper appended to requestconfig.go when some
 /// method auto-injects an idempotency key (`__XYD_RC_IDEMPOTENCY__`).
 const IDEMPOTENCY_HELPER: &str = "\n\n// NewIdempotencyKey returns a fresh UUIDv4 (crypto/rand, dependency-free) for\n// idempotency-key injection: generated methods set it once per logical call,\n// so every retry replays the SAME key (sdk.idempotency).\nfunc NewIdempotencyKey() string {\n\tvar b [16]byte\n\tif _, err := cryptorand.Read(b[:]); err != nil {\n\t\t// crypto/rand failing is effectively unreachable; fall back to a\n\t\t// time-based key rather than panicking inside a request path.\n\t\treturn fmt.Sprintf(\"fallback-%d\", time.Now().UnixNano())\n\t}\n\tb[6] = (b[6] & 0x0f) | 0x40 // version 4\n\tb[8] = (b[8] & 0x3f) | 0x80 // RFC 4122 variant\n\treturn fmt.Sprintf(\"%x-%x-%x-%x-%x\", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])\n}";
@@ -269,6 +275,36 @@ fn config_go(spec: &Value, base_url: &str, pkg: &str, behavior: &Value) -> Strin
         parts.join("\n\n")
     };
 
+    // --- default headers (sdk.defaultHeaders) ---------------------------------
+    // Absent from the file entirely when none are configured, so an SDK without
+    // them is byte-identical to what it was before the feature existed.
+    let headers = opensdk_core::behavior::default_headers(behavior);
+    let headers_block = if headers.is_empty() {
+        String::new()
+    } else {
+        let width = headers
+            .iter()
+            .map(|(name, _)| json_string(name).len() + 1)
+            .max()
+            .unwrap_or(0);
+        let rows = headers
+            .iter()
+            .map(|(name, value)| {
+                format!(
+                    "\t{:<width$} {},",
+                    format!("{}:", json_string(name)),
+                    json_string(value)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        format!(
+            "\n\n// defaultHeaders are sent on every request (sdk.defaultHeaders); a header\n\
+             // given through option.WithHeader(...) with the same name wins.\n\
+             var defaultHeaders = map[string]string{{\n{rows}\n}}"
+        )
+    };
+
     let auth_body = apply_auth_body(spec);
     let request_id_header =
         bstr(behavior, "telemetry", "requestIdHeader").unwrap_or("X-Request-ID");
@@ -295,7 +331,7 @@ fn config_go(spec: &Value, base_url: &str, pkg: &str, behavior: &Value) -> Strin
          // id, surfaced as APIError.RequestID (sdk.telemetry.requestIdHeader).\n\
          const requestIDHeader = {}\n\
          \n\
-         {ua_block}\n\
+         {ua_block}{headers_block}\n\
          \n\
          // applyAuth attaches the configured credential to the outgoing request.\n\
          func (cfg *RequestConfig) applyAuth(req *http.Request) {{{}}}\n",
@@ -623,6 +659,7 @@ pub fn runtime_files(
     let needs_idempotency = methods
         .iter()
         .any(|m| method_injects_idempotency(m, behavior));
+    let has_default_headers = !opensdk_core::behavior::default_headers(behavior).is_empty();
 
     // config.go — per-spec constants + every sdk.* policy constant.
     let config = config_go(spec, base_url, pkg, behavior);
@@ -657,6 +694,14 @@ pub fn runtime_files(
             "__XYD_RC_IDEMPOTENCY__",
             if needs_idempotency {
                 IDEMPOTENCY_HELPER
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "__XYD_RC_DEFAULT_HEADERS__",
+            if has_default_headers {
+                DEFAULT_HEADERS_APPLY
             } else {
                 ""
             },

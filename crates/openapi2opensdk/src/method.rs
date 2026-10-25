@@ -327,19 +327,28 @@ pub fn build_method(
         out.primary_response = Some(p.clone());
     }
 
-    // Pagination.
-    let pagination = detect_pagination(
-        doc,
-        operation,
-        &primary_status,
-        symbols,
-        &target.action,
-        &out.http_method,
-        primary.as_ref(),
-        &query_params,
-    );
-    if let Some(pg) = pagination {
-        out.pagination = Some(pg);
+    // Pagination — the heuristic runs unless the operation hint
+    // (`operationHints["GET /x"].pagination: false`) or the behavior's
+    // `pagination.mode: "none"` says this operation keeps its declared response
+    // type; a hint of `true` forces the heuristic back on under `"none"`.
+    let detect = match target.pagination {
+        Some(explicit) => explicit,
+        None => opensdk_core::behavior::pagination_mode(behavior) != "none",
+    };
+    if detect {
+        let pagination = detect_pagination(
+            doc,
+            operation,
+            &primary_status,
+            symbols,
+            &target.action,
+            &out.http_method,
+            primary.as_ref(),
+            &query_params,
+        );
+        if let Some(pg) = pagination {
+            out.pagination = Some(pg);
+        }
     }
 
     // Per-operation security — only when declared AND different from the doc default.
@@ -388,6 +397,29 @@ fn resolve_item_type(
 }
 
 /// Heuristic cursor/list pagination detection.
+///
+/// THE HEURISTIC (what `pagination: false` / `pagination.mode: "none"` turn
+/// off). For the primary 2xx response, resolved to an object schema:
+///
+/// 1. the ITEMS field is the first of `data` / `items` / `results` whose schema
+///    is an array — no items field, no pagination;
+/// 2. a NEXT marker is the first of `has_more` / `next` / `next_cursor` /
+///    `has_next` present at the TOP LEVEL of that object → `cursor` style,
+///    with the cursor param = the first query param named `after` / `cursor` /
+///    `starting_after` / `page` and the limit param = `limit` / `page_size` /
+///    `per_page`;
+/// 3. no marker, but a `GET … list` operation with an integer `offset` / `skip`
+///    / `start` query param → `offset` style;
+/// 4. no marker and no offset param, but a `GET … list` whose items field is
+///    `data` or `items` → the marker-less single-`page` style (the `GET /models`
+///    shape).
+///
+/// Every emitter then returns `Page<Item>` (its items + the marker) INSTEAD OF
+/// the declared response type, so sibling fields of the envelope — a nested
+/// `list: { has_more, next_cursor, total }` block, counts, metadata — are not
+/// reachable from the typed return. An envelope that nests its markers (step 2
+/// only looks at the top level) still matches step 4 and loses them; that is
+/// the case the `pagination: false` hint exists for.
 #[allow(clippy::too_many_arguments)]
 fn detect_pagination(
     doc: &Value,

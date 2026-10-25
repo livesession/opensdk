@@ -5,7 +5,7 @@
     "groups"
   ],
   "action": "list",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Admin.Organization.Groups.List(\n\t\tcontext.TODO(),\n\t\topenai.AdminOrganizationGroupListParams{\n\t\t\tLimit: param.NewOpt[int64](100),\n\t\t\tAfter: param.NewOpt[string](\"after\"),\n\t\t\tOrder: param.NewOpt[openai.AdminOrganizationGroupsListOrder](openai.AdminOrganizationGroupsListOrderAsc),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Admin.Organization.Groups.List(\n\t\tcontext.TODO(),\n\t\topenai.AdminOrganizationGroupListParams{\n\t\t\tLimit: param.NewOpt[int64](100),\n\t\t\tAfter: param.NewOpt[string](\"after\"),\n\t\t\tOrder: param.NewOpt[openai.AdminOrganizationGroupsListOrder](openai.AdminOrganizationGroupsListOrderAsc),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Admin.Organization.Groups.List(ctx, query) (*pagination.CursorPage[GroupResponse], error)",
     "request": {

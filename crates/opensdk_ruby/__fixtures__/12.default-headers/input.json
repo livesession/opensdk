@@ -1,0 +1,388 @@
+{
+  "opensdk": "1.0.0",
+  "info": {
+    "title": "Widgetco",
+    "version": "2.3.0",
+    "description": "A widget catalogue whose list responses nest their paging markers under `list`."
+  },
+  "servers": [
+    "https://api.widgetco.test/v2"
+  ],
+  "security": [
+    {
+      "type": "http",
+      "kind": "bearer",
+      "schemeName": "bearer",
+      "envVar": "WIDGETCO_API_KEY",
+      "scheme": "bearer"
+    }
+  ],
+  "types": [
+    {
+      "name": "WidgetList",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "data",
+          "type": {
+            "kind": "array",
+            "items": {
+              "kind": "ref",
+              "name": "Widget"
+            }
+          },
+          "required": false
+        },
+        {
+          "name": "has_more",
+          "type": {
+            "kind": "scalar",
+            "scalar": "boolean"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "Widget",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "weight_grams",
+          "type": {
+            "kind": "scalar",
+            "scalar": "integer"
+          },
+          "required": false
+        }
+      ],
+      "description": "A widget in the catalogue."
+    },
+    {
+      "name": "GadgetList",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "data",
+          "type": {
+            "kind": "array",
+            "items": {
+              "kind": "ref",
+              "name": "Gadget"
+            }
+          },
+          "required": true
+        },
+        {
+          "name": "list",
+          "type": {
+            "kind": "ref",
+            "name": "ListInfo"
+          },
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Gadget",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "label",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "ListInfo",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "has_more",
+          "type": {
+            "kind": "scalar",
+            "scalar": "boolean"
+          },
+          "required": true
+        },
+        {
+          "name": "next_cursor",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": false
+        },
+        {
+          "name": "total",
+          "type": {
+            "kind": "scalar",
+            "scalar": "integer"
+          },
+          "required": false
+        }
+      ],
+      "description": "Paging markers, nested beside the items."
+    }
+  ],
+  "resources": [
+    {
+      "name": "gadgets",
+      "methods": [
+        {
+          "action": "list",
+          "httpMethod": "get",
+          "path": "/gadgets",
+          "operationId": "listGadgets",
+          "description": "List gadgets",
+          "queryParams": [
+            {
+              "name": "limit",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "example": 10
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "example": "cur_abc"
+            }
+          ],
+          "responses": [
+            {
+              "status": "200",
+              "description": "A page of gadgets with its `list` block.",
+              "contentType": "application/json",
+              "type": {
+                "kind": "ref",
+                "name": "GadgetList"
+              }
+            }
+          ],
+          "primaryResponse": {
+            "kind": "ref",
+            "name": "GadgetList"
+          }
+        }
+      ]
+    },
+    {
+      "name": "widgets",
+      "methods": [
+        {
+          "action": "list",
+          "httpMethod": "get",
+          "path": "/widgets",
+          "operationId": "listWidgets",
+          "description": "List widgets",
+          "queryParams": [
+            {
+              "name": "limit",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "example": 20
+            },
+            {
+              "name": "after",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "example": "wgt_0"
+            }
+          ],
+          "responses": [
+            {
+              "status": "200",
+              "description": "A page of widgets with top-level markers.",
+              "contentType": "application/json",
+              "type": {
+                "kind": "ref",
+                "name": "WidgetList"
+              }
+            }
+          ],
+          "primaryResponse": {
+            "kind": "ref",
+            "name": "WidgetList"
+          },
+          "pagination": {
+            "style": "cursor",
+            "itemsField": "data",
+            "nextField": "has_more",
+            "itemType": {
+              "kind": "ref",
+              "name": "Widget"
+            },
+            "cursorParam": "after",
+            "limitParam": "limit"
+          }
+        },
+        {
+          "action": "retrieve",
+          "httpMethod": "get",
+          "path": "/widgets/{widget_id}",
+          "operationId": "getWidget",
+          "description": "Retrieve a widget",
+          "pathParams": [
+            {
+              "name": "widget_id",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "example": "wgt_1"
+            }
+          ],
+          "responses": [
+            {
+              "status": "200",
+              "description": "The widget.",
+              "contentType": "application/json",
+              "type": {
+                "kind": "ref",
+                "name": "Widget"
+              }
+            }
+          ],
+          "primaryResponse": {
+            "kind": "ref",
+            "name": "Widget"
+          }
+        }
+      ]
+    }
+  ],
+  "sdk": {
+    "retry": {
+      "maxRetries": 2,
+      "retryableStatusCodes": [
+        408,
+        429,
+        500,
+        502,
+        503,
+        504
+      ],
+      "retryConnectionErrors": true,
+      "honorRetryAfterHeader": true,
+      "backoff": {
+        "initialDelayMs": 500,
+        "maxDelayMs": 8000,
+        "multiplier": 2,
+        "jitter": 0.25
+      }
+    },
+    "timeout": {
+      "defaultTimeoutMs": 60000
+    },
+    "errors": {
+      "statusCodeMap": {
+        "400": "BadRequest",
+        "401": "Unauthorized",
+        "403": "PermissionDenied",
+        "404": "NotFound",
+        "409": "Conflict",
+        "422": "UnprocessableEntity",
+        "429": "RateLimited"
+      },
+      "clientErrorKind": "API",
+      "serverErrorKind": "Internal"
+    },
+    "userAgent": {
+      "sdkIdentifierTemplate": "{package}-{language}/{version}",
+      "includeRuntimeVersion": false,
+      "aiAgentEnvVars": {
+        "CLAUDE_CODE": "claude-code",
+        "CURSOR_AGENT": "cursor",
+        "CLINE_ACTIVE": "cline",
+        "WINDSURF_ACTIVE": "windsurf",
+        "COPILOT_AGENT": "copilot"
+      }
+    },
+    "telemetry": {
+      "requestIdHeader": "X-Request-ID",
+      "headerName": "X-Client-Telemetry",
+      "enabledByDefault": false
+    },
+    "logging": {
+      "events": [
+        "request.start",
+        "request.success",
+        "request.retry",
+        "request.rate_limited",
+        "request.error",
+        "request.connection_error"
+      ]
+    },
+    "idempotency": {
+      "headerName": "Idempotency-Key",
+      "autoGenerateForPost": true
+    },
+    "pagination": {
+      "autoPageDelayMs": 0
+    },
+    "requestGuard": {
+      "optionKeys": [
+        "api_key",
+        "apiKey",
+        "idempotency_key",
+        "idempotencyKey",
+        "extra_headers",
+        "extraHeaders",
+        "max_retries",
+        "maxRetries",
+        "base_url",
+        "baseUrl",
+        "timeout"
+      ]
+    },
+    "defaultHeaders": {
+      "X-Some-Version": "1.0",
+      "X-Release": "2024-10-01"
+    },
+    "headersFromExtension": {
+      "X-Release": "x-release"
+    }
+  }
+}

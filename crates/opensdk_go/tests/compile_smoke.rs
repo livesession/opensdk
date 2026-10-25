@@ -100,3 +100,14 @@ fn sdk_behavior_overrides_compile() {
     }
     compile_case("10.sdk-behavior");
 }
+
+// The default-headers runtime path (sdk.defaultHeaders) + an un-paginated list
+// envelope must compile too — a seam that only ever ran under the golden check
+// would be a syntax error waiting to be blessed.
+#[test]
+fn default_headers_sdk_compiles() {
+    if gated_skip() {
+        return;
+    }
+    compile_case("12.default-headers");
+}

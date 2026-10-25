@@ -229,7 +229,7 @@ fn constants_block(spec: &Value, behavior: &Value, pkg: &str, base_url: &str) ->
 
     let max_retries = get_f64(behavior, &["retry", "maxRetries"]) as i64;
 
-    let lines = [
+    let mut lines = vec![
         format!("  DEFAULT_BASE_URL = {}", rb_string(base_url)),
         format!("  USER_AGENT = {}", rb_string(&user_agent)),
         format!("  AI_AGENT_ENV_VARS = {{ {ai_agents} }}.freeze"),
@@ -268,7 +268,43 @@ fn constants_block(spec: &Value, behavior: &Value, pkg: &str, base_url: &str) ->
             rb_string(get_str(behavior, &["idempotency", "headerName"]))
         ),
     ];
+    // sdk.defaultHeaders — only when configured, so the no-headers runtime is
+    // byte-identical to what it was before the feature existed.
+    let headers = opensdk_core::behavior::default_headers(behavior);
+    if !headers.is_empty() {
+        let entries: Vec<String> = headers
+            .iter()
+            .map(|(name, value)| format!("{} => {}", rb_string(name), rb_string(value)))
+            .collect();
+        lines.push(format!(
+            "  DEFAULT_HEADERS = {{ {} }}.freeze",
+            entries.join(", ")
+        ));
+    }
     lines.join("\n")
+}
+
+/// The three `__XYD_DEFAULT_HEADERS_*__` seams of the transport: the
+/// `initialize` keyword, its merge over the built-in defaults, and the
+/// per-request application (before the per-call headers, so those win). All
+/// empty when `sdk.defaultHeaders` is not configured.
+fn default_headers_seams(behavior: &Value) -> [(&'static str, &'static str); 3] {
+    let configured = !opensdk_core::behavior::default_headers(behavior).is_empty();
+    let pick = |on: &'static str| if configured { on } else { "" };
+    [
+        (
+            "__XYD_DEFAULT_HEADERS_PARAM__",
+            pick(", default_headers: nil"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_INIT__",
+            pick("      @default_headers = DEFAULT_HEADERS.merge(default_headers || {})\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_APPLY__",
+            pick("      @default_headers.each { |key, value| request_headers[key] = value }\n"),
+        ),
+    ]
 }
 
 /// Render the vendored transport file body (no ownership header — the caller's
@@ -288,7 +324,7 @@ pub fn render_transport_file(spec: &Value, module_name: &str, pkg: &str, base_ur
         ""
     };
 
-    TEMPLATE
+    let mut out = TEMPLATE
         .replace(
             "__XYD_CONSTANTS__",
             &constants_block(spec, &behavior, pkg, base_url),
@@ -297,5 +333,9 @@ pub fn render_transport_file(spec: &Value, module_name: &str, pkg: &str, base_ur
         .replace("__XYD_AUTH__", &auth_block(spec))
         .replace("__XYD_TIMEOUT_INIT__", &timeout_init)
         .replace("__XYD_RUNTIME_VERSION__", runtime_version)
-        .replace("__XYD_MODULE__", module_name)
+        .replace("__XYD_MODULE__", module_name);
+    for (seam, text) in default_headers_seams(&behavior) {
+        out = out.replace(seam, text);
+    }
+    out
 }

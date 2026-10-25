@@ -113,7 +113,13 @@ pub fn command() -> Command {
                         .long("langs")
                         .value_name("ids")
                         .help("Comma-separated SDK language ids (default: all six)"),
-                ),
+                )
+                // The docs pass takes the same identity and options as
+                // `generate`: `--config` (global) for the sections, plus these
+                // two for the converter — so a sample names the configured
+                // package, the configured env var and the hinted method names.
+                .arg(sdk_name_arg())
+                .arg(grouping_arg()),
         )
         .subcommand(
             Command::new("generate")
@@ -536,16 +542,21 @@ pub fn dispatch(matches: &ArgMatches, cwd: &Path) -> Result<i32> {
             Ok(0)
         }
         "xsdk" => {
-            xsdk_command(&XsdkCommandOptions {
-                spec: opt(m, "spec").expect("required"),
-                output: opt(m, "output"),
-                langs: opt(m, "langs").map(|v| {
-                    v.split(',')
-                        .map(|s| s.trim().to_string())
-                        .filter(|s| !s.is_empty())
-                        .collect()
-                }),
-            })?;
+            xsdk_command(
+                &XsdkCommandOptions {
+                    spec: opt(m, "spec").expect("required"),
+                    output: opt(m, "output"),
+                    langs: opt(m, "langs").map(|v| {
+                        v.split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect()
+                    }),
+                    inputs: shared_inputs(m, config),
+                    config: config.cloned(),
+                },
+                cwd,
+            )?;
             Ok(0)
         }
         "generate" => run_generate(m, config, cwd),

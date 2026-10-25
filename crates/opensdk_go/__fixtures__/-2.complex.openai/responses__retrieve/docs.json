@@ -3,7 +3,7 @@
     "responses"
   ],
   "action": "retrieve",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Responses.Get(\n\t\tcontext.TODO(),\n\t\t\"resp_677efb5139a88190b512bc3fef8e535d\",\n\t\topenai.ResponseGetParams{\n\t\t\tInclude: []openai.IncludeEnum{openai.IncludeEnumFileSearchCallResults},\n\t\t\tStream: param.NewOpt[bool](true),\n\t\t\tStartingAfter: param.NewOpt[int64](1),\n\t\t\tIncludeObfuscation: param.NewOpt[bool](true),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/openai\"\n\t\"github.com/example/openai/option\"\n\t\"github.com/example/openai/packages/param\"\n)\n\nfunc main() {\n\tclient := openai.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"OPENAI_API_KEY\")),\n\t)\n\tresult, err := client.Responses.Get(\n\t\tcontext.TODO(),\n\t\t\"resp_677efb5139a88190b512bc3fef8e535d\",\n\t\topenai.ResponseGetParams{\n\t\t\tInclude: []openai.IncludeEnum{openai.IncludeEnumFileSearchCallResults},\n\t\t\tStream: param.NewOpt[bool](true),\n\t\t\tStartingAfter: param.NewOpt[int64](1),\n\t\t\tIncludeObfuscation: param.NewOpt[bool](true),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Responses.Get(ctx, responseID, query) (*Response, error)",
     "request": {

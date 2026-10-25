@@ -3,7 +3,7 @@
     "pets"
   ],
   "action": "list",
-  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\n\t\"github.com/example/petstore\"\n\t\"github.com/example/petstore/option\"\n\t\"github.com/example/petstore/packages/param\"\n)\n\nfunc main() {\n\tclient := petstore.NewClient(\n\t\toption.WithAPIKey(\"My API Key\"),\n\t)\n\tresult, err := client.Pets.List(\n\t\tcontext.TODO(),\n\t\tpetstore.PetListParams{\n\t\t\tAfter: param.NewOpt[string](\"after\"),\n\t\t\tLimit: param.NewOpt[int64](1),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/petstore\"\n\t\"github.com/example/petstore/option\"\n\t\"github.com/example/petstore/packages/param\"\n)\n\nfunc main() {\n\tclient := petstore.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"PETSTORE_API_KEY\")),\n\t)\n\tresult, err := client.Pets.List(\n\t\tcontext.TODO(),\n\t\tpetstore.PetListParams{\n\t\t\tAfter: param.NewOpt[string](\"after\"),\n\t\t\tLimit: param.NewOpt[int64](1),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
   "typeReference": {
     "signature": "client.Pets.List(ctx, query) (*pagination.CursorPage[Pet], error)",
     "request": {

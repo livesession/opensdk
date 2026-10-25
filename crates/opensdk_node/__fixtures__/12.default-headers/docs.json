@@ -1,0 +1,42 @@
+{
+  "chain": [
+    "gadgets"
+  ],
+  "action": "list",
+  "usage": "import Widgetco from \"widgetco\";\n\nconst client = new Widgetco({\n  apiKey: process.env[\"WIDGETCO_API_KEY\"],\n});\n\nconst result = await client.gadgets.list({ limit: 10, cursor: \"cur_abc\" });\nconsole.log(result);\n",
+  "typeReference": {
+    "signature": "client.gadgets.list(query?): Promise<GadgetList>",
+    "request": {
+      "typeName": "GadgetListParams",
+      "argName": "query",
+      "fields": [
+        {
+          "name": "limit",
+          "langType": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "langType": "string",
+          "required": false
+        }
+      ]
+    },
+    "response": {
+      "typeName": "GadgetList",
+      "fields": [
+        {
+          "name": "data",
+          "langType": "Gadget[]",
+          "required": true
+        },
+        {
+          "name": "list",
+          "langType": "ListInfo",
+          "required": true,
+          "refTypeName": "ListInfo"
+        }
+      ]
+    }
+  }
+}

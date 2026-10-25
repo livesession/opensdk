@@ -1,0 +1,42 @@
+{
+  "chain": [
+    "gadgets"
+  ],
+  "action": "list",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/widgetco\"\n\t\"github.com/example/widgetco/option\"\n\t\"github.com/example/widgetco/packages/param\"\n)\n\nfunc main() {\n\tclient := widgetco.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"WIDGETCO_API_KEY\")),\n\t)\n\tresult, err := client.Gadgets.List(\n\t\tcontext.TODO(),\n\t\twidgetco.GadgetListParams{\n\t\t\tLimit: param.NewOpt[int64](10),\n\t\t\tCursor: param.NewOpt[string](\"cur_abc\"),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "typeReference": {
+    "signature": "client.Gadgets.List(ctx, query) (*GadgetList, error)",
+    "request": {
+      "typeName": "GadgetListParams",
+      "argName": "query",
+      "fields": [
+        {
+          "name": "Limit",
+          "langType": "param.Opt[int64]",
+          "required": false
+        },
+        {
+          "name": "Cursor",
+          "langType": "param.Opt[string]",
+          "required": false
+        }
+      ]
+    },
+    "response": {
+      "typeName": "GadgetList",
+      "fields": [
+        {
+          "name": "Data",
+          "langType": "[]Gadget",
+          "required": true
+        },
+        {
+          "name": "List",
+          "langType": "ListInfo",
+          "required": true,
+          "refTypeName": "ListInfo"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "chain": [
+    "gadgets"
+  ],
+  "action": "list",
+  "usage": "require \"widgetco\"\n\nclient = Widgetco::Client.new(api_key: ENV[\"WIDGETCO_API_KEY\"])\n\nresult = client.gadgets.list(limit: 10, cursor: \"cur_abc\")\npp result\n",
+  "typeReference": {
+    "signature": "client.gadgets.list(limit: nil, cursor: nil) -> Models::GadgetList",
+    "request": {
+      "fields": [
+        {
+          "name": "limit",
+          "langType": "Integer",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "langType": "String",
+          "required": false
+        }
+      ]
+    },
+    "response": {
+      "typeName": "Models::GadgetList",
+      "fields": [
+        {
+          "name": "data",
+          "langType": "Array<Models::Gadget>",
+          "required": true
+        },
+        {
+          "name": "list",
+          "langType": "Models::ListInfo",
+          "required": true,
+          "refTypeName": "ListInfo"
+        }
+      ]
+    }
+  }
+}

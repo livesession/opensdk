@@ -38,6 +38,9 @@ pub struct DerivedTarget {
     pub action: String,
     /// wire names of path parameters in order (positional arguments)
     pub path_param_names: Vec<String>,
+    /// The operation hint's `pagination` (`Some(false)` = keep the declared
+    /// response type); `None` leaves the decision to the behavior's mode.
+    pub pagination: Option<bool>,
 }
 
 fn leading_verb(operation_id: Option<&str>) -> Option<String> {
@@ -168,5 +171,6 @@ pub fn derive_target(
         resource_path: resource_segs.iter().map(|s| kebab_case(s)).collect(),
         action: kebab_case(&action),
         path_param_names,
+        pagination: None,
     }
 }

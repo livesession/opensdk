@@ -307,7 +307,54 @@ fn constants_block(spec: &Value, behavior: &Value, ctx: &DotnetRuntimeCtx) -> St
             "    private static readonly Dictionary<string, string> AiAgentEnvVars = new()\n    {{\n{ai_entries}\n    }};"
         ),
     ]);
+    // sdk.defaultHeaders — only when configured, so the no-headers runtime is
+    // byte-identical to what it was before the feature existed.
+    let headers = opensdk_core::behavior::default_headers(behavior);
+    if !headers.is_empty() {
+        let entries = headers
+            .iter()
+            .map(|(name, value)| {
+                format!("        [{}] = {},", json_string(name), json_string(value))
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        lines.push(format!(
+            "    private static readonly Dictionary<string, string> DefaultHeaders = new()\n    {{\n{entries}\n    }};"
+        ));
+    }
     lines.join("\n")
+}
+
+/// The four `__XYD_DEFAULT_HEADERS_*__` seams of the transport: the field, the
+/// constructor parameter, the merge of per-client overrides over the built-in
+/// defaults, and the per-request application (skipping any header the call
+/// supplies itself, so a per-call header wins). All empty when
+/// `sdk.defaultHeaders` is not configured.
+fn default_headers_seams(behavior: &Value) -> [(&'static str, &'static str); 4] {
+    let configured = !opensdk_core::behavior::default_headers(behavior).is_empty();
+    let pick = |on: &'static str| if configured { on } else { "" };
+    [
+        (
+            "__XYD_DEFAULT_HEADERS_FIELD__",
+            pick("    private readonly Dictionary<string, string> _defaultHeaders;\n"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_PARAM__",
+            pick(", IReadOnlyDictionary<string, string>? defaultHeaders = null"),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_INIT__",
+            pick(
+                "        _defaultHeaders = new Dictionary<string, string>(DefaultHeaders);\n        if (defaultHeaders != null)\n        {\n            foreach (KeyValuePair<string, string> header in defaultHeaders)\n            {\n                _defaultHeaders[header.Key] = header.Value;\n            }\n        }\n",
+            ),
+        ),
+        (
+            "__XYD_DEFAULT_HEADERS_APPLY__",
+            pick(
+                "        foreach (KeyValuePair<string, string> header in _defaultHeaders)\n        {\n            if (headers == null || !headers.ContainsKey(header.Key))\n            {\n                request.Headers.TryAddWithoutValidation(header.Key, header.Value);\n            }\n        }\n",
+            ),
+        ),
+    ]
 }
 
 /// Emit `Transport.cs` — the vendored, dependency-free runtime.
@@ -340,7 +387,7 @@ pub fn render_transport_file(spec: &Value, ctx: &DotnetRuntimeCtx) -> String {
             .to_string()
     };
 
-    TRANSPORT_TEMPLATE
+    let mut out = TRANSPORT_TEMPLATE
         .replace("__XYD_NAMESPACE__", ctx.namespace)
         .replace("__XYD_ERROR_CLASSES__", &error_class_decls(&behavior))
         .replace("__XYD_CONSTANTS__", &constants_block(spec, &behavior, ctx))
@@ -348,7 +395,11 @@ pub fn render_transport_file(spec: &Value, ctx: &DotnetRuntimeCtx) -> String {
         .replace("__XYD_HEADER_BLOCK__", &header_block)
         .replace("__XYD_RUNTIME_VERSION__", &runtime_version)
         .replace("__XYD_TIMEOUT_BODY__", &timeout_body)
-        .replace("__XYD_ERROR_DISPATCH__", &error_dispatch(&behavior))
+        .replace("__XYD_ERROR_DISPATCH__", &error_dispatch(&behavior));
+    for (seam, text) in default_headers_seams(&behavior) {
+        out = out.replace(seam, text);
+    }
+    out
 }
 
 /// Emit `Pagination.cs` — the generic page containers list methods return.
