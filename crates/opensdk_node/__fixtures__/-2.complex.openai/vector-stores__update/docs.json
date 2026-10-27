@@ -9,6 +9,7 @@
     "request": {
       "typeName": "VectorStoreUpdateParams",
       "argName": "body",
+      "refTypeName": "UpdateVectorStoreRequest",
       "fields": [
         {
           "name": "name",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "VectorStoreObject",
+      "refTypeName": "VectorStoreObject",
       "fields": [
         {
           "name": "id",

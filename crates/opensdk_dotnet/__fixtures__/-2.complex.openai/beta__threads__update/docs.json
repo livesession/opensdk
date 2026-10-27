@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Beta.Threads.Update(threadId, body) -> Task<ThreadObject>",
     "request": {
+      "refTypeName": "ModifyThreadRequest",
       "fields": [
         {
           "name": "ToolResources",
@@ -25,6 +26,7 @@
     },
     "response": {
       "typeName": "ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "Id",

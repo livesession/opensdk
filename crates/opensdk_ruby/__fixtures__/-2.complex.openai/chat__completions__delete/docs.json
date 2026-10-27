@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::ChatCompletionDeleted",
+      "refTypeName": "ChatCompletionDeleted",
       "fields": [
         {
           "name": "object",

@@ -11,6 +11,7 @@
     "request": {
       "typeName": "AdminOrganizationCertificateCreateParams",
       "argName": "body",
+      "refTypeName": "UploadCertificateRequest",
       "fields": [
         {
           "name": "name",
@@ -28,6 +29,7 @@
     },
     "response": {
       "typeName": "Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "object",

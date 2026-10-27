@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.realtime.calls.refer(call_id, target_uri:) -> nil",
     "request": {
+      "refTypeName": "RealtimeCallReferRequest",
       "fields": [
         {
           "name": "target_uri",

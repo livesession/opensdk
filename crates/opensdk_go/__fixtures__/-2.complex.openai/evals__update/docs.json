@@ -9,6 +9,7 @@
     "request": {
       "typeName": "EvalUpdateParams",
       "argName": "body",
+      "refTypeName": "EvalsUpdateRequest",
       "fields": [
         {
           "name": "Name",
@@ -26,6 +27,7 @@
     },
     "response": {
       "typeName": "Eval",
+      "refTypeName": "Eval",
       "fields": [
         {
           "name": "Object",
@@ -56,7 +58,8 @@
           "name": "TestingCriteria",
           "langType": "[]EvalTestingCriteriaItem",
           "required": true,
-          "description": "A list of testing criteria."
+          "description": "A list of testing criteria.",
+          "refTypeName": "EvalTestingCriteriaItem"
         },
         {
           "name": "CreatedAt",

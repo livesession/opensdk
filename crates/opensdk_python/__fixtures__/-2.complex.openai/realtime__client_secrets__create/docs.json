@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.realtime.client_secrets.create(expires_after=..., session=...) -> RealtimeCreateClientSecretResponse",
     "request": {
+      "refTypeName": "RealtimeCreateClientSecretRequest",
       "fields": [
         {
           "name": "expires_after",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "RealtimeCreateClientSecretResponse",
+      "refTypeName": "RealtimeCreateClientSecretResponse",
       "fields": [
         {
           "name": "value",

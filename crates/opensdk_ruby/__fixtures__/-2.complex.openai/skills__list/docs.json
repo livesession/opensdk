@@ -31,7 +31,7 @@
     },
     "response": {
       "typeName": "Page<Models::SkillResource>",
-      "note": "paginated (Page)",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "id",
@@ -75,7 +75,8 @@
           "required": true,
           "description": "Latest version for the skill."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

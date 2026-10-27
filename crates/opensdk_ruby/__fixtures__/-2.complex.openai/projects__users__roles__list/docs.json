@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "Page<Models::AssignedRoleDetails>",
-      "note": "paginated (Page)",
+      "refTypeName": "AssignedRoleDetails",
       "fields": [
         {
           "name": "id",
@@ -101,7 +101,8 @@
           "required": true,
           "description": "Arbitrary metadata stored on the role."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

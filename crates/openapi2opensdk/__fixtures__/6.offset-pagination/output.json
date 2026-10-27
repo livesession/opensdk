@@ -7,6 +7,7 @@
   "types": [
     {
       "name": "WidgetList",
+      "schemaRef": "#/components/schemas/WidgetList",
       "kind": "struct",
       "fields": [
         {
@@ -32,6 +33,7 @@
     },
     {
       "name": "Widget",
+      "schemaRef": "#/components/schemas/Widget",
       "kind": "struct",
       "fields": [
         {

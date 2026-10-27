@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Uploads.Complete(uploadId, body) -> Task<Upload>",
     "request": {
+      "refTypeName": "CompleteUploadRequest",
       "fields": [
         {
           "name": "PartIds",
@@ -24,6 +25,7 @@
     },
     "response": {
       "typeName": "Upload",
+      "refTypeName": "Upload",
       "fields": [
         {
           "name": "Id",

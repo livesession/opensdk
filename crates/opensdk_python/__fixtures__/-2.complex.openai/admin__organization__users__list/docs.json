@@ -32,7 +32,7 @@
     },
     "response": {
       "typeName": "CursorPage[User]",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "User",
       "fields": [
         {
           "name": "object",
@@ -132,7 +132,8 @@
           "description": "Projects associated with the user, if included.",
           "refTypeName": "UserProjects"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

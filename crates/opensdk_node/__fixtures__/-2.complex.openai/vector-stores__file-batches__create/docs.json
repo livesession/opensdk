@@ -8,10 +8,12 @@
   "typeReference": {
     "signature": "client.vectorStores.fileBatches.create(vectorStoreId): Promise<VectorStoreFileBatchObject>",
     "request": {
+      "refTypeName": "CreateVectorStoreFileBatchRequest",
       "fields": []
     },
     "response": {
       "typeName": "VectorStoreFileBatchObject",
+      "refTypeName": "VectorStoreFileBatchObject",
       "fields": [
         {
           "name": "id",

@@ -9,6 +9,7 @@
     "request": {
       "typeName": "VectorStoreSearchParams",
       "argName": "params",
+      "refTypeName": "VectorStoreSearchRequest",
       "fields": [
         {
           "name": "query",
@@ -47,7 +48,7 @@
     },
     "response": {
       "typeName": "VectorStoreSearchResultItem",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "VectorStoreSearchResultItem",
       "fields": [
         {
           "name": "fileId",
@@ -77,9 +78,11 @@
           "name": "content",
           "langType": "List<VectorStoreSearchResultContentObject>",
           "required": true,
-          "description": "Content chunks from the file."
+          "description": "Content chunks from the file.",
+          "refTypeName": "VectorStoreSearchResultContentObject"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

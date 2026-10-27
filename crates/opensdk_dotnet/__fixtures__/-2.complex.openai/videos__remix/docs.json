@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Videos.Remix(videoId, body) -> Task<VideoResource>",
     "request": {
+      "refTypeName": "CreateVideoRemixBody",
       "fields": [
         {
           "name": "Prompt",
@@ -18,6 +19,7 @@
     },
     "response": {
       "typeName": "VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "Id",

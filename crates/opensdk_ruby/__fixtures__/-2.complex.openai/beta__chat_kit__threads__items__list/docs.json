@@ -40,6 +40,7 @@
     },
     "response": {
       "typeName": "Page<Models::ThreadItem>",
+      "refTypeName": "ThreadItem",
       "langType": "Page<Models::ThreadItem>",
       "note": "paginated (Page)"
     }

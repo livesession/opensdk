@@ -8,10 +8,12 @@
   "typeReference": {
     "signature": "client.VectorStores.FileBatches.Create(vectorStoreId, body) -> Task<VectorStoreFileBatchObject>",
     "request": {
+      "refTypeName": "CreateVectorStoreFileBatchRequest",
       "fields": []
     },
     "response": {
       "typeName": "VectorStoreFileBatchObject",
+      "refTypeName": "VectorStoreFileBatchObject",
       "fields": [
         {
           "name": "Id",

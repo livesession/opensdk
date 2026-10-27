@@ -13,12 +13,14 @@
           "name": "include",
           "langType": "List<IncludeEnum>?",
           "required": false,
-          "description": "Additional fields to include in the response. See the `include`\nparameter for [listing Conversation items above](/docs/api-reference/conversations/list-items#conversations_list_items-include) for more information.\n"
+          "description": "Additional fields to include in the response. See the `include`\nparameter for [listing Conversation items above](/docs/api-reference/conversations/list-items#conversations_list_items-include) for more information.\n",
+          "refTypeName": "IncludeEnum"
         }
       ]
     },
     "response": {
       "typeName": "object",
+      "refTypeName": "ConversationItem",
       "langType": "object"
     }
   }

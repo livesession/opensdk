@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "DeleteFineTuningCheckpointPermissionResponse",
+      "refTypeName": "DeleteFineTuningCheckpointPermissionResponse",
       "fields": [
         {
           "name": "Id",

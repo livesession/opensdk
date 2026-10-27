@@ -37,7 +37,7 @@
     },
     "response": {
       "typeName": "VectorStoreObject",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "VectorStoreObject",
       "fields": [
         {
           "name": "Id",
@@ -104,7 +104,8 @@
           "required": true,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

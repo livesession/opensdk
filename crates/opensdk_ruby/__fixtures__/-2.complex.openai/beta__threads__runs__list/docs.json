@@ -39,7 +39,7 @@
     },
     "response": {
       "typeName": "Page<Models::RunObject>",
-      "note": "paginated (Page)",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -145,7 +145,8 @@
           "name": "tools",
           "langType": "Array<Models::RunObjectToolsItem>",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "RunObjectToolsItem"
         },
         {
           "name": "metadata",
@@ -207,7 +208,8 @@
           "required": true,
           "refTypeName": "AssistantsApiResponseFormatOption"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

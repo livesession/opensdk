@@ -21,6 +21,7 @@
   "types": [
     {
       "name": "PetList",
+      "schemaRef": "#/components/schemas/PetList",
       "kind": "struct",
       "fields": [
         {
@@ -46,6 +47,7 @@
     },
     {
       "name": "Pet",
+      "schemaRef": "#/components/schemas/Pet",
       "kind": "struct",
       "fields": [
         {
@@ -89,6 +91,7 @@
     },
     {
       "name": "PetStatus",
+      "schemaRef": "#/components/schemas/PetStatus",
       "kind": "enum",
       "base": "string",
       "values": [
@@ -106,6 +109,7 @@
     },
     {
       "name": "CreatePetRequest",
+      "schemaRef": "#/components/schemas/CreatePetRequest",
       "kind": "struct",
       "fields": [
         {

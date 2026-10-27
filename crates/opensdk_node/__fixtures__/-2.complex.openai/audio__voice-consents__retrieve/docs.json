@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "VoiceConsentResource",
+      "refTypeName": "VoiceConsentResource",
       "fields": [
         {
           "name": "object",

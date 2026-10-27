@@ -156,10 +156,15 @@ pub struct RenderedTypeField {
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
-    /// When the field type is a named type: the ORIGINAL IR schema name, for a
-    /// cross-type link.
+    /// When the field type is (or wraps, through arrays and maps) a named type:
+    /// the ORIGINAL IR type name — the key into [`RenderedTypeReference::nested`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_type_name: Option<String>,
+    /// The OpenAPI component schema that IR type came from
+    /// (`#/components/schemas/<Name>`); absent when the type was hoisted from
+    /// an inline schema, whatever name it carries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_ref: Option<String>,
 }
 
 /// One SDK type (request params / a response struct) as rendered field rows.
@@ -174,6 +179,13 @@ pub struct RenderedTypeGroup {
     /// (`body`/`query`/`params`). `None` when the language flattens.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arg_name: Option<String>,
+    /// The IR type behind the request body (the key into `nested`); absent
+    /// when there is no body or it is not a named type.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ref_type_name: Option<String>,
+    /// That type's OpenAPI component schema, when it came from one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_ref: Option<String>,
     pub fields: Vec<RenderedTypeField>,
 }
 
@@ -183,6 +195,14 @@ pub struct RenderedTypeGroup {
 pub struct RenderedTypeResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_name: Option<String>,
+    /// The IR type behind the response (the paginated ITEM type for a list;
+    /// through arrays and maps) — the key into `nested`. Absent for a binary,
+    /// scalar or empty response.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ref_type_name: Option<String>,
+    /// That type's OpenAPI component schema, when it came from one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_ref: Option<String>,
     /// Struct field rows; absent for binary/scalar/open-union responses.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<RenderedTypeField>>,
@@ -194,7 +214,57 @@ pub struct RenderedTypeResponse {
     pub note: Option<String>,
 }
 
+/// A rendered type expression: the language type string plus the IR type it
+/// names (through arrays and maps), when it names one. A union variant, an
+/// alias target.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenderedTypeExpr {
+    pub lang_type: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ref_type_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_ref: Option<String>,
+}
+
+/// One IR type reachable from an operation's request or response, rendered in
+/// one language: a `nested` entry (keyed by the IR type name). The body is
+/// kind-specific: `fields` for a struct, `values` for an enum, `variants` for a
+/// union, `of` for an alias.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenderedNestedType {
+    /// The language's name for the type (what a field of this type shows).
+    pub type_name: String,
+    /// `struct` | `enum` | `union` | `alias`.
+    pub kind: String,
+    /// The OpenAPI component schema the type came from; absent for a type
+    /// hoisted from an inline schema (a synthesized envelope, a nested block).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_ref: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// A struct's field rows, rendered as the language's MODEL declares them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fields: Option<Vec<RenderedTypeField>>,
+    /// An enum's values, as the IR carries them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub values: Option<Vec<Value>>,
+    /// A union's variants.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variants: Option<Vec<RenderedTypeExpr>>,
+    /// An alias's target.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub of: Option<RenderedTypeExpr>,
+}
+
 /// A per-operation TYPE reference, rendered in one language.
+///
+/// `request` and `response` are ONE level deep; `nested` is the lookup table
+/// behind them — every IR type reachable from either (the request body, the
+/// query/header parameter types and the response type included), keyed by the
+/// IR type name a row's `refTypeName` carries, within the depth cap
+/// `opensdk_core::nested` documents.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RenderedTypeReference {
@@ -202,6 +272,8 @@ pub struct RenderedTypeReference {
     pub signature: String,
     pub request: RenderedTypeGroup,
     pub response: RenderedTypeResponse,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub nested: BTreeMap<String, RenderedNestedType>,
 }
 
 /// One operation's docs payload, keyed by `"<httpmethod> <path>"`.
@@ -492,14 +564,19 @@ mod tests {
                 request: RenderedTypeGroup {
                     type_name: None,
                     arg_name: None,
+                    ref_type_name: None,
+                    schema_ref: None,
                     fields: vec![],
                 },
                 response: RenderedTypeResponse {
                     type_name: None,
+                    ref_type_name: None,
+                    schema_ref: None,
                     fields: None,
                     lang_type: None,
                     note: None,
                 },
+                nested: BTreeMap::new(),
             }
         }
         let map = EmitterFns::new("go", gen)

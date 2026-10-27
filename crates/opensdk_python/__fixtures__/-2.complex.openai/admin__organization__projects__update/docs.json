@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.update(project_id, name=..., external_key_id=..., geography=...) -> Project",
     "request": {
+      "refTypeName": "ProjectUpdateRequest",
       "fields": [
         {
           "name": "name",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "Project",
+      "refTypeName": "Project",
       "fields": [
         {
           "name": "id",

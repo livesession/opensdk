@@ -14,6 +14,7 @@
     },
     "response": {
       "typeName": "ProjectServiceAccountDeleteResponse",
+      "refTypeName": "ProjectServiceAccountDeleteResponse",
       "fields": [
         {
           "name": "Object",

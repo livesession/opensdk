@@ -21,6 +21,7 @@ use serde_json::Value;
 use opensdk_core::emitter::{
     RenderedTypeField, RenderedTypeGroup, RenderedTypeReference, RenderedTypeResponse,
 };
+use opensdk_core::nested::{finish_type_reference, NestedRender, TypeReferenceRoots};
 
 use crate::example::render_java_example;
 use crate::example_plan::plan_method_example;
@@ -34,7 +35,7 @@ use crate::service::{plan_params, return_plan};
 use crate::tests_gen::{
     call_expr, client_chain, const_body_field_names, method_has_params, render_params_builder,
 };
-use crate::type_plan::{plan_type_reference, ref_schema_name, NeutralTypeField};
+use crate::type_plan::{plan_type_reference, ref_schema_name, to_request_field, NeutralTypeField};
 
 /// Whether the method returns a value (drives `var result = ...` vs a bare
 /// call) — mirrors service.rs `return_plan`: a binary download, a paginated
@@ -144,6 +145,21 @@ fn java_render_field(f: &NeutralTypeField, types: &Types) -> RenderedTypeField {
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(f.type_ref),
+        schema_ref: None,
+    }
+}
+
+/// A response (model) field row: the bare `java_type`, never `Optional`-wrapped
+/// — a decoded model's optional field still has its own type.
+fn java_response_field(rf: &NeutralTypeField, types: &Types) -> RenderedTypeField {
+    RenderedTypeField {
+        name: camel_case(&rf.logical_name),
+        lang_type: java_type(rf.type_ref, types),
+        required: rf.required,
+        description: rf.description.clone(),
+        deprecated: rf.deprecated,
+        ref_type_name: ref_schema_name(rf.type_ref),
+        schema_ref: None,
     }
 }
 
@@ -156,6 +172,8 @@ fn java_response(
     if let Some(ct) = &op.binary_content_type {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("byte[]".to_string()),
             note: Some(format!("binary download ({ct})")),
@@ -164,6 +182,8 @@ fn java_response(
     if neutral_ref.is_none() || op.primary_response == PrimaryKind::None {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("void".to_string()),
             note: Some("no response body".to_string()),
@@ -174,17 +194,12 @@ fn java_response(
     match neutral_fields {
         Some(fields) => RenderedTypeResponse {
             type_name: Some(type_name),
+            ref_type_name: None,
+            schema_ref: None,
             fields: Some(
                 fields
                     .iter()
-                    .map(|rf| RenderedTypeField {
-                        name: camel_case(&rf.logical_name),
-                        lang_type: java_type(rf.type_ref, &ctx.types),
-                        required: rf.required,
-                        description: rf.description.clone(),
-                        deprecated: rf.deprecated,
-                        ref_type_name: ref_schema_name(rf.type_ref),
-                    })
+                    .map(|rf| java_response_field(rf, &ctx.types))
                     .collect(),
             ),
             lang_type: None,
@@ -192,6 +207,8 @@ fn java_response(
         },
         None => RenderedTypeResponse {
             type_name: Some(type_name.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(type_name),
             note,
@@ -209,13 +226,15 @@ pub fn generate_java_type_reference(
     options: &Value,
 ) -> RenderedTypeReference {
     let ctx = resolve_java_options(spec, build_types(spec), options);
-    java_type_reference(method, chain, &ctx)
+    java_type_reference(spec, method, chain, &ctx, options)
 }
 
 fn java_type_reference(
+    spec: &Value,
     method: &Value,
     segments: &[String],
     ctx: &JavaCtx,
+    options: &Value,
 ) -> RenderedTypeReference {
     let op = plan_operation(method, &ctx.types);
     let neutral = plan_type_reference(method, &op, &ctx.types);
@@ -247,10 +266,12 @@ fn java_type_reference(
         return_plan(method, &op, ctx).0
     );
 
-    RenderedTypeReference {
+    let mut tr = RenderedTypeReference {
         signature,
         request: RenderedTypeGroup {
             type_name: params.as_ref().map(|p| p.class_name.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             arg_name: params.as_ref().map(|_| "params".to_string()),
             fields: request_fields,
         },
@@ -260,5 +281,27 @@ fn java_type_reference(
             neutral.response_fields.as_ref(),
             ctx,
         ),
-    }
+        nested: Default::default(),
+    };
+    // The transitive view behind the two groups (`opensdk_core::nested`): a
+    // nested struct's rows render as a response model's do.
+    let response = tr
+        .response
+        .type_name
+        .is_some()
+        .then_some(neutral.response_type_ref)
+        .flatten();
+    let render_field = |raw: &Value| java_response_field(&to_request_field(raw), &ctx.types);
+    let render_type = |raw: Option<&Value>| java_type(raw, &ctx.types);
+    finish_type_reference(
+        &mut tr,
+        spec,
+        &TypeReferenceRoots::from_method(method, response),
+        options,
+        &NestedRender {
+            field: &render_field,
+            lang_type: &render_type,
+        },
+    );
+    tr
 }

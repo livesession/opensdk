@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.groups.roles.create(group_id, role_id:) -> Models::GroupRoleAssignment",
     "request": {
+      "refTypeName": "PublicAssignOrganizationGroupRoleBody",
       "fields": [
         {
           "name": "role_id",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "Models::GroupRoleAssignment",
+      "refTypeName": "GroupRoleAssignment",
       "fields": [
         {
           "name": "object",

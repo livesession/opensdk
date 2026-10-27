@@ -1,0 +1,268 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Widgetco",
+    "version": "1.0.0",
+    "description": "A widget catalogue whose list envelope nests its paging block as an inline object."
+  },
+  "servers": [
+    {
+      "url": "https://api.widgetco.test/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Material": {
+        "type": "object",
+        "description": "What a part is made of.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "steel"
+          },
+          "recycled": {
+            "type": "boolean",
+            "description": "Whether the stock is reclaimed."
+          }
+        }
+      },
+      "Paint": {
+        "type": "object",
+        "description": "A painted finish.",
+        "required": [
+          "color"
+        ],
+        "properties": {
+          "color": {
+            "type": "string",
+            "example": "red"
+          },
+          "gloss": {
+            "type": "boolean",
+            "description": "Whether the coat is glossy."
+          }
+        }
+      },
+      "Plating": {
+        "type": "object",
+        "description": "A plated finish.",
+        "required": [
+          "metal"
+        ],
+        "properties": {
+          "metal": {
+            "type": "string",
+            "example": "zinc"
+          },
+          "microns": {
+            "type": "integer",
+            "example": 12
+          }
+        }
+      },
+      "Finish": {
+        "description": "How a part's surface is treated: painted or plated.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Paint"
+          },
+          {
+            "$ref": "#/components/schemas/Plating"
+          }
+        ]
+      },
+      "PartCodes": {
+        "type": "array",
+        "description": "The catalogue codes a part is listed under.",
+        "items": {
+          "type": "string",
+          "example": "cat_1"
+        }
+      },
+      "Part": {
+        "type": "object",
+        "description": "A part a widget is assembled from.",
+        "required": [
+          "sku"
+        ],
+        "properties": {
+          "sku": {
+            "type": "string",
+            "example": "prt_1"
+          },
+          "weight_grams": {
+            "type": "integer",
+            "example": 40
+          },
+          "material": {
+            "$ref": "#/components/schemas/Material"
+          },
+          "finish": {
+            "$ref": "#/components/schemas/Finish"
+          },
+          "codes": {
+            "$ref": "#/components/schemas/PartCodes"
+          }
+        }
+      },
+      "WidgetStatus": {
+        "type": "string",
+        "description": "Where a widget is in its life cycle.",
+        "enum": [
+          "draft",
+          "active",
+          "retired"
+        ]
+      },
+      "Widget": {
+        "type": "object",
+        "description": "A widget in the catalogue.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "wgt_1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Sprocket"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WidgetStatus"
+          },
+          "part": {
+            "$ref": "#/components/schemas/Part"
+          }
+        }
+      },
+      "WidgetList": {
+        "type": "object",
+        "description": "A page of widgets; the paging block is an inline object.",
+        "required": [
+          "data",
+          "list"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Widget"
+            }
+          },
+          "list": {
+            "type": "object",
+            "description": "Paging markers, nested beside the items.",
+            "required": [
+              "has_more"
+            ],
+            "properties": {
+              "has_more": {
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "type": "string",
+                "nullable": true,
+                "description": "Pass as `cursor` to fetch the next page."
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/widgets": {
+      "get": {
+        "operationId": "listWidgets",
+        "summary": "List widgets",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "cur_1"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only widgets in this state.",
+            "schema": {
+              "$ref": "#/components/schemas/WidgetStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of widgets with its inline `list` block.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WidgetList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets/{widget_id}": {
+      "get": {
+        "operationId": "getWidget",
+        "summary": "Retrieve a widget",
+        "parameters": [
+          {
+            "name": "widget_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "wgt_1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The widget.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Widget"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

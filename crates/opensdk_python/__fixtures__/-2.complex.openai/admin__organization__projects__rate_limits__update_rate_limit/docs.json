@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.rate_limits.update_rate_limit(project_id, rate_limit_id, max_requests_per_1_minute=..., max_tokens_per_1_minute=..., max_images_per_1_minute=..., max_audio_megabytes_per_1_minute=..., max_requests_per_1_day=..., batch_1_day_max_input_tokens=...) -> ProjectRateLimit",
     "request": {
+      "refTypeName": "ProjectRateLimitUpdateRequest",
       "fields": [
         {
           "name": "max_requests_per_1_minute",
@@ -51,6 +52,7 @@
     },
     "response": {
       "typeName": "ProjectRateLimit",
+      "refTypeName": "ProjectRateLimit",
       "fields": [
         {
           "name": "object",

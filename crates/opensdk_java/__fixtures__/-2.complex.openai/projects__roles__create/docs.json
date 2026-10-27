@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ProjectRoleCreateParams",
       "argName": "params",
+      "refTypeName": "PublicCreateOrganizationRoleBody",
       "fields": [
         {
           "name": "roleName",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "Role",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "object",

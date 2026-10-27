@@ -7,6 +7,7 @@
   "types": [
     {
       "name": "Pet",
+      "schemaRef": "#/components/schemas/Pet",
       "kind": "union",
       "semantics": "oneOf",
       "variants": [
@@ -29,6 +30,7 @@
     },
     {
       "name": "Cat",
+      "schemaRef": "#/components/schemas/Cat",
       "kind": "struct",
       "fields": [
         {
@@ -51,6 +53,7 @@
     },
     {
       "name": "Dog",
+      "schemaRef": "#/components/schemas/Dog",
       "kind": "struct",
       "fields": [
         {
@@ -73,6 +76,7 @@
     },
     {
       "name": "Vehicle",
+      "schemaRef": "#/components/schemas/Vehicle",
       "kind": "union",
       "semantics": "oneOf",
       "variants": [
@@ -95,6 +99,7 @@
     },
     {
       "name": "Car",
+      "schemaRef": "#/components/schemas/Car",
       "kind": "struct",
       "fields": [
         {
@@ -118,6 +123,7 @@
     },
     {
       "name": "Bike",
+      "schemaRef": "#/components/schemas/Bike",
       "kind": "struct",
       "fields": [
         {

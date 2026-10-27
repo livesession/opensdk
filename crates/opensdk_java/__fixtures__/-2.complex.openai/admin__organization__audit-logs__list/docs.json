@@ -29,7 +29,8 @@
           "name": "eventTypes",
           "langType": "Optional<List<AuditLogEventType>>",
           "required": false,
-          "description": "Return only events with a `type` in one of these values. For example, `project.created`. For all options, see the documentation for the [audit log object](/docs/api-reference/audit-logs/object)."
+          "description": "Return only events with a `type` in one of these values. For example, `project.created`. For all options, see the documentation for the [audit log object](/docs/api-reference/audit-logs/object).",
+          "refTypeName": "AuditLogEventType"
         },
         {
           "name": "actorIds",
@@ -71,7 +72,7 @@
     },
     "response": {
       "typeName": "AuditLog",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "AuditLog",
       "fields": [
         {
           "name": "id",
@@ -431,7 +432,8 @@
           "description": "The details for events with this `type`.",
           "refTypeName": "AuditLogCertificatesActivated"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

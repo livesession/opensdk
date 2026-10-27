@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::VectorStoreFileObject",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "id",

@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.users.create(project_id, user_id: nil, email: nil, role:) -> Models::ProjectUser",
     "request": {
+      "refTypeName": "ProjectUserCreateRequest",
       "fields": [
         {
           "name": "user_id",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "Models::ProjectUser",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "object",

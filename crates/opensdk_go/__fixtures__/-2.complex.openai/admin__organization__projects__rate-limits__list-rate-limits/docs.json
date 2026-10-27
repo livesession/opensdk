@@ -35,7 +35,7 @@
     },
     "response": {
       "typeName": "ProjectRateLimit",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "ProjectRateLimit",
       "fields": [
         {
           "name": "Object",
@@ -91,7 +91,8 @@
           "required": false,
           "description": "The maximum batch input tokens per day. Only present for relevant models."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

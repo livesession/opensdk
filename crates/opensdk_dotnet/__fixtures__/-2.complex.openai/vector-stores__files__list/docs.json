@@ -45,7 +45,7 @@
     },
     "response": {
       "typeName": "VectorStoreFileObject",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "Id",
@@ -103,7 +103,8 @@
           "required": false,
           "refTypeName": "VectorStoreFileAttributes"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

@@ -1,6 +1,19 @@
 //! The docs capabilities vs `docs.json` — captured from the TypeScript emitter
-//! before the port, so it is a true oracle. `usage` must match BYTE-EXACTLY and
-//! `typeReference` must serialize to exactly the golden's JSON shape.
+//! before the port, so it is a true oracle for what it captured. `usage` must
+//! match BYTE-EXACTLY and `typeReference` must serialize to exactly the golden's
+//! JSON shape.
+//!
+//! Options: a fixture renders with the bag in its `docs.options.json` when it
+//! carries one, else with the suite default `{ "nestedDepth": 0 }`. The 0.2.2
+//! type reference grew `nested` (the transitive type view), `schemaRef` and the
+//! through-array `refTypeName`; the corpus goldens were re-minted at depth 0,
+//! so they stay the one-level capture plus those small additive keys — the
+//! nested view of a 242-operation corpus is megabytes of golden per language
+//! with no oracle behind it. `13.nested-envelope` carries `docs.options.json`
+//! `{}` and renders at the default depth: the one full `nested` golden.
+//!
+//! `XYD_BLESS=1` re-mints every `docs.json` (`usage` + `typeReference`; `chain`
+//! and `action` are kept) instead of checking it. Never set it in CI.
 
 use std::path::{Path, PathBuf};
 
@@ -9,6 +22,26 @@ use serde_json::Value;
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("__fixtures__")
+}
+
+/// The emitter options a fixture's golden was minted with: its
+/// `docs.options.json`, else the suite default — no nested type view.
+fn docs_options(dir: &Path) -> Value {
+    match std::fs::read_to_string(dir.join("docs.options.json")) {
+        Ok(raw) => serde_json::from_str(&raw)
+            .unwrap_or_else(|e| panic!("{}: bad docs.options.json: {e}", dir.display())),
+        Err(_) => serde_json::json!({ "nestedDepth": 0 }),
+    }
+}
+
+/// `XYD_BLESS=1`: rewrite the golden's `usage` and `typeReference` in place
+/// (`chain` and `action` stay), in the captured file's own layout.
+fn bless_golden(dir: &Path, golden: &Value, usage: String, type_reference: Value) {
+    let mut out = golden.clone();
+    out["usage"] = Value::String(usage);
+    out["typeReference"] = type_reference;
+    let pretty = serde_json::to_string_pretty(&out).unwrap();
+    std::fs::write(dir.join("docs.json"), format!("{pretty}\n")).unwrap();
 }
 
 fn has(dir: &Path, file: &str) -> bool {
@@ -108,6 +141,7 @@ fn docs_match_the_typescript_golden() {
         cases.len()
     );
 
+    let bless = std::env::var("XYD_BLESS").as_deref() == Ok("1");
     let mut failures: Vec<String> = Vec::new();
     for (id, dir) in &cases {
         let spec = read_json(dir.join("input.json"));
@@ -125,7 +159,17 @@ fn docs_match_the_typescript_golden() {
         };
         assert_eq!(found_chain, chain, "{id}: resolved a different method");
 
-        let usage = generate_dotnet_usage(&spec, &chain, &method, &Value::Null);
+        let options = docs_options(dir);
+        let usage = generate_dotnet_usage(&spec, &chain, &method, &options);
+        let tr = serde_json::to_value(generate_dotnet_type_reference(
+            &spec, &chain, &method, &options,
+        ))
+        .expect("serialize type reference");
+        if bless {
+            bless_golden(dir, &golden, usage, tr);
+            continue;
+        }
+
         let want_usage = golden["usage"].as_str().expect("golden usage");
         if usage != want_usage {
             failures.push(format!(
@@ -133,20 +177,17 @@ fn docs_match_the_typescript_golden() {
                 first_diff_line(&usage, want_usage)
             ));
         }
-
-        let tr = serde_json::to_value(generate_dotnet_type_reference(
-            &spec,
-            &chain,
-            &method,
-            &Value::Null,
-        ))
-        .expect("serialize type reference");
         if tr != golden["typeReference"] {
             failures.push(format!(
                 "{id}: typeReference\n      got  {}\n      want {}",
                 tr, golden["typeReference"]
             ));
         }
+    }
+
+    if bless {
+        eprintln!("BLESSED {} docs.json", cases.len());
+        return;
     }
 
     assert!(

@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.groups.create(name:) -> Models::GroupResponse",
     "request": {
+      "refTypeName": "CreateGroupBody",
       "fields": [
         {
           "name": "name",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "Models::GroupResponse",
+      "refTypeName": "GroupResponse",
       "fields": [
         {
           "name": "id",

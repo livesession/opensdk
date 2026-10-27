@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.vector_stores.create(file_ids: nil, name: nil, description: nil, expires_after: nil, chunking_strategy: nil, metadata: nil) -> Models::VectorStoreObject",
     "request": {
+      "refTypeName": "CreateVectorStoreRequest",
       "fields": [
         {
           "name": "file_ids",
@@ -49,6 +50,7 @@
     },
     "response": {
       "typeName": "Models::VectorStoreObject",
+      "refTypeName": "VectorStoreObject",
       "fields": [
         {
           "name": "id",

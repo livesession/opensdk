@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Responses.Compact.Create(body) -> Task<CompactResource>",
     "request": {
+      "refTypeName": "CompactResponseMethodPublicBody",
       "fields": [
         {
           "name": "Model",
@@ -52,6 +53,7 @@
     },
     "response": {
       "typeName": "CompactResource",
+      "refTypeName": "CompactResource",
       "fields": [
         {
           "name": "Id",
@@ -69,7 +71,8 @@
           "name": "Output",
           "langType": "List<object>",
           "required": true,
-          "description": "The compacted list of output items."
+          "description": "The compacted list of output items.",
+          "refTypeName": "ItemField"
         },
         {
           "name": "CreatedAt",

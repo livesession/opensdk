@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "SkillResource",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "ID",
@@ -77,7 +77,8 @@
           "required": true,
           "description": "Latest version for the skill."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

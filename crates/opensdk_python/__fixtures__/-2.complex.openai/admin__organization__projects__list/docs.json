@@ -32,7 +32,7 @@
     },
     "response": {
       "typeName": "CursorPage[Project]",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "Project",
       "fields": [
         {
           "name": "id",
@@ -75,7 +75,8 @@
           "required": false,
           "description": "The external key associated with the project."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

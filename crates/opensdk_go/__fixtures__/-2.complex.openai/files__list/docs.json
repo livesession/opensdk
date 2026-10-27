@@ -39,7 +39,7 @@
     },
     "response": {
       "typeName": "OpenAiFile",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "OpenAiFile",
       "fields": [
         {
           "name": "ID",
@@ -99,7 +99,8 @@
           "description": "Deprecated. For details on why a fine-tuning training file failed validation, see the `error` field on `fine_tuning.job`.",
           "deprecated": true
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

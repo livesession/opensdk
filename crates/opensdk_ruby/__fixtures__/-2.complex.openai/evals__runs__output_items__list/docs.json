@@ -40,7 +40,7 @@
     },
     "response": {
       "typeName": "Page<Models::EvalRunOutputItem>",
-      "note": "paginated (Page)",
+      "refTypeName": "EvalRunOutputItem",
       "fields": [
         {
           "name": "object",
@@ -94,7 +94,8 @@
           "name": "results",
           "langType": "Array<Models::EvalRunOutputItemResult>",
           "required": true,
-          "description": "A list of grader results for this output item."
+          "description": "A list of grader results for this output item.",
+          "refTypeName": "EvalRunOutputItemResult"
         },
         {
           "name": "sample",
@@ -103,7 +104,8 @@
           "description": "A sample containing the input and output of the evaluation run.",
           "refTypeName": "EvalRunOutputItemSample"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

@@ -34,12 +34,14 @@
           "name": "include",
           "langType": "Optional<List<IncludeEnum>>",
           "required": false,
-          "description": "Additional fields to include in the response. See the `include`\nparameter for Response creation above for more information.\n"
+          "description": "Additional fields to include in the response. See the `include`\nparameter for Response creation above for more information.\n",
+          "refTypeName": "IncludeEnum"
         }
       ]
     },
     "response": {
       "typeName": "Object",
+      "refTypeName": "ItemResource",
       "langType": "Object",
       "note": "paginated (CursorPage)"
     }

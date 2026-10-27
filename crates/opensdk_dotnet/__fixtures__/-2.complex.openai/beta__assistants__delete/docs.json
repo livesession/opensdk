@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "DeleteAssistantResponse",
+      "refTypeName": "DeleteAssistantResponse",
       "fields": [
         {
           "name": "Id",

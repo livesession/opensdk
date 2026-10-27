@@ -229,16 +229,16 @@ pub fn generate_go_usage(
 /// The per-operation SDK TYPE REFERENCE for the docs API-reference page: the
 /// method signature plus the request-params and response types as field rows.
 ///
-/// `_options` is accepted for a uniform cross-language entry point; no Go
-/// emitter option reaches this output (the rendered type names are unqualified,
-/// so neither `packageName` nor `modulePath` appears in it).
+/// `options` is the emitter options bag; the only key this output reads is
+/// the `nestedDepth` cap of `opensdk_core::nested` (the rendered type names are
+/// unqualified, so neither `packageName` nor `modulePath` appears in it).
 pub fn generate_go_type_reference(
     spec: &Value,
     chain: &[String],
     method: &Value,
-    _options: &Value,
+    options: &Value,
 ) -> opensdk_core::emitter::RenderedTypeReference {
-    example_go::go_type_reference(method, chain, &symbol_table(spec))
+    example_go::go_type_reference(spec, method, chain, &symbol_table(spec), options)
 }
 
 /// This crate as plain data, for a Rust-side dispatcher and the A2 docs surface.

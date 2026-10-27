@@ -64,7 +64,8 @@
           "name": "group_by",
           "langType": "Array<Models::AdminOrganizationUsageCompletionsListGroupByItem>",
           "required": false,
-          "description": "Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model`, `batch`, `service_tier` or any combination of them."
+          "description": "Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model`, `batch`, `service_tier` or any combination of them.",
+          "refTypeName": "AdminOrganizationUsageCompletionsListGroupByItem"
         },
         {
           "name": "limit",
@@ -82,7 +83,7 @@
     },
     "response": {
       "typeName": "Page<Models::UsageTimeBucket>",
-      "note": "paginated (Page)",
+      "refTypeName": "UsageTimeBucket",
       "fields": [
         {
           "name": "object",
@@ -102,9 +103,11 @@
         {
           "name": "results",
           "langType": "Array<Models::UsageTimeBucketResultsItem>",
-          "required": true
+          "required": true,
+          "refTypeName": "UsageTimeBucketResultsItem"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

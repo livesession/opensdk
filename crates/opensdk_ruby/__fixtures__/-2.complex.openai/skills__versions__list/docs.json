@@ -32,7 +32,7 @@
     },
     "response": {
       "typeName": "Page<Models::SkillVersionResource>",
-      "note": "paginated (Page)",
+      "refTypeName": "SkillVersionResource",
       "fields": [
         {
           "name": "object",
@@ -76,7 +76,8 @@
           "required": true,
           "description": "Description of the skill version."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

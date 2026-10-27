@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::VideoCharacterResource",
+      "refTypeName": "VideoCharacterResource",
       "fields": [
         {
           "name": "id",

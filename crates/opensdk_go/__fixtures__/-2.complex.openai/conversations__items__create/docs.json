@@ -10,23 +10,27 @@
     "request": {
       "typeName": "ConversationItemNewParams",
       "argName": "params",
+      "refTypeName": "ConversationsItemsCreateRequest",
       "fields": [
         {
           "name": "Items",
           "langType": "[]InputItem",
           "required": true,
-          "description": "The items to add to the conversation. You may add up to 20 items at a time.\n"
+          "description": "The items to add to the conversation. You may add up to 20 items at a time.\n",
+          "refTypeName": "InputItem"
         },
         {
           "name": "Include",
           "langType": "[]IncludeEnum",
           "required": false,
-          "description": "Additional fields to include in the response. See the `include`\nparameter for [listing Conversation items above](/docs/api-reference/conversations/list-items#conversations_list_items-include) for more information.\n"
+          "description": "Additional fields to include in the response. See the `include`\nparameter for [listing Conversation items above](/docs/api-reference/conversations/list-items#conversations_list_items-include) for more information.\n",
+          "refTypeName": "IncludeEnum"
         }
       ]
     },
     "response": {
       "typeName": "ConversationItem",
+      "refTypeName": "ConversationItem",
       "langType": "ConversationItem",
       "note": "paginated (pagination.CursorPage)"
     }

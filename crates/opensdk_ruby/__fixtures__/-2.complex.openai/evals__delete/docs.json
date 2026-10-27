@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Models::EvalsDeleteResponse",
+      "refTypeName": "EvalsDeleteResponse",
       "fields": [
         {
           "name": "object",

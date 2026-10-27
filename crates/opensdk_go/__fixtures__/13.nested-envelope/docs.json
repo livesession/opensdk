@@ -1,0 +1,266 @@
+{
+  "chain": [
+    "widgets"
+  ],
+  "action": "list",
+  "usage": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/example/widgetco\"\n\t\"github.com/example/widgetco/option\"\n\t\"github.com/example/widgetco/packages/param\"\n)\n\nfunc main() {\n\tclient := widgetco.NewClient(\n\t\toption.WithAPIKey(os.Getenv(\"WIDGETCO_API_KEY\")),\n\t)\n\tresult, err := client.Widgets.List(\n\t\tcontext.TODO(),\n\t\twidgetco.WidgetListParams{\n\t\t\tLimit: param.NewOpt[int64](20),\n\t\t\tCursor: param.NewOpt[string](\"cur_1\"),\n\t\t\tStatus: param.NewOpt[widgetco.WidgetStatus](widgetco.WidgetStatusDraft),\n\t\t},\n\t)\n\tif err != nil {\n\t\tpanic(err.Error())\n\t}\n\tfmt.Printf(\"%+v\\n\", result)\n}\n",
+  "typeReference": {
+    "signature": "client.Widgets.List(ctx, query) (*WidgetList, error)",
+    "request": {
+      "typeName": "WidgetListParams",
+      "argName": "query",
+      "fields": [
+        {
+          "name": "Limit",
+          "langType": "param.Opt[int64]",
+          "required": false
+        },
+        {
+          "name": "Cursor",
+          "langType": "param.Opt[string]",
+          "required": false
+        },
+        {
+          "name": "Status",
+          "langType": "param.Opt[WidgetStatus]",
+          "required": false,
+          "description": "Only widgets in this state.",
+          "refTypeName": "WidgetStatus",
+          "schemaRef": "#/components/schemas/WidgetStatus"
+        }
+      ]
+    },
+    "response": {
+      "typeName": "WidgetList",
+      "refTypeName": "WidgetList",
+      "schemaRef": "#/components/schemas/WidgetList",
+      "fields": [
+        {
+          "name": "Data",
+          "langType": "[]Widget",
+          "required": true,
+          "refTypeName": "Widget",
+          "schemaRef": "#/components/schemas/Widget"
+        },
+        {
+          "name": "List",
+          "langType": "WidgetListList",
+          "required": true,
+          "description": "Paging markers, nested beside the items.",
+          "refTypeName": "WidgetListList"
+        }
+      ]
+    },
+    "nested": {
+      "Finish": {
+        "typeName": "Finish",
+        "kind": "union",
+        "schemaRef": "#/components/schemas/Finish",
+        "description": "How a part's surface is treated: painted or plated.",
+        "variants": [
+          {
+            "langType": "Paint",
+            "refTypeName": "Paint",
+            "schemaRef": "#/components/schemas/Paint"
+          },
+          {
+            "langType": "Plating",
+            "refTypeName": "Plating",
+            "schemaRef": "#/components/schemas/Plating"
+          }
+        ]
+      },
+      "Material": {
+        "typeName": "Material",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Material",
+        "description": "What a part is made of.",
+        "fields": [
+          {
+            "name": "Name",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "Recycled",
+            "langType": "bool",
+            "required": false,
+            "description": "Whether the stock is reclaimed."
+          }
+        ]
+      },
+      "Paint": {
+        "typeName": "Paint",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Paint",
+        "description": "A painted finish.",
+        "fields": [
+          {
+            "name": "Color",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "Gloss",
+            "langType": "bool",
+            "required": false,
+            "description": "Whether the coat is glossy."
+          }
+        ]
+      },
+      "Part": {
+        "typeName": "Part",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Part",
+        "description": "A part a widget is assembled from.",
+        "fields": [
+          {
+            "name": "Sku",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "WeightGrams",
+            "langType": "int64",
+            "required": false
+          },
+          {
+            "name": "Material",
+            "langType": "Material",
+            "required": false,
+            "refTypeName": "Material",
+            "schemaRef": "#/components/schemas/Material"
+          },
+          {
+            "name": "Finish",
+            "langType": "Finish",
+            "required": false,
+            "refTypeName": "Finish",
+            "schemaRef": "#/components/schemas/Finish"
+          },
+          {
+            "name": "Codes",
+            "langType": "PartCodes",
+            "required": false,
+            "refTypeName": "PartCodes",
+            "schemaRef": "#/components/schemas/PartCodes"
+          }
+        ]
+      },
+      "PartCodes": {
+        "typeName": "PartCodes",
+        "kind": "alias",
+        "schemaRef": "#/components/schemas/PartCodes",
+        "of": {
+          "langType": "[]string"
+        }
+      },
+      "Plating": {
+        "typeName": "Plating",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Plating",
+        "description": "A plated finish.",
+        "fields": [
+          {
+            "name": "Metal",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "Microns",
+            "langType": "int64",
+            "required": false
+          }
+        ]
+      },
+      "Widget": {
+        "typeName": "Widget",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Widget",
+        "description": "A widget in the catalogue.",
+        "fields": [
+          {
+            "name": "ID",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "Name",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "Status",
+            "langType": "WidgetStatus",
+            "required": false,
+            "refTypeName": "WidgetStatus",
+            "schemaRef": "#/components/schemas/WidgetStatus"
+          },
+          {
+            "name": "Part",
+            "langType": "Part",
+            "required": false,
+            "refTypeName": "Part",
+            "schemaRef": "#/components/schemas/Part"
+          }
+        ]
+      },
+      "WidgetList": {
+        "typeName": "WidgetList",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/WidgetList",
+        "description": "A page of widgets; the paging block is an inline object.",
+        "fields": [
+          {
+            "name": "Data",
+            "langType": "[]Widget",
+            "required": true,
+            "refTypeName": "Widget",
+            "schemaRef": "#/components/schemas/Widget"
+          },
+          {
+            "name": "List",
+            "langType": "WidgetListList",
+            "required": true,
+            "description": "Paging markers, nested beside the items.",
+            "refTypeName": "WidgetListList"
+          }
+        ]
+      },
+      "WidgetListList": {
+        "typeName": "WidgetListList",
+        "kind": "struct",
+        "description": "Paging markers, nested beside the items.",
+        "fields": [
+          {
+            "name": "HasMore",
+            "langType": "bool",
+            "required": true
+          },
+          {
+            "name": "NextCursor",
+            "langType": "string",
+            "required": false,
+            "description": "Pass as `cursor` to fetch the next page."
+          },
+          {
+            "name": "Total",
+            "langType": "int64",
+            "required": false
+          }
+        ]
+      },
+      "WidgetStatus": {
+        "typeName": "WidgetStatus",
+        "kind": "enum",
+        "schemaRef": "#/components/schemas/WidgetStatus",
+        "description": "Where a widget is in its life cycle.",
+        "values": [
+          "draft",
+          "active",
+          "retired"
+        ]
+      }
+    }
+  }
+}

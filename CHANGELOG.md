@@ -4,6 +4,35 @@ Releases are tagged `vX.Y.Z` on the `opensdk` binary (`cli/Cargo.toml`); the
 library crates are not versioned independently. Earlier releases are described
 on their GitHub release pages.
 
+## 0.2.2
+
+- Nested type groups on the docs type reference: `typeReference.nested`
+  (`x-sdk.<lang>.types.nested`) renders every IR type reachable from an
+  operation's request (the body and the query/header parameter types) and
+  response — those roots included, inline/synthesized types too — as a lookup
+  table keyed by IR type name, each entry `{ typeName, kind, schemaRef?, description?, fields | values
+  | variants | of }` with struct fields rendered the way the language's models
+  declare them. The walk is breadth-first with a cycle guard; `nestedDepth` in
+  a language's emitter options caps the hops from the operation (default 8,
+  `0` leaves `nested` out).
+- The source schema on every rendered type and field: `schemaRef`
+  (`#/components/schemas/<Name>`) wherever the IR type came from a component
+  schema, absent for a type hoisted from an inline schema whatever its
+  synthesized name; `refTypeName` (the IR type name, the `nested` key) on the
+  request and response groups beside the language `typeName`. The converter
+  records the origin on the IR as `types[].schemaRef`.
+- `refTypeName` names the IR type behind an array or map field too
+  (`data: Widget[]` → `Widget`), not only a direct ref.
+- Fixtures: converter `12.nested-envelope` and the emitters' `13.nested-envelope`
+  (a list envelope kept as the declared type whose paging block is an inline
+  object beside an array of a component that names further components, one of
+  them through a `oneOf` union of two components and an array alias; a query
+  param that refs an enum). The docs suites render a fixture with its
+  `docs.options.json` bag, else `{ "nestedDepth": 0 }`: the captured corpus
+  goldens were re-minted at depth 0 (`XYD_BLESS=1`) and differ from the capture
+  only in the additive keys above; `13.nested-envelope` is the full `nested`
+  golden per language.
+
 ## 0.2.1
 
 - `xsdk --config <sdk.json>` (plus `--sdk-name` / `--grouping`): the docs pass

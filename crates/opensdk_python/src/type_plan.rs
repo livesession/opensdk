@@ -38,7 +38,7 @@ pub(crate) struct NeutralTypeReference<'a> {
     pub response_fields: Option<Vec<NeutralTypeField<'a>>>,
 }
 
-fn to_field(source: &Value) -> NeutralTypeField<'_> {
+pub(crate) fn to_field(source: &Value) -> NeutralTypeField<'_> {
     NeutralTypeField {
         logical_name: str_field(source, "name").unwrap_or(""),
         type_ref: source.get("type"),
@@ -63,14 +63,10 @@ fn resolve_body_fields<'a>(body_ref: Option<&'a Value>, types: &TypeMap<'a>) -> 
     }
 }
 
-/// The ORIGINAL IR schema name behind a field's type, for a cross-type link.
-/// Direct refs only (v1).
-pub(crate) fn ref_schema_name(type_ref: Option<&Value>) -> Option<&str> {
-    let r = type_ref?;
-    if str_field(r, "kind") != Some("ref") {
-        return None;
-    }
-    str_field(r, "name").filter(|n| !n.is_empty())
+/// The IR type name behind a field's type (through arrays and maps): the key
+/// into the type reference's `nested` table and the cross-type link.
+pub(crate) fn ref_schema_name(type_ref: Option<&Value>) -> Option<String> {
+    opensdk_core::nested::ref_type_name(type_ref)
 }
 
 /// A paginated list's real payload is the ITEM type, not the page envelope.

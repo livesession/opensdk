@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.images.generations.create(prompt, model=..., n=..., quality=..., response_format=..., output_format=..., output_compression=..., stream=..., partial_images=..., size=..., moderation=..., background=..., style=..., user=...) -> ImagesResponse",
     "request": {
+      "refTypeName": "CreateImageRequest",
       "fields": [
         {
           "name": "prompt",
@@ -105,6 +106,7 @@
     },
     "response": {
       "typeName": "ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "created",
@@ -116,7 +118,8 @@
           "name": "data",
           "langType": "list[Image]",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "background",

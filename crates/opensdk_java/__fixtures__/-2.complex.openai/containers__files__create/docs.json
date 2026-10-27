@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ContainerFileCreateParams",
       "argName": "params",
+      "refTypeName": "CreateContainerFileBody",
       "fields": [
         {
           "name": "fileId",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "ContainerFileResource",
+      "refTypeName": "ContainerFileResource",
       "fields": [
         {
           "name": "id",

@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "object",
+      "refTypeName": "Shape",
       "langType": "object"
     }
   }

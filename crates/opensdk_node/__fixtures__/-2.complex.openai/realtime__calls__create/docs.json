@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeCallCreateParams",
       "argName": "body",
+      "refTypeName": "RealtimeCallCreateRequest",
       "fields": [
         {
           "name": "sdp",

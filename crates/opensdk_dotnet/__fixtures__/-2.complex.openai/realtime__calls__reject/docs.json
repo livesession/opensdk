@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Realtime.Calls.Reject(callId, body) -> Task",
     "request": {
+      "refTypeName": "RealtimeCallRejectRequest",
       "fields": [
         {
           "name": "StatusCode",

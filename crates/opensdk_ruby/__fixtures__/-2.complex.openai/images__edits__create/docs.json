@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.images.edits.create(model: nil, images:, mask: nil, prompt:, n: nil, quality: nil, input_fidelity: nil, size: nil, user: nil, output_format: nil, output_compression: nil, moderation: nil, background: nil, stream: nil, partial_images: nil) -> Models::ImagesResponse",
     "request": {
+      "refTypeName": "EditImageBodyJsonParam",
       "fields": [
         {
           "name": "model",
@@ -20,7 +21,8 @@
           "name": "images",
           "langType": "Array<Models::ImageRefParam>",
           "required": true,
-          "description": "Input image references to edit.\nFor GPT image models, you can provide up to 16 images.\n"
+          "description": "Input image references to edit.\nFor GPT image models, you can provide up to 16 images.\n",
+          "refTypeName": "ImageRefParam"
         },
         {
           "name": "mask",
@@ -110,6 +112,7 @@
     },
     "response": {
       "typeName": "Models::ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "created",
@@ -121,7 +124,8 @@
           "name": "data",
           "langType": "Array<Models::Image>",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "background",

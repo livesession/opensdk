@@ -10,6 +10,7 @@
     "request": {
       "typeName": "BetaAssistantUpdateParams",
       "argName": "body",
+      "refTypeName": "ModifyAssistantRequest",
       "fields": [
         {
           "name": "Model",
@@ -43,7 +44,8 @@
           "name": "Tools",
           "langType": "[]ModifyAssistantRequestToolsItem",
           "required": false,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "ModifyAssistantRequestToolsItem"
         },
         {
           "name": "ToolResources",
@@ -77,6 +79,7 @@
     },
     "response": {
       "typeName": "AssistantObject",
+      "refTypeName": "AssistantObject",
       "fields": [
         {
           "name": "ID",
@@ -121,7 +124,8 @@
           "name": "Tools",
           "langType": "[]ModifyAssistantRequestToolsItem",
           "required": true,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "ModifyAssistantRequestToolsItem"
         },
         {
           "name": "ToolResources",

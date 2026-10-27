@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "[]Thing",
+      "refTypeName": "Thing",
       "langType": "[]Thing"
     }
   }

@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "Models::DeletedRoleAssignmentResource",
+      "refTypeName": "DeletedRoleAssignmentResource",
       "fields": [
         {
           "name": "object",

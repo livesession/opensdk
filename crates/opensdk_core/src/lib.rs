@@ -9,6 +9,8 @@
 //!   table, previously five slightly different local gates.
 //! - [`emitter`] — the data-only emitter descriptor plus the docs-capability
 //!   return types A2 needs a shared home for.
+//! - [`nested`] — the transitive type view behind a type reference (`nested`,
+//!   `schemaRef`), walked once here over the raw IR for every language.
 //!
 //! DELIBERATELY NOT HERE, each for a measured reason (see the A1 spec):
 //!
@@ -34,3 +36,4 @@ pub mod behavior;
 pub mod emitter;
 pub mod example;
 pub mod header;
+pub mod nested;

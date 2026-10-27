@@ -25,7 +25,7 @@
     },
     "response": {
       "typeName": "FineTuningJobEvent",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "FineTuningJobEvent",
       "fields": [
         {
           "name": "Object",
@@ -71,7 +71,8 @@
           "required": false,
           "description": "The data associated with the event."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

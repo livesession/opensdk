@@ -137,6 +137,11 @@ pub struct Discriminator {
 #[derive(Serialize, Clone)]
 pub struct NamedType {
     pub name: String,
+    /// The OpenAPI component schema this type came from
+    /// (`#/components/schemas/<Name>`); absent for a type hoisted from an
+    /// inline schema under a synthesized name.
+    #[serde(rename = "schemaRef", skip_serializing_if = "Option::is_none")]
+    pub schema_ref: Option<String>,
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub base: Option<String>,
@@ -160,6 +165,7 @@ impl NamedType {
     pub fn placeholder(name: String) -> Self {
         NamedType {
             name,
+            schema_ref: None,
             kind: "struct".to_string(),
             base: None,
             values: None,

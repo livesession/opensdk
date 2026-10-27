@@ -9,6 +9,7 @@
     "request": {
       "typeName": "BatchCreateParams",
       "argName": "params",
+      "refTypeName": "BatchesCreateRequest",
       "fields": [
         {
           "name": "inputFileId",
@@ -45,6 +46,7 @@
     },
     "response": {
       "typeName": "Batch",
+      "refTypeName": "Batch",
       "fields": [
         {
           "name": "id",

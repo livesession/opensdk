@@ -11,6 +11,7 @@
     "request": {
       "typeName": "AdminOrganizationCertificateUpdateParams",
       "argName": "params",
+      "refTypeName": "ModifyCertificateRequest",
       "fields": [
         {
           "name": "name",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "object",

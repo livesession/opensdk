@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "ContainerResource",
+      "refTypeName": "ContainerResource",
       "fields": [
         {
           "name": "Id",

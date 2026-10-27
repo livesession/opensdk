@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Beta.Threads.Messages.Create(threadId, body) -> Task<MessageObject>",
     "request": {
+      "refTypeName": "CreateMessageRequest",
       "fields": [
         {
           "name": "Role",
@@ -26,7 +27,8 @@
         {
           "name": "Attachments",
           "langType": "List<CreateMessageRequestAttachmentsItem>?",
-          "required": false
+          "required": false,
+          "refTypeName": "CreateMessageRequestAttachmentsItem"
         },
         {
           "name": "Metadata",
@@ -38,6 +40,7 @@
     },
     "response": {
       "typeName": "MessageObject",
+      "refTypeName": "MessageObject",
       "fields": [
         {
           "name": "Id",
@@ -97,7 +100,8 @@
           "name": "Content",
           "langType": "List<object>",
           "required": true,
-          "description": "The content of the message in array of text and/or images."
+          "description": "The content of the message in array of text and/or images.",
+          "refTypeName": "MessageObjectContentItem"
         },
         {
           "name": "AssistantId",
@@ -112,7 +116,8 @@
         {
           "name": "Attachments",
           "langType": "List<CreateMessageRequestAttachmentsItem>",
-          "required": true
+          "required": true,
+          "refTypeName": "CreateMessageRequestAttachmentsItem"
         },
         {
           "name": "Metadata",

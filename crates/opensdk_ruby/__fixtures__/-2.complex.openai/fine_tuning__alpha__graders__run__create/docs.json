@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.fine_tuning.alpha.graders.run.create(grader:, item: nil, model_sample:) -> Models::RunGraderResponse",
     "request": {
+      "refTypeName": "RunGraderRequest",
       "fields": [
         {
           "name": "grader",
@@ -34,6 +35,7 @@
     },
     "response": {
       "typeName": "Models::RunGraderResponse",
+      "refTypeName": "RunGraderResponse",
       "fields": [
         {
           "name": "reward",

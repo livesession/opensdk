@@ -11,6 +11,7 @@
     "request": {
       "typeName": "BetaThreadMessageCreateParams",
       "argName": "params",
+      "refTypeName": "CreateMessageRequest",
       "fields": [
         {
           "name": "role",
@@ -28,7 +29,8 @@
         {
           "name": "attachments",
           "langType": "Optional<List<CreateMessageRequestAttachmentsItem>>",
-          "required": false
+          "required": false,
+          "refTypeName": "CreateMessageRequestAttachmentsItem"
         },
         {
           "name": "metadata",
@@ -40,6 +42,7 @@
     },
     "response": {
       "typeName": "MessageObject",
+      "refTypeName": "MessageObject",
       "fields": [
         {
           "name": "id",
@@ -99,7 +102,8 @@
           "name": "content",
           "langType": "List<Object>",
           "required": true,
-          "description": "The content of the message in array of text and/or images."
+          "description": "The content of the message in array of text and/or images.",
+          "refTypeName": "MessageObjectContentItem"
         },
         {
           "name": "assistantId",
@@ -114,7 +118,8 @@
         {
           "name": "attachments",
           "langType": "List<CreateMessageRequestAttachmentsItem>",
-          "required": true
+          "required": true,
+          "refTypeName": "CreateMessageRequestAttachmentsItem"
         },
         {
           "name": "metadata",

@@ -10,6 +10,7 @@
     "request": {
       "typeName": "AudioVoiceNewParams",
       "argName": "body",
+      "refTypeName": "CreateVoiceRequest",
       "fields": [
         {
           "name": "Name",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "VoiceResource",
+      "refTypeName": "VoiceResource",
       "fields": [
         {
           "name": "Object",

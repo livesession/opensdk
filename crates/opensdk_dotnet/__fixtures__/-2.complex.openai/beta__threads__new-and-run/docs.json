@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Beta.Threads.NewAndRun(body) -> Task<RunObject>",
     "request": {
+      "refTypeName": "CreateThreadAndRunRequest",
       "fields": [
         {
           "name": "AssistantId",
@@ -38,7 +39,8 @@
           "name": "Tools",
           "langType": "List<object>?",
           "required": false,
-          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis."
+          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis.",
+          "refTypeName": "CreateThreadAndRunRequestToolsItem"
         },
         {
           "name": "ToolResources",
@@ -111,6 +113,7 @@
     },
     "response": {
       "typeName": "RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "Id",
@@ -216,7 +219,8 @@
           "name": "Tools",
           "langType": "List<object>",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "CreateThreadAndRunRequestToolsItem"
         },
         {
           "name": "Metadata",

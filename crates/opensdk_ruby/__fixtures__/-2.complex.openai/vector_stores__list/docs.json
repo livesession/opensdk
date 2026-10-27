@@ -37,7 +37,7 @@
     },
     "response": {
       "typeName": "Page<Models::VectorStoreObject>",
-      "note": "paginated (Page)",
+      "refTypeName": "VectorStoreObject",
       "fields": [
         {
           "name": "id",
@@ -104,7 +104,8 @@
           "required": true,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

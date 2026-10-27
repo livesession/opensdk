@@ -29,7 +29,7 @@
     },
     "response": {
       "typeName": "ProjectServiceAccount",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "ProjectServiceAccount",
       "fields": [
         {
           "name": "object",
@@ -62,7 +62,8 @@
           "required": true,
           "description": "The Unix timestamp (in seconds) of when the service account was created"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

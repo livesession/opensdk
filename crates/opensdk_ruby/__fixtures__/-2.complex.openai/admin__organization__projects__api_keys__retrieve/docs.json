@@ -14,6 +14,7 @@
     },
     "response": {
       "typeName": "Models::ProjectApiKey",
+      "refTypeName": "ProjectApiKey",
       "fields": [
         {
           "name": "object",

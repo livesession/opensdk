@@ -8,23 +8,27 @@
   "typeReference": {
     "signature": "client.conversations.items.create(conversation_id, items, include=...) -> CursorPage[ConversationItem]",
     "request": {
+      "refTypeName": "ConversationsItemsCreateRequest",
       "fields": [
         {
           "name": "items",
           "langType": "list[InputItem]",
           "required": true,
-          "description": "The items to add to the conversation. You may add up to 20 items at a time.\n"
+          "description": "The items to add to the conversation. You may add up to 20 items at a time.\n",
+          "refTypeName": "InputItem"
         },
         {
           "name": "include",
           "langType": "Optional[list[IncludeEnum]]",
           "required": false,
-          "description": "Additional fields to include in the response. See the `include`\nparameter for [listing Conversation items above](/docs/api-reference/conversations/list-items#conversations_list_items-include) for more information.\n"
+          "description": "Additional fields to include in the response. See the `include`\nparameter for [listing Conversation items above](/docs/api-reference/conversations/list-items#conversations_list_items-include) for more information.\n",
+          "refTypeName": "IncludeEnum"
         }
       ]
     },
     "response": {
       "typeName": "CursorPage[ConversationItem]",
+      "refTypeName": "ConversationItem",
       "langType": "CursorPage[ConversationItem]",
       "note": "paginated (CursorPage)"
     }

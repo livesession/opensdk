@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.realtime.sessions.create(client_secret, modalities=..., instructions=..., voice=..., input_audio_format=..., output_audio_format=..., input_audio_transcription=..., speed=..., tracing=..., turn_detection=..., tools=..., tool_choice=..., temperature=..., max_response_output_tokens=..., truncation=..., prompt=...) -> RealtimeSessionCreateResponse",
     "request": {
+      "refTypeName": "RealtimeSessionCreateRequest",
       "fields": [
         {
           "name": "client_secret",
@@ -77,7 +78,8 @@
           "name": "tools",
           "langType": "Optional[list[RealtimeSessionCreateRequestToolsItem]]",
           "required": false,
-          "description": "Tools (functions) available to the model."
+          "description": "Tools (functions) available to the model.",
+          "refTypeName": "RealtimeSessionCreateRequestToolsItem"
         },
         {
           "name": "tool_choice",
@@ -114,6 +116,7 @@
     },
     "response": {
       "typeName": "RealtimeSessionCreateResponse",
+      "refTypeName": "RealtimeSessionCreateResponse",
       "fields": [
         {
           "name": "id",
@@ -182,7 +185,8 @@
           "name": "tools",
           "langType": "list[RealtimeFunctionTool]",
           "required": false,
-          "description": "Tools (functions) available to the model."
+          "description": "Tools (functions) available to the model.",
+          "refTypeName": "RealtimeFunctionTool"
         },
         {
           "name": "tool_choice",

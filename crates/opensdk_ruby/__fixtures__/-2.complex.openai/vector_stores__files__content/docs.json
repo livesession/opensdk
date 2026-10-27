@@ -12,7 +12,7 @@
     },
     "response": {
       "typeName": "Page<Models::VectorStoreFileContentResponseDataItem>",
-      "note": "paginated (Page)",
+      "refTypeName": "VectorStoreFileContentResponseDataItem",
       "fields": [
         {
           "name": "type",
@@ -26,7 +26,8 @@
           "required": false,
           "description": "The text content"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

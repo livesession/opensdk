@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.projects.groups.roles.create(project_id, group_id, role_id) -> GroupRoleAssignment",
     "request": {
+      "refTypeName": "PublicAssignOrganizationGroupRoleBody",
       "fields": [
         {
           "name": "role_id",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "GroupRoleAssignment",
+      "refTypeName": "GroupRoleAssignment",
       "fields": [
         {
           "name": "object",

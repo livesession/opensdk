@@ -12,6 +12,7 @@
     "request": {
       "typeName": "FineTuningAlphaGraderValidateCreateParams",
       "argName": "params",
+      "refTypeName": "ValidateGraderRequest",
       "fields": [
         {
           "name": "grader",
@@ -24,6 +25,7 @@
     },
     "response": {
       "typeName": "ValidateGraderResponse",
+      "refTypeName": "ValidateGraderResponse",
       "fields": [
         {
           "name": "grader",

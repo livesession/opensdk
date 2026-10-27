@@ -9,6 +9,7 @@
     "request": {
       "typeName": "VectorStoreCreateParams",
       "argName": "body",
+      "refTypeName": "CreateVectorStoreRequest",
       "fields": [
         {
           "name": "file_ids",
@@ -51,6 +52,7 @@
     },
     "response": {
       "typeName": "VectorStoreObject",
+      "refTypeName": "VectorStoreObject",
       "fields": [
         {
           "name": "id",

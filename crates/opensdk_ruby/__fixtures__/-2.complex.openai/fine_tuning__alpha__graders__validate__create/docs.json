@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.fine_tuning.alpha.graders.validate.create(grader:) -> Models::ValidateGraderResponse",
     "request": {
+      "refTypeName": "ValidateGraderRequest",
       "fields": [
         {
           "name": "grader",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "Models::ValidateGraderResponse",
+      "refTypeName": "ValidateGraderResponse",
       "fields": [
         {
           "name": "grader",

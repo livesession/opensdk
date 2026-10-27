@@ -11,7 +11,7 @@
     },
     "response": {
       "typeName": "Page<Models::Model>",
-      "note": "paginated (Page)",
+      "refTypeName": "Model",
       "fields": [
         {
           "name": "id",
@@ -37,7 +37,8 @@
           "required": true,
           "description": "The organization that owns the model."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

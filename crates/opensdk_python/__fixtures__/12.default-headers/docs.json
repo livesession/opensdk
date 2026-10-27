@@ -22,11 +22,13 @@
     },
     "response": {
       "typeName": "GadgetList",
+      "refTypeName": "GadgetList",
       "fields": [
         {
           "name": "data",
           "langType": "list[Gadget]",
-          "required": true
+          "required": true,
+          "refTypeName": "Gadget"
         },
         {
           "name": "list",

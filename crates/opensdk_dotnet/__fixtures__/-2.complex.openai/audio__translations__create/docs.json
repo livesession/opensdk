@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Audio.Translations.Create(body) -> Task<object>",
     "request": {
+      "refTypeName": "CreateTranslationRequest",
       "fields": [
         {
           "name": "File",
@@ -45,6 +46,7 @@
     },
     "response": {
       "typeName": "object",
+      "refTypeName": "AudioTranslationsCreateResponse",
       "langType": "object"
     }
   }

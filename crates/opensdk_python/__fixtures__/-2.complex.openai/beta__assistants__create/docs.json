@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.beta.assistants.create(model, name=..., description=..., instructions=..., reasoning_effort=..., tools=..., tool_resources=..., metadata=..., temperature=..., top_p=..., response_format=...) -> AssistantObject",
     "request": {
+      "refTypeName": "CreateAssistantRequest",
       "fields": [
         {
           "name": "model",
@@ -41,7 +42,8 @@
           "name": "tools",
           "langType": "Optional[list[CreateAssistantRequestToolsItem]]",
           "required": false,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "CreateAssistantRequestToolsItem"
         },
         {
           "name": "tool_resources",
@@ -75,6 +77,7 @@
     },
     "response": {
       "typeName": "AssistantObject",
+      "refTypeName": "AssistantObject",
       "fields": [
         {
           "name": "id",
@@ -119,7 +122,8 @@
           "name": "tools",
           "langType": "list[CreateAssistantRequestToolsItem]",
           "required": true,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "CreateAssistantRequestToolsItem"
         },
         {
           "name": "tool_resources",

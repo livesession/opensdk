@@ -11,6 +11,7 @@
     "request": {
       "typeName": "AdminOrganizationUserUpdateParams",
       "argName": "body",
+      "refTypeName": "UserRoleUpdateRequest",
       "fields": [
         {
           "name": "Role",
@@ -40,6 +41,7 @@
     },
     "response": {
       "typeName": "User",
+      "refTypeName": "User",
       "fields": [
         {
           "name": "Object",

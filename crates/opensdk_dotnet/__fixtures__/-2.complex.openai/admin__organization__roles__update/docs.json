@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Roles.Update(roleId, body) -> Task<Role>",
     "request": {
+      "refTypeName": "PublicUpdateOrganizationRoleBody",
       "fields": [
         {
           "name": "Permissions",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "Role",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "Object",

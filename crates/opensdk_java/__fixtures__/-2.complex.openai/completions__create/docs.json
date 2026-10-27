@@ -9,6 +9,7 @@
     "request": {
       "typeName": "CompletionCreateParams",
       "argName": "params",
+      "refTypeName": "CreateCompletionRequest",
       "fields": [
         {
           "name": "model",
@@ -124,6 +125,7 @@
     },
     "response": {
       "typeName": "CreateCompletionResponse",
+      "refTypeName": "CreateCompletionResponse",
       "fields": [
         {
           "name": "id",
@@ -135,7 +137,8 @@
           "name": "choices",
           "langType": "List<CreateCompletionResponseChoicesItem>",
           "required": true,
-          "description": "The list of completion choices the model generated for the input prompt."
+          "description": "The list of completion choices the model generated for the input prompt.",
+          "refTypeName": "CreateCompletionResponseChoicesItem"
         },
         {
           "name": "created",

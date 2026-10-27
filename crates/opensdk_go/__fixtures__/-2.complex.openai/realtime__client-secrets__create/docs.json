@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeClientSecretNewParams",
       "argName": "body",
+      "refTypeName": "RealtimeCreateClientSecretRequest",
       "fields": [
         {
           "name": "ExpiresAfter",
@@ -29,6 +30,7 @@
     },
     "response": {
       "typeName": "RealtimeCreateClientSecretResponse",
+      "refTypeName": "RealtimeCreateClientSecretResponse",
       "fields": [
         {
           "name": "Value",

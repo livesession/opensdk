@@ -18,8 +18,9 @@ use crate::project::resolve_options;
 use crate::pytype::{optionalize, py_type, PyUses};
 use crate::resources::{plan_operation, py_page_name, return_annotation, Plan};
 use crate::tests::render_call_args;
-use crate::type_plan::{plan_type_reference, ref_schema_name, NeutralTypeField};
+use crate::type_plan::{plan_type_reference, ref_schema_name, to_field, NeutralTypeField};
 use crate::val::{arr, pystr, str_field};
+use opensdk_core::nested::{finish_type_reference, NestedRender, TypeReferenceRoots};
 
 type TypeMap<'a> = HashMap<&'a str, &'a Value>;
 
@@ -128,7 +129,8 @@ fn py_render_field(f: &NeutralTypeField) -> RenderedTypeField {
         required: f.required,
         description: f.description.map(str::to_string),
         deprecated: f.deprecated,
-        ref_type_name: ref_schema_name(f.type_ref).map(str::to_string),
+        ref_type_name: ref_schema_name(f.type_ref),
+        schema_ref: None,
     }
 }
 
@@ -141,7 +143,8 @@ fn py_render_response_field(f: &NeutralTypeField) -> RenderedTypeField {
         required: f.required,
         description: f.description.map(str::to_string),
         deprecated: f.deprecated,
-        ref_type_name: ref_schema_name(f.type_ref).map(str::to_string),
+        ref_type_name: ref_schema_name(f.type_ref),
+        schema_ref: None,
     }
 }
 
@@ -157,10 +160,8 @@ pub fn generate_python_type_reference(
     method: &Value,
     options: &Value,
 ) -> RenderedTypeReference {
-    // No Python emitter option reaches the type reference (the signature is
-    // derived entirely from the IR); accepted so every language's docs surface
-    // has one shape.
-    let _ = options;
+    // The signature is derived entirely from the IR; the options bag is read
+    // only for the `nestedDepth` cap of `opensdk_core::nested`.
     let types = type_map(spec);
     let plan = plan_operation(method);
     let neutral = plan_type_reference(method, &types, &plan);
@@ -183,15 +184,39 @@ pub fn generate_python_type_reference(
         return_annotation(&plan)
     );
 
-    RenderedTypeReference {
+    let mut tr = RenderedTypeReference {
         signature,
         request: RenderedTypeGroup {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             arg_name: None,
             fields: neutral.request_fields.iter().map(py_render_field).collect(),
         },
         response: py_response(method, &plan, &neutral),
-    }
+        nested: Default::default(),
+    };
+    // The transitive view behind the two groups (`opensdk_core::nested`): a
+    // nested struct's rows render as a response model's do (bare `py_type`).
+    let response = tr
+        .response
+        .type_name
+        .is_some()
+        .then_some(neutral.response_type_ref)
+        .flatten();
+    let render_field = |raw: &Value| py_render_response_field(&to_field(raw));
+    let render_type = |raw: Option<&Value>| py_type(raw, &mut PyUses::new());
+    finish_type_reference(
+        &mut tr,
+        spec,
+        &TypeReferenceRoots::from_method(method, response),
+        options,
+        &NestedRender {
+            field: &render_field,
+            lang_type: &render_type,
+        },
+    );
+    tr
 }
 
 /// The Python "Returns" half: `returnPlan`'s annotation, plus struct rows when
@@ -205,6 +230,8 @@ fn py_response(
     if let Some(binary) = &plan.binary_content_type {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(lang_type),
             note: Some(format!("binary download ({binary})")),
@@ -217,6 +244,8 @@ fn py_response(
     if neutral.response_type_ref.is_none() || no_primary {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("None".to_string()),
             note: Some("no response body".to_string()),
@@ -226,12 +255,16 @@ fn py_response(
     match &neutral.response_fields {
         Some(fields) => RenderedTypeResponse {
             type_name: Some(lang_type),
+            ref_type_name: None,
+            schema_ref: None,
             fields: Some(fields.iter().map(py_render_response_field).collect()),
             lang_type: None,
             note,
         },
         None => RenderedTypeResponse {
             type_name: Some(lang_type.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(lang_type),
             note,

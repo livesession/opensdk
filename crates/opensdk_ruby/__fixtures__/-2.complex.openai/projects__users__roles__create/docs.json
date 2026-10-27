@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.projects.users.roles.create(project_id, user_id, role_id:) -> Models::UserRoleAssignment",
     "request": {
+      "refTypeName": "PublicAssignOrganizationGroupRoleBody",
       "fields": [
         {
           "name": "role_id",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "Models::UserRoleAssignment",
+      "refTypeName": "UserRoleAssignment",
       "fields": [
         {
           "name": "object",

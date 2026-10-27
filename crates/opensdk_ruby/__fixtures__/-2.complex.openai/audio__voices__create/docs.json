@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.audio.voices.create(name:, audio_sample:, consent:) -> Models::VoiceResource",
     "request": {
+      "refTypeName": "CreateVoiceRequest",
       "fields": [
         {
           "name": "name",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "Models::VoiceResource",
+      "refTypeName": "VoiceResource",
       "fields": [
         {
           "name": "object",

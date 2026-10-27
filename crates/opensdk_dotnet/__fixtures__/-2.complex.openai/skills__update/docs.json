@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Skills.Update(skillId, body) -> Task<SkillResource>",
     "request": {
+      "refTypeName": "SetDefaultSkillVersionBody",
       "fields": [
         {
           "name": "DefaultVersion",
@@ -18,6 +19,7 @@
     },
     "response": {
       "typeName": "SkillResource",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "Id",

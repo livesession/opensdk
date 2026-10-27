@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::RoleDeletedResource",
+      "refTypeName": "RoleDeletedResource",
       "fields": [
         {
           "name": "object",

@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.skills.update(skill_id, default_version:) -> Models::SkillResource",
     "request": {
+      "refTypeName": "SetDefaultSkillVersionBody",
       "fields": [
         {
           "name": "default_version",
@@ -18,6 +19,7 @@
     },
     "response": {
       "typeName": "Models::SkillResource",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "id",

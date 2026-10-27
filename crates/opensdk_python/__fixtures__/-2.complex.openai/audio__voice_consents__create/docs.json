@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.audio.voice_consents.create(name, recording, language) -> VoiceConsentResource",
     "request": {
+      "refTypeName": "CreateVoiceConsentRequest",
       "fields": [
         {
           "name": "name",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "VoiceConsentResource",
+      "refTypeName": "VoiceConsentResource",
       "fields": [
         {
           "name": "object",

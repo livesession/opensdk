@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::DeleteThreadResponse",
+      "refTypeName": "DeleteThreadResponse",
       "fields": [
         {
           "name": "id",

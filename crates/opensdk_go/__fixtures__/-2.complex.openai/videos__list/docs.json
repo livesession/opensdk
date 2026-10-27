@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "VideoResource",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "ID",
@@ -109,7 +109,8 @@
           "required": true,
           "refTypeName": "Error2"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "RoleDeletedResource",
+      "refTypeName": "RoleDeletedResource",
       "fields": [
         {
           "name": "object",

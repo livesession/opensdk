@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "OpenAiFile",
+      "refTypeName": "OpenAiFile",
       "fields": [
         {
           "name": "id",

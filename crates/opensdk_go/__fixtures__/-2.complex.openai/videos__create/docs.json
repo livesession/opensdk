@@ -9,6 +9,7 @@
     "request": {
       "typeName": "VideoNewParams",
       "argName": "body",
+      "refTypeName": "CreateVideoJsonBody",
       "fields": [
         {
           "name": "Model",
@@ -44,6 +45,7 @@
     },
     "response": {
       "typeName": "VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "ID",

@@ -9,6 +9,7 @@
     "request": {
       "typeName": "ModerationCreateParams",
       "argName": "body",
+      "refTypeName": "CreateModerationRequest",
       "fields": [
         {
           "name": "input",
@@ -28,6 +29,7 @@
     },
     "response": {
       "typeName": "CreateModerationResponse",
+      "refTypeName": "CreateModerationResponse",
       "fields": [
         {
           "name": "id",
@@ -45,7 +47,8 @@
           "name": "results",
           "langType": "CreateModerationResponseResultsItem[]",
           "required": true,
-          "description": "A list of moderation objects."
+          "description": "A list of moderation objects.",
+          "refTypeName": "CreateModerationResponseResultsItem"
         }
       ]
     }

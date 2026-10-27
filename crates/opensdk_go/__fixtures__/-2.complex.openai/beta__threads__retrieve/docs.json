@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "ID",

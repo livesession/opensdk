@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.FineTuning.Alpha.Graders.Validate.Create(body) -> Task<ValidateGraderResponse>",
     "request": {
+      "refTypeName": "ValidateGraderRequest",
       "fields": [
         {
           "name": "Grader",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "ValidateGraderResponse",
+      "refTypeName": "ValidateGraderResponse",
       "fields": [
         {
           "name": "Grader",

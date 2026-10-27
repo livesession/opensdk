@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "VoiceConsentDeletedResource",
+      "refTypeName": "VoiceConsentDeletedResource",
       "fields": [
         {
           "name": "Id",

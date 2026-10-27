@@ -23,6 +23,7 @@
     },
     "response": {
       "typeName": "RunStepObject",
+      "refTypeName": "RunStepObject",
       "fields": [
         {
           "name": "ID",

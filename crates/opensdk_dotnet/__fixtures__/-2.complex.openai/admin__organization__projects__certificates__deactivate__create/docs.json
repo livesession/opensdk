@@ -11,6 +11,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Projects.Certificates.Deactivate.Create(projectId, body) -> Task<OrganizationProjectCertificateDeactivationResponse>",
     "request": {
+      "refTypeName": "ToggleCertificatesRequest",
       "fields": [
         {
           "name": "CertificateIds",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "OrganizationProjectCertificateDeactivationResponse",
+      "refTypeName": "OrganizationProjectCertificateDeactivationResponse",
       "fields": [
         {
           "name": "Object",
@@ -31,7 +33,8 @@
         {
           "name": "Data",
           "langType": "List<OrganizationProjectCertificate>",
-          "required": true
+          "required": true,
+          "refTypeName": "OrganizationProjectCertificate"
         }
       ]
     }

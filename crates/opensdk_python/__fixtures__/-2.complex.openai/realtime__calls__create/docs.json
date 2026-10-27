@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.realtime.calls.create(sdp, session=...) -> bytes",
     "request": {
+      "refTypeName": "RealtimeCallCreateRequest",
       "fields": [
         {
           "name": "sdp",

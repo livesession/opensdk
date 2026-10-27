@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationProjectGroupCreateParams",
       "argName": "params",
+      "refTypeName": "InviteProjectGroupBody",
       "fields": [
         {
           "name": "groupId",
@@ -29,6 +30,7 @@
     },
     "response": {
       "typeName": "ProjectGroup",
+      "refTypeName": "ProjectGroup",
       "fields": [
         {
           "name": "object",

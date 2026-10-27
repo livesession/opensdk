@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Realtime.Calls.Refer(callId, body) -> Task",
     "request": {
+      "refTypeName": "RealtimeCallReferRequest",
       "fields": [
         {
           "name": "TargetUri",

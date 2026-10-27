@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationCertificateDeactivateNewParams",
       "argName": "body",
+      "refTypeName": "ToggleCertificatesRequest",
       "fields": [
         {
           "name": "CertificateIds",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "OrganizationCertificateDeactivationResponse",
+      "refTypeName": "OrganizationCertificateDeactivationResponse",
       "fields": [
         {
           "name": "Object",
@@ -32,7 +34,8 @@
         {
           "name": "Data",
           "langType": "[]OrganizationCertificate",
-          "required": true
+          "required": true,
+          "refTypeName": "OrganizationCertificate"
         }
       ]
     }

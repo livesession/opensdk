@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ChatCompletionCreateParams",
       "argName": "params",
+      "refTypeName": "CreateChatCompletionRequest",
       "fields": [
         {
           "name": "metadata",
@@ -68,7 +69,8 @@
           "name": "messages",
           "langType": "List<Object>",
           "required": true,
-          "description": "A list of messages comprising the conversation so far. Depending on the\n[model](/docs/models) you use, different message types (modalities) are\nsupported, like [text](/docs/guides/text-generation),\n[images](/docs/guides/vision), and [audio](/docs/guides/audio).\n"
+          "description": "A list of messages comprising the conversation so far. Depending on the\n[model](/docs/models) you use, different message types (modalities) are\nsupported, like [text](/docs/guides/text-generation),\n[images](/docs/guides/vision), and [audio](/docs/guides/audio).\n",
+          "refTypeName": "ChatCompletionRequestMessage"
         },
         {
           "name": "model",
@@ -200,7 +202,8 @@
           "name": "tools",
           "langType": "Optional<List<Object>>",
           "required": false,
-          "description": "A list of tools the model may call. You can provide either\n[custom tools](/docs/guides/function-calling#custom-tools) or\n[function tools](/docs/guides/function-calling).\n"
+          "description": "A list of tools the model may call. You can provide either\n[custom tools](/docs/guides/function-calling#custom-tools) or\n[function tools](/docs/guides/function-calling).\n",
+          "refTypeName": "CreateChatCompletionRequestToolsItem"
         },
         {
           "name": "toolChoice",
@@ -227,12 +230,14 @@
           "langType": "Optional<List<ChatCompletionFunctions>>",
           "required": false,
           "description": "Deprecated in favor of `tools`.\n\nA list of functions the model may generate JSON inputs for.\n",
-          "deprecated": true
+          "deprecated": true,
+          "refTypeName": "ChatCompletionFunctions"
         }
       ]
     },
     "response": {
       "typeName": "CreateChatCompletionResponse",
+      "refTypeName": "CreateChatCompletionResponse",
       "fields": [
         {
           "name": "id",
@@ -244,7 +249,8 @@
           "name": "choices",
           "langType": "List<CreateChatCompletionResponseChoicesItem>",
           "required": true,
-          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1."
+          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1.",
+          "refTypeName": "CreateChatCompletionResponseChoicesItem"
         },
         {
           "name": "created",

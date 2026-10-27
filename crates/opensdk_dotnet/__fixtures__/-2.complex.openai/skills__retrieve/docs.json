@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "SkillResource",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "Id",

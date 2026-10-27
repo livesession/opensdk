@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "Page<Models::Role>",
-      "note": "paginated (Page)",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "object",
@@ -77,7 +77,8 @@
           "required": true,
           "description": "Whether the role is predefined and managed by OpenAI."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

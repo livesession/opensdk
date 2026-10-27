@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "VectorStoreFileBatchObject",
+      "refTypeName": "VectorStoreFileBatchObject",
       "fields": [
         {
           "name": "Id",

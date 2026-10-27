@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.skills.update(skill_id, default_version) -> SkillResource",
     "request": {
+      "refTypeName": "SetDefaultSkillVersionBody",
       "fields": [
         {
           "name": "default_version",
@@ -18,6 +19,7 @@
     },
     "response": {
       "typeName": "SkillResource",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "id",

@@ -26,7 +26,7 @@
     },
     "response": {
       "typeName": "Batch",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "Batch",
       "fields": [
         {
           "name": "id",
@@ -162,7 +162,8 @@
           "required": false,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

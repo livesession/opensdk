@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Moderations.Create(body) -> Task<CreateModerationResponse>",
     "request": {
+      "refTypeName": "CreateModerationRequest",
       "fields": [
         {
           "name": "Input",
@@ -26,6 +27,7 @@
     },
     "response": {
       "typeName": "CreateModerationResponse",
+      "refTypeName": "CreateModerationResponse",
       "fields": [
         {
           "name": "Id",
@@ -43,7 +45,8 @@
           "name": "Results",
           "langType": "List<CreateModerationResponseResultsItem>",
           "required": true,
-          "description": "A list of moderation objects."
+          "description": "A list of moderation objects.",
+          "refTypeName": "CreateModerationResponseResultsItem"
         }
       ]
     }

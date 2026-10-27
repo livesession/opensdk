@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Models::SkillResource",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "id",

@@ -9,6 +9,7 @@
     "request": {
       "typeName": "EvalNewParams",
       "argName": "body",
+      "refTypeName": "CreateEvalRequest",
       "fields": [
         {
           "name": "Name",
@@ -33,12 +34,14 @@
           "name": "TestingCriteria",
           "langType": "[]CreateEvalRequestTestingCriteriaItem",
           "required": true,
-          "description": "A list of graders for all eval runs in this group. Graders can reference variables in the data source using double curly braces notation, like `{{item.variable_name}}`. To reference the model's output, use the `sample` namespace (ie, `{{sample.output_text}}`)."
+          "description": "A list of graders for all eval runs in this group. Graders can reference variables in the data source using double curly braces notation, like `{{item.variable_name}}`. To reference the model's output, use the `sample` namespace (ie, `{{sample.output_text}}`).",
+          "refTypeName": "CreateEvalRequestTestingCriteriaItem"
         }
       ]
     },
     "response": {
       "typeName": "Eval",
+      "refTypeName": "Eval",
       "fields": [
         {
           "name": "Object",
@@ -69,7 +72,8 @@
           "name": "TestingCriteria",
           "langType": "[]EvalTestingCriteriaItem",
           "required": true,
-          "description": "A list of testing criteria."
+          "description": "A list of testing criteria.",
+          "refTypeName": "EvalTestingCriteriaItem"
         },
         {
           "name": "CreatedAt",

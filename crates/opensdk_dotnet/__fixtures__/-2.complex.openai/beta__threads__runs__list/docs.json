@@ -39,7 +39,7 @@
     },
     "response": {
       "typeName": "RunObject",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "Id",
@@ -145,7 +145,8 @@
           "name": "Tools",
           "langType": "List<object>",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "RunObjectToolsItem"
         },
         {
           "name": "Metadata",
@@ -207,7 +208,8 @@
           "required": true,
           "refTypeName": "AssistantsApiResponseFormatOption"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

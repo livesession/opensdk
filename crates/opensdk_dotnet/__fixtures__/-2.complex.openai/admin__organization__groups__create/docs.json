@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Groups.Create(body) -> Task<GroupResponse>",
     "request": {
+      "refTypeName": "CreateGroupBody",
       "fields": [
         {
           "name": "Name",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "GroupResponse",
+      "refTypeName": "GroupResponse",
       "fields": [
         {
           "name": "Id",

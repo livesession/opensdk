@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Completions.Create(body) -> Task<CreateCompletionResponse>",
     "request": {
+      "refTypeName": "CreateCompletionRequest",
       "fields": [
         {
           "name": "Model",
@@ -122,6 +123,7 @@
     },
     "response": {
       "typeName": "CreateCompletionResponse",
+      "refTypeName": "CreateCompletionResponse",
       "fields": [
         {
           "name": "Id",
@@ -133,7 +135,8 @@
           "name": "Choices",
           "langType": "List<CreateCompletionResponseChoicesItem>",
           "required": true,
-          "description": "The list of completion choices the model generated for the input prompt."
+          "description": "The list of completion choices the model generated for the input prompt.",
+          "refTypeName": "CreateCompletionResponseChoicesItem"
         },
         {
           "name": "Created",

@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.beta.threads.update(thread_id, tool_resources: nil, metadata: nil) -> Models::ThreadObject",
     "request": {
+      "refTypeName": "ModifyThreadRequest",
       "fields": [
         {
           "name": "tool_resources",
@@ -25,6 +26,7 @@
     },
     "response": {
       "typeName": "Models::ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "id",

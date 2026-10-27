@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::SkillVersionResource",
+      "refTypeName": "SkillVersionResource",
       "fields": [
         {
           "name": "object",

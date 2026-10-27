@@ -11,6 +11,7 @@
   "types": [
     {
       "name": "Thing",
+      "schemaRef": "#/components/schemas/Thing",
       "kind": "struct",
       "fields": [
         {

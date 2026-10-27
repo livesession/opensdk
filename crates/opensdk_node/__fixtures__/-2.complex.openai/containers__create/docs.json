@@ -9,6 +9,7 @@
     "request": {
       "typeName": "ContainerCreateParams",
       "argName": "body",
+      "refTypeName": "CreateContainerBody",
       "fields": [
         {
           "name": "name",
@@ -33,7 +34,8 @@
           "name": "skills",
           "langType": "CreateContainerBodySkillsItem[]",
           "required": false,
-          "description": "An optional list of skills referenced by id or inline data."
+          "description": "An optional list of skills referenced by id or inline data.",
+          "refTypeName": "CreateContainerBodySkillsItem"
         },
         {
           "name": "memory_limit",
@@ -53,6 +55,7 @@
     },
     "response": {
       "typeName": "ContainerResource",
+      "refTypeName": "ContainerResource",
       "fields": [
         {
           "name": "id",

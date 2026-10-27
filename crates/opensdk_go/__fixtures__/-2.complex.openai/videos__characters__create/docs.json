@@ -10,6 +10,7 @@
     "request": {
       "typeName": "VideoCharacterNewParams",
       "argName": "body",
+      "refTypeName": "CreateVideoCharacterBody",
       "fields": [
         {
           "name": "Video",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "VideoCharacterResource",
+      "refTypeName": "VideoCharacterResource",
       "fields": [
         {
           "name": "ID",

@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.audio.speech.create(model:, input:, instructions: nil, voice:, response_format: nil, speed: nil, stream_format: nil) -> String",
     "request": {
+      "refTypeName": "CreateSpeechRequest",
       "fields": [
         {
           "name": "model",

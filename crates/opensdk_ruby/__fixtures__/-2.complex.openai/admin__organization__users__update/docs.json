@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.users.update(user_id, role: nil, role_id: nil, technical_level: nil, developer_persona: nil) -> Models::User",
     "request": {
+      "refTypeName": "UserRoleUpdateRequest",
       "fields": [
         {
           "name": "role",
@@ -38,6 +39,7 @@
     },
     "response": {
       "typeName": "Models::User",
+      "refTypeName": "User",
       "fields": [
         {
           "name": "object",

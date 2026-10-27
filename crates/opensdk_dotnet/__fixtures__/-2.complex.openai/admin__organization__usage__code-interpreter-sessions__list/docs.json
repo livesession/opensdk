@@ -58,7 +58,7 @@
     },
     "response": {
       "typeName": "UsageTimeBucket",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "UsageTimeBucket",
       "fields": [
         {
           "name": "Object",
@@ -78,9 +78,11 @@
         {
           "name": "Results",
           "langType": "List<object>",
-          "required": true
+          "required": true,
+          "refTypeName": "UsageTimeBucketResultsItem"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

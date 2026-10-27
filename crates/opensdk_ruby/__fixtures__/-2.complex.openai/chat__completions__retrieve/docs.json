@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::CreateChatCompletionResponse",
+      "refTypeName": "CreateChatCompletionResponse",
       "fields": [
         {
           "name": "id",
@@ -23,7 +24,8 @@
           "name": "choices",
           "langType": "Array<Models::CreateChatCompletionResponseChoicesItem>",
           "required": true,
-          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1."
+          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1.",
+          "refTypeName": "CreateChatCompletionResponseChoicesItem"
         },
         {
           "name": "created",

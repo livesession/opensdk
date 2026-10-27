@@ -36,7 +36,7 @@
     },
     "response": {
       "typeName": "ProjectGroup",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "ProjectGroup",
       "fields": [
         {
           "name": "Object",
@@ -74,7 +74,8 @@
           "required": true,
           "description": "Unix timestamp (in seconds) when the group was granted project access."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

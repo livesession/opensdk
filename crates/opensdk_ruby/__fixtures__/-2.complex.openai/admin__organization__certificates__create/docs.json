@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.certificates.create(name: nil, certificate:) -> Models::Certificate",
     "request": {
+      "refTypeName": "UploadCertificateRequest",
       "fields": [
         {
           "name": "name",
@@ -26,6 +27,7 @@
     },
     "response": {
       "typeName": "Models::Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "object",

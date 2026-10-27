@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Groups.Users.Create(groupId, body) -> Task<GroupUserAssignment>",
     "request": {
+      "refTypeName": "CreateGroupUserBody",
       "fields": [
         {
           "name": "UserId",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "GroupUserAssignment",
+      "refTypeName": "GroupUserAssignment",
       "fields": [
         {
           "name": "Object",

@@ -12,12 +12,14 @@
     "request": {
       "typeName": "BetaThreadRunSubmitToolOutputCreateParams",
       "argName": "body",
+      "refTypeName": "SubmitToolOutputsRunRequest",
       "fields": [
         {
           "name": "tool_outputs",
           "langType": "SubmitToolOutputsRunRequestToolOutputsItem[]",
           "required": true,
-          "description": "A list of tools for which the outputs are being submitted."
+          "description": "A list of tools for which the outputs are being submitted.",
+          "refTypeName": "SubmitToolOutputsRunRequestToolOutputsItem"
         },
         {
           "name": "stream",
@@ -28,6 +30,7 @@
     },
     "response": {
       "typeName": "RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -133,7 +136,8 @@
           "name": "tools",
           "langType": "RunObjectToolsItem[]",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "RunObjectToolsItem"
         },
         {
           "name": "metadata",

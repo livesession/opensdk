@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Containers.Create(body) -> Task<ContainerResource>",
     "request": {
+      "refTypeName": "CreateContainerBody",
       "fields": [
         {
           "name": "Name",
@@ -31,7 +32,8 @@
           "name": "Skills",
           "langType": "List<object>?",
           "required": false,
-          "description": "An optional list of skills referenced by id or inline data."
+          "description": "An optional list of skills referenced by id or inline data.",
+          "refTypeName": "CreateContainerBodySkillsItem"
         },
         {
           "name": "MemoryLimit",
@@ -51,6 +53,7 @@
     },
     "response": {
       "typeName": "ContainerResource",
+      "refTypeName": "ContainerResource",
       "fields": [
         {
           "name": "Id",

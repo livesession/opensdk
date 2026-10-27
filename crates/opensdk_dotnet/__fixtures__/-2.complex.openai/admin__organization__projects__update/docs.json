@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Projects.Update(projectId, body) -> Task<Project>",
     "request": {
+      "refTypeName": "ProjectUpdateRequest",
       "fields": [
         {
           "name": "Name",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "Project",
+      "refTypeName": "Project",
       "fields": [
         {
           "name": "Id",

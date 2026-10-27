@@ -72,20 +72,13 @@ fn resolve_body_fields<'a>(body_ref: Option<&Value>, types: &'a Map<String, Valu
     arr(named, "fields")
 }
 
-/// The ORIGINAL IR schema name behind a field's type, for a cross-type link
-/// (`symbolDef.canonical → objects/<name>`). Direct refs only (v1).
+/// The IR type name behind a field's type (through arrays and maps): the key
+/// into the type reference's `nested` table and the cross-type link.
 pub fn ref_schema_name(type_ref: Option<&Value>) -> Option<String> {
-    let r = type_ref?;
-    if r.get("kind").and_then(Value::as_str) != Some("ref") {
-        return None;
-    }
-    r.get("name")
-        .and_then(Value::as_str)
-        .filter(|n| !n.is_empty())
-        .map(str::to_string)
+    opensdk_core::nested::ref_type_name(type_ref)
 }
 
-fn to_field(source: &Value, loc: FieldLocation) -> NeutralTypeField {
+pub(crate) fn to_field(source: &Value, loc: FieldLocation) -> NeutralTypeField {
     NeutralTypeField {
         logical_name: source
             .get("name")

@@ -10,6 +10,7 @@
     "request": {
       "typeName": "BetaThreadUpdateParams",
       "argName": "params",
+      "refTypeName": "ModifyThreadRequest",
       "fields": [
         {
           "name": "toolResources",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "id",

@@ -60,7 +60,8 @@
           "name": "GroupBy",
           "langType": "[]AdminOrganizationUsageAudioTranscriptionsListGroupByItem",
           "required": false,
-          "description": "Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model` or any combination of them."
+          "description": "Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model` or any combination of them.",
+          "refTypeName": "AdminOrganizationUsageAudioTranscriptionsListGroupByItem"
         },
         {
           "name": "Limit",
@@ -78,7 +79,7 @@
     },
     "response": {
       "typeName": "UsageTimeBucket",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "UsageTimeBucket",
       "fields": [
         {
           "name": "Object",
@@ -98,9 +99,11 @@
         {
           "name": "Results",
           "langType": "[]UsageTimeBucketResultsItem",
-          "required": true
+          "required": true,
+          "refTypeName": "UsageTimeBucketResultsItem"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

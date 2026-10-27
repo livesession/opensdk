@@ -358,7 +358,11 @@ impl<'a> SymbolTable<'a> {
         self.set_type(&name, NamedType::placeholder(name.clone()));
 
         let schema = self.component_schema(key).cloned();
-        let built = self.build_from_schema(&name, schema.as_ref());
+        let mut built = self.build_from_schema(&name, schema.as_ref());
+        // The one place a type's schema origin is known: a component ref.
+        // Hoisted inline types never get one, however component-like their
+        // synthesized name looks.
+        built.schema_ref = Some(format!("#/components/schemas/{key}"));
         self.set_type(&name, built);
         name
     }

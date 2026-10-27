@@ -39,7 +39,7 @@
     },
     "response": {
       "typeName": "ContainerResource",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "ContainerResource",
       "fields": [
         {
           "name": "id",
@@ -98,7 +98,8 @@
           "description": "Network access policy for the container.",
           "refTypeName": "ContainerResourceNetworkPolicy"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

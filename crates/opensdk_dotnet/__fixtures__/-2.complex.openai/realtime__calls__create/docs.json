@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Realtime.Calls.Create(body) -> Task<byte[]>",
     "request": {
+      "refTypeName": "RealtimeCallCreateRequest",
       "fields": [
         {
           "name": "Sdp",

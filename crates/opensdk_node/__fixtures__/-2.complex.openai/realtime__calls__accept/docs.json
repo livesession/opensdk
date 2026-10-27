@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeCallAcceptParams",
       "argName": "body",
+      "refTypeName": "RealtimeSessionCreateRequestGa",
       "fields": [
         {
           "name": "type",
@@ -21,7 +22,8 @@
           "name": "output_modalities",
           "langType": "RealtimeSessionCreateRequestGaOutputModalitiesItem[]",
           "required": false,
-          "description": "The set of modalities the model can respond with. It defaults to `[\"audio\"]`, indicating\nthat the model will respond with audio plus a transcript. `[\"text\"]` can be used to make\nthe model respond with text only. It is not possible to request both `text` and `audio` at the same time.\n"
+          "description": "The set of modalities the model can respond with. It defaults to `[\"audio\"]`, indicating\nthat the model will respond with audio plus a transcript. `[\"text\"]` can be used to make\nthe model respond with text only. It is not possible to request both `text` and `audio` at the same time.\n",
+          "refTypeName": "RealtimeSessionCreateRequestGaOutputModalitiesItem"
         },
         {
           "name": "model",
@@ -60,7 +62,8 @@
           "name": "tools",
           "langType": "RealtimeSessionCreateRequestGaToolsItem[]",
           "required": false,
-          "description": "Tools available to the model."
+          "description": "Tools available to the model.",
+          "refTypeName": "RealtimeSessionCreateRequestGaToolsItem"
         },
         {
           "name": "tool_choice",

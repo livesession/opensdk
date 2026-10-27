@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ProjectRoleUpdateParams",
       "argName": "params",
+      "refTypeName": "PublicUpdateOrganizationRoleBody",
       "fields": [
         {
           "name": "permissions",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "Role",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "object",

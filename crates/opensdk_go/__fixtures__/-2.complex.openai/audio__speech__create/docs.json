@@ -10,6 +10,7 @@
     "request": {
       "typeName": "AudioSpeechNewParams",
       "argName": "body",
+      "refTypeName": "CreateSpeechRequest",
       "fields": [
         {
           "name": "Model",

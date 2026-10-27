@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "DeletedSkillVersionResource",
+      "refTypeName": "DeletedSkillVersionResource",
       "fields": [
         {
           "name": "Object",

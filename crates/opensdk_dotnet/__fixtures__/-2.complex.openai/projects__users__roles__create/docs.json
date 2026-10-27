@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Projects.Users.Roles.Create(projectId, userId, body) -> Task<UserRoleAssignment>",
     "request": {
+      "refTypeName": "PublicAssignOrganizationGroupRoleBody",
       "fields": [
         {
           "name": "RoleId",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "UserRoleAssignment",
+      "refTypeName": "UserRoleAssignment",
       "fields": [
         {
           "name": "Object",

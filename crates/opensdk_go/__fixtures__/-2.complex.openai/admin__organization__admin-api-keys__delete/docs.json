@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "AdminOrganizationAdminAPIKeysDeleteResponse",
+      "refTypeName": "AdminOrganizationAdminApiKeysDeleteResponse",
       "fields": [
         {
           "name": "ID",

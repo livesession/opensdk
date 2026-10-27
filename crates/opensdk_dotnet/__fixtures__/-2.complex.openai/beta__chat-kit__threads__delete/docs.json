@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "DeletedThreadResource",
+      "refTypeName": "DeletedThreadResource",
       "fields": [
         {
           "name": "Id",

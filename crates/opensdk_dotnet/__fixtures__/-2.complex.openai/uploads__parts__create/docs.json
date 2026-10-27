@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Uploads.Parts.Create(uploadId, body) -> Task<UploadPart>",
     "request": {
+      "refTypeName": "AddUploadPartRequest",
       "fields": [
         {
           "name": "Data",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "UploadPart",
+      "refTypeName": "UploadPart",
       "fields": [
         {
           "name": "Id",

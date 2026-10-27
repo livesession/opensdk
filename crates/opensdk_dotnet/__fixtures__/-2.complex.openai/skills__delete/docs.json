@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "DeletedSkillResource",
+      "refTypeName": "DeletedSkillResource",
       "fields": [
         {
           "name": "Object",

@@ -24,7 +24,7 @@
     },
     "response": {
       "typeName": "Page<Models::Batch>",
-      "note": "paginated (Page)",
+      "refTypeName": "Batch",
       "fields": [
         {
           "name": "id",
@@ -160,7 +160,8 @@
           "required": false,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

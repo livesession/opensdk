@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationProjectUserUpdateParams",
       "argName": "body",
+      "refTypeName": "ProjectUserUpdateRequest",
       "fields": [
         {
           "name": "role",
@@ -23,6 +24,7 @@
     },
     "response": {
       "typeName": "ProjectUser",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "object",

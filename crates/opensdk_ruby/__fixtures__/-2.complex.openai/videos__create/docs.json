@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.videos.create(model: nil, prompt:, input_reference: nil, seconds: nil, size: nil) -> Models::VideoResource",
     "request": {
+      "refTypeName": "CreateVideoJsonBody",
       "fields": [
         {
           "name": "model",
@@ -42,6 +43,7 @@
     },
     "response": {
       "typeName": "Models::VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "id",

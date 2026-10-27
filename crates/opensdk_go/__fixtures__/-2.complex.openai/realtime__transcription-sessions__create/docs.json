@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeTranscriptionSessionNewParams",
       "argName": "body",
+      "refTypeName": "RealtimeTranscriptionSessionCreateRequest",
       "fields": [
         {
           "name": "TurnDetection",
@@ -48,6 +49,7 @@
     },
     "response": {
       "typeName": "RealtimeTranscriptionSessionCreateResponse",
+      "refTypeName": "RealtimeTranscriptionSessionCreateResponse",
       "fields": [
         {
           "name": "ClientSecret",

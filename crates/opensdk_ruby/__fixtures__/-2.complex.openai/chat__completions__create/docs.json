@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.chat.completions.create(metadata: nil, top_logprobs: nil, temperature: nil, top_p: nil, user: nil, safety_identifier: nil, prompt_cache_key: nil, service_tier: nil, prompt_cache_retention: nil, messages:, model:, modalities: nil, verbosity: nil, reasoning_effort: nil, max_completion_tokens: nil, frequency_penalty: nil, presence_penalty: nil, web_search_options: nil, response_format: nil, audio: nil, store: nil, stream: nil, stop: nil, logit_bias: nil, logprobs: nil, max_tokens: nil, n: nil, prediction: nil, seed: nil, stream_options: nil, tools: nil, tool_choice: nil, parallel_tool_calls: nil, function_call: nil, functions: nil) -> Models::CreateChatCompletionResponse",
     "request": {
+      "refTypeName": "CreateChatCompletionRequest",
       "fields": [
         {
           "name": "metadata",
@@ -66,7 +67,8 @@
           "name": "messages",
           "langType": "Array<Models::ChatCompletionRequestMessage>",
           "required": true,
-          "description": "A list of messages comprising the conversation so far. Depending on the\n[model](/docs/models) you use, different message types (modalities) are\nsupported, like [text](/docs/guides/text-generation),\n[images](/docs/guides/vision), and [audio](/docs/guides/audio).\n"
+          "description": "A list of messages comprising the conversation so far. Depending on the\n[model](/docs/models) you use, different message types (modalities) are\nsupported, like [text](/docs/guides/text-generation),\n[images](/docs/guides/vision), and [audio](/docs/guides/audio).\n",
+          "refTypeName": "ChatCompletionRequestMessage"
         },
         {
           "name": "model",
@@ -198,7 +200,8 @@
           "name": "tools",
           "langType": "Array<Models::CreateChatCompletionRequestToolsItem>",
           "required": false,
-          "description": "A list of tools the model may call. You can provide either\n[custom tools](/docs/guides/function-calling#custom-tools) or\n[function tools](/docs/guides/function-calling).\n"
+          "description": "A list of tools the model may call. You can provide either\n[custom tools](/docs/guides/function-calling#custom-tools) or\n[function tools](/docs/guides/function-calling).\n",
+          "refTypeName": "CreateChatCompletionRequestToolsItem"
         },
         {
           "name": "tool_choice",
@@ -225,12 +228,14 @@
           "langType": "Array<Models::ChatCompletionFunctions>",
           "required": false,
           "description": "Deprecated in favor of `tools`.\n\nA list of functions the model may generate JSON inputs for.\n",
-          "deprecated": true
+          "deprecated": true,
+          "refTypeName": "ChatCompletionFunctions"
         }
       ]
     },
     "response": {
       "typeName": "Models::CreateChatCompletionResponse",
+      "refTypeName": "CreateChatCompletionResponse",
       "fields": [
         {
           "name": "id",
@@ -242,7 +247,8 @@
           "name": "choices",
           "langType": "Array<Models::CreateChatCompletionResponseChoicesItem>",
           "required": true,
-          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1."
+          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1.",
+          "refTypeName": "CreateChatCompletionResponseChoicesItem"
         },
         {
           "name": "created",

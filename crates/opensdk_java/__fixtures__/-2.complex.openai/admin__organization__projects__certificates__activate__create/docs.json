@@ -13,6 +13,7 @@
     "request": {
       "typeName": "AdminOrganizationProjectCertificateActivateCreateParams",
       "argName": "params",
+      "refTypeName": "ToggleCertificatesRequest",
       "fields": [
         {
           "name": "certificateIds",
@@ -23,6 +24,7 @@
     },
     "response": {
       "typeName": "OrganizationProjectCertificateActivationResponse",
+      "refTypeName": "OrganizationProjectCertificateActivationResponse",
       "fields": [
         {
           "name": "object",
@@ -33,7 +35,8 @@
         {
           "name": "data",
           "langType": "List<OrganizationProjectCertificate>",
-          "required": true
+          "required": true,
+          "refTypeName": "OrganizationProjectCertificate"
         }
       ]
     }

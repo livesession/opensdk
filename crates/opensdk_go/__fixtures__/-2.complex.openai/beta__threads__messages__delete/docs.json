@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "DeleteMessageResponse",
+      "refTypeName": "DeleteMessageResponse",
       "fields": [
         {
           "name": "ID",

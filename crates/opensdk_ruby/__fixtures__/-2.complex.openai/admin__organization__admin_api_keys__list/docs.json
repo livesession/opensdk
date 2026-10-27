@@ -30,7 +30,7 @@
     },
     "response": {
       "typeName": "Page<Models::AdminApiKey>",
-      "note": "paginated (Page)",
+      "refTypeName": "AdminApiKey",
       "fields": [
         {
           "name": "object",
@@ -73,7 +73,8 @@
           "required": true,
           "refTypeName": "AdminApiKeyOwner"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

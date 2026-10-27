@@ -10,6 +10,7 @@
     "request": {
       "typeName": "VideoExtensionCreateParams",
       "argName": "body",
+      "refTypeName": "CreateVideoExtendJsonBody",
       "fields": [
         {
           "name": "video",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "id",

@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.create(name:, geography: nil, external_key_id: nil) -> Models::Project",
     "request": {
+      "refTypeName": "ProjectCreateRequest",
       "fields": [
         {
           "name": "name",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "Models::Project",
+      "refTypeName": "Project",
       "fields": [
         {
           "name": "id",

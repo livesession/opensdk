@@ -35,7 +35,7 @@
     },
     "response": {
       "typeName": "GroupResponse",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "GroupResponse",
       "fields": [
         {
           "name": "ID",
@@ -67,7 +67,8 @@
           "required": true,
           "description": "The type of the group."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

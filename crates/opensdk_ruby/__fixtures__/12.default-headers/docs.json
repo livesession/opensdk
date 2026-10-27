@@ -22,11 +22,13 @@
     },
     "response": {
       "typeName": "Models::GadgetList",
+      "refTypeName": "GadgetList",
       "fields": [
         {
           "name": "data",
           "langType": "Array<Models::Gadget>",
-          "required": true
+          "required": true,
+          "refTypeName": "Gadget"
         },
         {
           "name": "list",

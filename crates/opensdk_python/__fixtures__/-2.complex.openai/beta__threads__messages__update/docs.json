@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.beta.threads.messages.update(thread_id, message_id, metadata=...) -> MessageObject",
     "request": {
+      "refTypeName": "ModifyMessageRequest",
       "fields": [
         {
           "name": "metadata",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "MessageObject",
+      "refTypeName": "MessageObject",
       "fields": [
         {
           "name": "id",
@@ -79,7 +81,8 @@
           "name": "content",
           "langType": "list[MessageObjectContentItem]",
           "required": true,
-          "description": "The content of the message in array of text and/or images."
+          "description": "The content of the message in array of text and/or images.",
+          "refTypeName": "MessageObjectContentItem"
         },
         {
           "name": "assistant_id",
@@ -94,7 +97,8 @@
         {
           "name": "attachments",
           "langType": "Optional[list[MessageObjectAttachmentsItem]]",
-          "required": true
+          "required": true,
+          "refTypeName": "MessageObjectAttachmentsItem"
         },
         {
           "name": "metadata",

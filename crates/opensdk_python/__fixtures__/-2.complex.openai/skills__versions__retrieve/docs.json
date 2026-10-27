@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "SkillVersionResource",
+      "refTypeName": "SkillVersionResource",
       "fields": [
         {
           "name": "object",

@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeCallRejectParams",
       "argName": "body",
+      "refTypeName": "RealtimeCallRejectRequest",
       "fields": [
         {
           "name": "StatusCode",

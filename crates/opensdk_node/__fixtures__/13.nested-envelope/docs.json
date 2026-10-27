@@ -1,0 +1,266 @@
+{
+  "chain": [
+    "widgets"
+  ],
+  "action": "list",
+  "usage": "import Widgetco from \"widgetco\";\n\nconst client = new Widgetco({\n  apiKey: process.env[\"WIDGETCO_API_KEY\"],\n});\n\nconst result = await client.widgets.list({ limit: 20, cursor: \"cur_1\", status: \"draft\" });\nconsole.log(result);\n",
+  "typeReference": {
+    "signature": "client.widgets.list(query?): Promise<WidgetList>",
+    "request": {
+      "typeName": "WidgetListParams",
+      "argName": "query",
+      "fields": [
+        {
+          "name": "limit",
+          "langType": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "langType": "string",
+          "required": false
+        },
+        {
+          "name": "status",
+          "langType": "WidgetStatus",
+          "required": false,
+          "description": "Only widgets in this state.",
+          "refTypeName": "WidgetStatus",
+          "schemaRef": "#/components/schemas/WidgetStatus"
+        }
+      ]
+    },
+    "response": {
+      "typeName": "WidgetList",
+      "refTypeName": "WidgetList",
+      "schemaRef": "#/components/schemas/WidgetList",
+      "fields": [
+        {
+          "name": "data",
+          "langType": "Widget[]",
+          "required": true,
+          "refTypeName": "Widget",
+          "schemaRef": "#/components/schemas/Widget"
+        },
+        {
+          "name": "list",
+          "langType": "WidgetListList",
+          "required": true,
+          "description": "Paging markers, nested beside the items.",
+          "refTypeName": "WidgetListList"
+        }
+      ]
+    },
+    "nested": {
+      "Finish": {
+        "typeName": "Finish",
+        "kind": "union",
+        "schemaRef": "#/components/schemas/Finish",
+        "description": "How a part's surface is treated: painted or plated.",
+        "variants": [
+          {
+            "langType": "Paint",
+            "refTypeName": "Paint",
+            "schemaRef": "#/components/schemas/Paint"
+          },
+          {
+            "langType": "Plating",
+            "refTypeName": "Plating",
+            "schemaRef": "#/components/schemas/Plating"
+          }
+        ]
+      },
+      "Material": {
+        "typeName": "Material",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Material",
+        "description": "What a part is made of.",
+        "fields": [
+          {
+            "name": "name",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "recycled",
+            "langType": "boolean",
+            "required": false,
+            "description": "Whether the stock is reclaimed."
+          }
+        ]
+      },
+      "Paint": {
+        "typeName": "Paint",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Paint",
+        "description": "A painted finish.",
+        "fields": [
+          {
+            "name": "color",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "gloss",
+            "langType": "boolean",
+            "required": false,
+            "description": "Whether the coat is glossy."
+          }
+        ]
+      },
+      "Part": {
+        "typeName": "Part",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Part",
+        "description": "A part a widget is assembled from.",
+        "fields": [
+          {
+            "name": "sku",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "weight_grams",
+            "langType": "number",
+            "required": false
+          },
+          {
+            "name": "material",
+            "langType": "Material",
+            "required": false,
+            "refTypeName": "Material",
+            "schemaRef": "#/components/schemas/Material"
+          },
+          {
+            "name": "finish",
+            "langType": "Finish",
+            "required": false,
+            "refTypeName": "Finish",
+            "schemaRef": "#/components/schemas/Finish"
+          },
+          {
+            "name": "codes",
+            "langType": "PartCodes",
+            "required": false,
+            "refTypeName": "PartCodes",
+            "schemaRef": "#/components/schemas/PartCodes"
+          }
+        ]
+      },
+      "PartCodes": {
+        "typeName": "PartCodes",
+        "kind": "alias",
+        "schemaRef": "#/components/schemas/PartCodes",
+        "of": {
+          "langType": "string[]"
+        }
+      },
+      "Plating": {
+        "typeName": "Plating",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Plating",
+        "description": "A plated finish.",
+        "fields": [
+          {
+            "name": "metal",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "microns",
+            "langType": "number",
+            "required": false
+          }
+        ]
+      },
+      "Widget": {
+        "typeName": "Widget",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/Widget",
+        "description": "A widget in the catalogue.",
+        "fields": [
+          {
+            "name": "id",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "name",
+            "langType": "string",
+            "required": true
+          },
+          {
+            "name": "status",
+            "langType": "WidgetStatus",
+            "required": false,
+            "refTypeName": "WidgetStatus",
+            "schemaRef": "#/components/schemas/WidgetStatus"
+          },
+          {
+            "name": "part",
+            "langType": "Part",
+            "required": false,
+            "refTypeName": "Part",
+            "schemaRef": "#/components/schemas/Part"
+          }
+        ]
+      },
+      "WidgetList": {
+        "typeName": "WidgetList",
+        "kind": "struct",
+        "schemaRef": "#/components/schemas/WidgetList",
+        "description": "A page of widgets; the paging block is an inline object.",
+        "fields": [
+          {
+            "name": "data",
+            "langType": "Widget[]",
+            "required": true,
+            "refTypeName": "Widget",
+            "schemaRef": "#/components/schemas/Widget"
+          },
+          {
+            "name": "list",
+            "langType": "WidgetListList",
+            "required": true,
+            "description": "Paging markers, nested beside the items.",
+            "refTypeName": "WidgetListList"
+          }
+        ]
+      },
+      "WidgetListList": {
+        "typeName": "WidgetListList",
+        "kind": "struct",
+        "description": "Paging markers, nested beside the items.",
+        "fields": [
+          {
+            "name": "has_more",
+            "langType": "boolean",
+            "required": true
+          },
+          {
+            "name": "next_cursor",
+            "langType": "string | null",
+            "required": false,
+            "description": "Pass as `cursor` to fetch the next page."
+          },
+          {
+            "name": "total",
+            "langType": "number",
+            "required": false
+          }
+        ]
+      },
+      "WidgetStatus": {
+        "typeName": "WidgetStatus",
+        "kind": "enum",
+        "schemaRef": "#/components/schemas/WidgetStatus",
+        "description": "Where a widget is in its life cycle.",
+        "values": [
+          "draft",
+          "active",
+          "retired"
+        ]
+      }
+    }
+  }
+}

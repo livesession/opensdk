@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "Models::DeletedThreadResource",
+      "refTypeName": "DeletedThreadResource",
       "fields": [
         {
           "name": "id",

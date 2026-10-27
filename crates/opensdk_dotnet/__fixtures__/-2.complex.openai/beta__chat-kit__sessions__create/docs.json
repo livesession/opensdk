@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Beta.ChatKit.Sessions.Create(body) -> Task<ChatSessionResource>",
     "request": {
+      "refTypeName": "CreateChatSessionBody",
       "fields": [
         {
           "name": "Workflow",
@@ -44,6 +45,7 @@
     },
     "response": {
       "typeName": "ChatSessionResource",
+      "refTypeName": "ChatSessionResource",
       "fields": [
         {
           "name": "Id",

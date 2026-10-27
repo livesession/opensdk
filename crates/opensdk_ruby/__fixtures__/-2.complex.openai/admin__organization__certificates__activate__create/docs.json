@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.certificates.activate.create(certificate_ids:) -> Models::OrganizationCertificateActivationResponse",
     "request": {
+      "refTypeName": "ToggleCertificatesRequest",
       "fields": [
         {
           "name": "certificate_ids",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "Models::OrganizationCertificateActivationResponse",
+      "refTypeName": "OrganizationCertificateActivationResponse",
       "fields": [
         {
           "name": "object",
@@ -30,7 +32,8 @@
         {
           "name": "data",
           "langType": "Array<Models::OrganizationCertificate>",
-          "required": true
+          "required": true,
+          "refTypeName": "OrganizationCertificate"
         }
       ]
     }

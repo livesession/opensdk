@@ -34,7 +34,7 @@
     },
     "response": {
       "typeName": "ContainerFileResource",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "ContainerFileResource",
       "fields": [
         {
           "name": "ID",
@@ -78,7 +78,8 @@
           "required": true,
           "description": "Source of the file (e.g., `user`, `assistant`)."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

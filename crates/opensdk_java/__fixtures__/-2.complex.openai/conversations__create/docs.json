@@ -9,6 +9,7 @@
     "request": {
       "typeName": "ConversationCreateParams",
       "argName": "params",
+      "refTypeName": "CreateConversationBody",
       "fields": [
         {
           "name": "metadata",
@@ -19,12 +20,14 @@
         {
           "name": "items",
           "langType": "Optional<List<Object>>",
-          "required": false
+          "required": false,
+          "refTypeName": "InputItem"
         }
       ]
     },
     "response": {
       "typeName": "ConversationResource",
+      "refTypeName": "ConversationResource",
       "fields": [
         {
           "name": "id",

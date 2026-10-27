@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.realtime.calls.reject(call_id, status_code=...) -> None",
     "request": {
+      "refTypeName": "RealtimeCallRejectRequest",
       "fields": [
         {
           "name": "status_code",

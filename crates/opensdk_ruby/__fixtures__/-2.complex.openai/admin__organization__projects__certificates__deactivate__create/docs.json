@@ -11,6 +11,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.certificates.deactivate.create(project_id, certificate_ids:) -> Models::OrganizationProjectCertificateDeactivationResponse",
     "request": {
+      "refTypeName": "ToggleCertificatesRequest",
       "fields": [
         {
           "name": "certificate_ids",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "Models::OrganizationProjectCertificateDeactivationResponse",
+      "refTypeName": "OrganizationProjectCertificateDeactivationResponse",
       "fields": [
         {
           "name": "object",
@@ -31,7 +33,8 @@
         {
           "name": "data",
           "langType": "Array<Models::OrganizationProjectCertificate>",
-          "required": true
+          "required": true,
+          "refTypeName": "OrganizationProjectCertificate"
         }
       ]
     }

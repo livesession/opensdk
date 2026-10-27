@@ -25,7 +25,7 @@
     },
     "response": {
       "typeName": "VoiceConsentResource",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "VoiceConsentResource",
       "fields": [
         {
           "name": "Object",
@@ -57,7 +57,8 @@
           "required": true,
           "description": "The Unix timestamp (in seconds) for when the consent recording was created."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

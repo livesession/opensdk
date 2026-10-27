@@ -28,7 +28,7 @@
     },
     "response": {
       "typeName": "FineTuningJobCheckpoint",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "FineTuningJobCheckpoint",
       "fields": [
         {
           "name": "id",
@@ -73,7 +73,8 @@
           "required": true,
           "description": "The object type, which is always \"fine_tuning.job.checkpoint\"."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

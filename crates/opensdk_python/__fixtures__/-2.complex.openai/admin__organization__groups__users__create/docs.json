@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.groups.users.create(group_id, user_id) -> GroupUserAssignment",
     "request": {
+      "refTypeName": "CreateGroupUserBody",
       "fields": [
         {
           "name": "user_id",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "GroupUserAssignment",
+      "refTypeName": "GroupUserAssignment",
       "fields": [
         {
           "name": "object",

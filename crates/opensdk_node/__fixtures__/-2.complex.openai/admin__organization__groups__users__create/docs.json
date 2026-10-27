@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationGroupUserCreateParams",
       "argName": "body",
+      "refTypeName": "CreateGroupUserBody",
       "fields": [
         {
           "name": "user_id",
@@ -23,6 +24,7 @@
     },
     "response": {
       "typeName": "GroupUserAssignment",
+      "refTypeName": "GroupUserAssignment",
       "fields": [
         {
           "name": "object",

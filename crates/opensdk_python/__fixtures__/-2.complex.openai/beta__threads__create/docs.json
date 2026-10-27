@@ -8,12 +8,14 @@
   "typeReference": {
     "signature": "client.beta.threads.create(messages=..., tool_resources=..., metadata=...) -> ThreadObject",
     "request": {
+      "refTypeName": "CreateThreadRequest",
       "fields": [
         {
           "name": "messages",
           "langType": "Optional[list[CreateMessageRequest]]",
           "required": false,
-          "description": "A list of [messages](/docs/api-reference/messages) to start the thread with."
+          "description": "A list of [messages](/docs/api-reference/messages) to start the thread with.",
+          "refTypeName": "CreateMessageRequest"
         },
         {
           "name": "tool_resources",
@@ -31,6 +33,7 @@
     },
     "response": {
       "typeName": "ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "id",

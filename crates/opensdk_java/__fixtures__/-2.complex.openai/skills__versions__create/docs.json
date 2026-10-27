@@ -10,6 +10,7 @@
     "request": {
       "typeName": "SkillVersionCreateParams",
       "argName": "params",
+      "refTypeName": "CreateSkillVersionBody",
       "fields": [
         {
           "name": "files",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "SkillVersionResource",
+      "refTypeName": "SkillVersionResource",
       "fields": [
         {
           "name": "object",

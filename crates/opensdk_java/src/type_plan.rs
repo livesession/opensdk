@@ -51,19 +51,13 @@ fn resolve_body_fields<'a>(body_ref: Option<&'a Value>, types: &'a Types) -> Vec
         .unwrap_or_default()
 }
 
-/// The ORIGINAL IR schema name behind a field's type, for a cross-type link.
-/// Direct refs only (v1).
+/// The IR type name behind a field's type (through arrays and maps): the key
+/// into the type reference's `nested` table and the cross-type link.
 pub fn ref_schema_name(type_ref: Option<&Value>) -> Option<String> {
-    let r = type_ref?;
-    if str_field(r, "kind") != Some("ref") {
-        return None;
-    }
-    str_field(r, "name")
-        .filter(|n| !n.is_empty())
-        .map(str::to_string)
+    opensdk_core::nested::ref_type_name(type_ref)
 }
 
-fn to_request_field(source: &Value) -> NeutralTypeField<'_> {
+pub(crate) fn to_request_field(source: &Value) -> NeutralTypeField<'_> {
     NeutralTypeField {
         logical_name: str_field(source, "name").unwrap_or("").to_string(),
         type_ref: source.get("type"),

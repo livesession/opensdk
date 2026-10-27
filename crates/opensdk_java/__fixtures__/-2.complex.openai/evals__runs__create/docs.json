@@ -10,6 +10,7 @@
     "request": {
       "typeName": "EvalRunCreateParams",
       "argName": "params",
+      "refTypeName": "CreateEvalRunRequest",
       "fields": [
         {
           "name": "name",
@@ -34,6 +35,7 @@
     },
     "response": {
       "typeName": "EvalRun",
+      "refTypeName": "EvalRun",
       "fields": [
         {
           "name": "object",
@@ -94,13 +96,15 @@
           "name": "perModelUsage",
           "langType": "List<EvalRunPerModelUsageItem>",
           "required": true,
-          "description": "Usage statistics for each model during the evaluation run."
+          "description": "Usage statistics for each model during the evaluation run.",
+          "refTypeName": "EvalRunPerModelUsageItem"
         },
         {
           "name": "perTestingCriteriaResults",
           "langType": "List<EvalRunPerTestingCriteriaResultsItem>",
           "required": true,
-          "description": "Results per testing criteria applied during the evaluation run."
+          "description": "Results per testing criteria applied during the evaluation run.",
+          "refTypeName": "EvalRunPerTestingCriteriaResultsItem"
         },
         {
           "name": "dataSource",

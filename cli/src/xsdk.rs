@@ -1,8 +1,9 @@
 //! `src/cli/xsdk.ts` + the `embedXSdk` half of `@xyd-js/opensdk-uniform`.
 //!
 //! The CI/CD-side spec enricher: read a RAW OpenAPI spec, compute every
-//! operation's per-language SDK artifacts (signature, usage sample,
-//! request/response type reference) through the emitters' DOCS capabilities,
+//! operation's per-language SDK artifacts (signature, usage sample, the
+//! request/response type reference and the `nested` types behind it) through
+//! the emitters' DOCS capabilities,
 //! and write the spec back with `x-sdk` extensions embedded (root + per
 //! operation). Ship the result as your published OpenAPI and a docs site
 //! renders SDK-native docs from it WITHOUT running the generator.
@@ -235,6 +236,15 @@ pub fn embed_xsdk(
                     "response".into(),
                     serde_json::to_value(&tref.response).map_err(|e| Error::msg(e.to_string()))?,
                 );
+                // The lookup table behind the two one-level groups (see
+                // `opensdk_core::nested`); left out when nothing is referenced.
+                if !tref.nested.is_empty() {
+                    types.insert(
+                        "nested".into(),
+                        serde_json::to_value(&tref.nested)
+                            .map_err(|e| Error::msg(e.to_string()))?,
+                    );
+                }
                 entry.insert("types".into(), Value::Object(types));
                 xop.insert((*id).to_string(), Value::Object(entry));
             }
