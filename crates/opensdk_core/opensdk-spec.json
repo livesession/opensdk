@@ -67,6 +67,7 @@
         "kind": { "type": "string", "description": "The type kind a generator branches on: struct | enum | union | alias" },
         "description": { "type": "string", "description": "The type description" },
         "deprecated": { "type": "boolean", "description": "Whether the type is deprecated" },
+        "schemaRef": { "type": "string", "description": "The OpenAPI component schema this type came from (#/components/schemas/<Name>); absent for a type hoisted from an inline schema" },
         "fields": {
           "type": "array",
           "items": { "$ref": "#/$defs/Field" },

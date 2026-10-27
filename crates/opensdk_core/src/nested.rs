@@ -37,14 +37,17 @@ use crate::emitter::{
 /// How many named-type hops from the operation `nested` renders by default.
 pub const DEFAULT_NESTED_DEPTH: usize = 8;
 
-/// The depth cap for one docs call: the options bag's `nestedDepth` (a
-/// non-negative integer) or [`DEFAULT_NESTED_DEPTH`].
+/// The depth cap for one docs call: the options bag's `nestedDepth` — a
+/// non-negative integer, or a string holding one (`"0"` counts as `0`) — or
+/// [`DEFAULT_NESTED_DEPTH`] when the key is absent. Any other value (a
+/// negative number, a fraction, `null`, another type) falls back to the
+/// default as well: the docs pass never fails over a presentation option.
 pub fn nested_depth(options: &Value) -> usize {
-    options
-        .get("nestedDepth")
-        .and_then(Value::as_u64)
-        .map(|d| d as usize)
-        .unwrap_or(DEFAULT_NESTED_DEPTH)
+    match options.get("nestedDepth") {
+        Some(Value::Number(n)) => n.as_u64().map_or(DEFAULT_NESTED_DEPTH, |d| d as usize),
+        Some(Value::String(s)) => s.trim().parse::<usize>().unwrap_or(DEFAULT_NESTED_DEPTH),
+        _ => DEFAULT_NESTED_DEPTH,
+    }
 }
 
 /// The IR type name behind a TypeRef: a direct `ref`, or the element type of an
@@ -569,6 +572,29 @@ mod tests {
         // The default is generous enough for the whole fixture.
         assert_eq!(nested_depth(&Value::Null), DEFAULT_NESTED_DEPTH);
         assert_eq!(nested_depth(&json!({ "nestedDepth": 3 })), 3);
+    }
+
+    #[test]
+    fn an_odd_nested_depth_falls_back_to_the_default() {
+        // A numeric string is honoured (configs round-trip through strings).
+        assert_eq!(nested_depth(&json!({ "nestedDepth": "0" })), 0);
+        assert_eq!(nested_depth(&json!({ "nestedDepth": " 2 " })), 2);
+        // Anything else is not a depth: the default applies, never a panic.
+        for odd in [
+            json!(-1),
+            json!(1.5),
+            json!("deep"),
+            json!(""),
+            json!(null),
+            json!(true),
+            json!([2]),
+        ] {
+            assert_eq!(
+                nested_depth(&json!({ "nestedDepth": odd })),
+                DEFAULT_NESTED_DEPTH,
+                "{odd}"
+            );
+        }
     }
 
     #[test]

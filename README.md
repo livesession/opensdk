@@ -151,7 +151,9 @@ the language's models declare them — so a page can expand `list` into
 its own nested types, and link a type to its schema page only when `schemaRef`
 says one exists. The walk is breadth-first with a visited set (a
 self-referencing type terminates) and stops `nestedDepth` hops from the
-operation (default 8, set in a language's section of the options bag; `0`
-leaves `nested` out). The IR records the origin as `types[].schemaRef`.
+operation (default 8, set in a language's section of the options bag as a
+non-negative integer or a string holding one; `0` leaves `nested` out; any
+other value falls back to the default). The IR records the origin as
+`types[].schemaRef`, which the IR schema declares on `NamedType`.
 
 MIT licensed.
