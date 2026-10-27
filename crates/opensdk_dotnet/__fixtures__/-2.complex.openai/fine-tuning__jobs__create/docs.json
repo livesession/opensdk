@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.FineTuning.Jobs.Create(body) -> Task<FineTuningJob>",
     "request": {
+      "refTypeName": "CreateFineTuningJobRequest",
       "fields": [
         {
           "name": "Model",
@@ -46,7 +47,8 @@
           "name": "Integrations",
           "langType": "List<CreateFineTuningJobRequestIntegrationsItem>?",
           "required": false,
-          "description": "A list of integrations to enable for your fine-tuning job."
+          "description": "A list of integrations to enable for your fine-tuning job.",
+          "refTypeName": "CreateFineTuningJobRequestIntegrationsItem"
         },
         {
           "name": "Seed",
@@ -70,6 +72,7 @@
     },
     "response": {
       "typeName": "FineTuningJob",
+      "refTypeName": "FineTuningJob",
       "fields": [
         {
           "name": "Id",
@@ -156,7 +159,8 @@
         {
           "name": "Integrations",
           "langType": "List<FineTuningIntegration>",
-          "required": false
+          "required": false,
+          "refTypeName": "FineTuningIntegration"
         },
         {
           "name": "Seed",

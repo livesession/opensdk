@@ -47,7 +47,7 @@
     },
     "response": {
       "typeName": "MessageObject",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "MessageObject",
       "fields": [
         {
           "name": "id",
@@ -107,7 +107,8 @@
           "name": "content",
           "langType": "MessageObjectContentItem[]",
           "required": true,
-          "description": "The content of the message in array of text and/or images."
+          "description": "The content of the message in array of text and/or images.",
+          "refTypeName": "MessageObjectContentItem"
         },
         {
           "name": "assistant_id",
@@ -122,7 +123,8 @@
         {
           "name": "attachments",
           "langType": "MessageObjectAttachmentsItem[] | null",
-          "required": true
+          "required": true,
+          "refTypeName": "MessageObjectAttachmentsItem"
         },
         {
           "name": "metadata",
@@ -130,7 +132,8 @@
           "required": true,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

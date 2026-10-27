@@ -32,7 +32,7 @@
     },
     "response": {
       "typeName": "Page<Models::Project>",
-      "note": "paginated (Page)",
+      "refTypeName": "Project",
       "fields": [
         {
           "name": "id",
@@ -75,7 +75,8 @@
           "required": false,
           "description": "The external key associated with the project."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

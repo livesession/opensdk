@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ImageVariationCreateParams",
       "argName": "params",
+      "refTypeName": "CreateImageVariationRequest",
       "fields": [
         {
           "name": "image",
@@ -54,6 +55,7 @@
     },
     "response": {
       "typeName": "ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "created",
@@ -65,7 +67,8 @@
           "name": "data",
           "langType": "List<Image>",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "background",

@@ -11,6 +11,7 @@
     "request": {
       "typeName": "AdminOrganizationGroupNewParams",
       "argName": "body",
+      "refTypeName": "CreateGroupBody",
       "fields": [
         {
           "name": "Name",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "GroupResponse",
+      "refTypeName": "GroupResponse",
       "fields": [
         {
           "name": "ID",

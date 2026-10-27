@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.responses.compact.create(model, input=..., previous_response_id=..., instructions=..., prompt_cache_key=..., prompt_cache_retention=..., service_tier=...) -> CompactResource",
     "request": {
+      "refTypeName": "CompactResponseMethodPublicBody",
       "fields": [
         {
           "name": "model",
@@ -52,6 +53,7 @@
     },
     "response": {
       "typeName": "CompactResource",
+      "refTypeName": "CompactResource",
       "fields": [
         {
           "name": "id",
@@ -69,7 +71,8 @@
           "name": "output",
           "langType": "list[ItemField]",
           "required": true,
-          "description": "The compacted list of output items."
+          "description": "The compacted list of output items.",
+          "refTypeName": "ItemField"
         },
         {
           "name": "created_at",

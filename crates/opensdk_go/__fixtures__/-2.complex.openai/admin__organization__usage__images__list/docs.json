@@ -36,13 +36,15 @@
           "name": "Sources",
           "langType": "[]AdminOrganizationUsageImagesListSourcesItem",
           "required": false,
-          "description": "Return only usages for these sources. Possible values are `image.generation`, `image.edit`, `image.variation` or any combination of them."
+          "description": "Return only usages for these sources. Possible values are `image.generation`, `image.edit`, `image.variation` or any combination of them.",
+          "refTypeName": "AdminOrganizationUsageImagesListSourcesItem"
         },
         {
           "name": "Sizes",
           "langType": "[]AdminOrganizationUsageImagesListSizesItem",
           "required": false,
-          "description": "Return only usages for these image sizes. Possible values are `256x256`, `512x512`, `1024x1024`, `1792x1792`, `1024x1792` or any combination of them."
+          "description": "Return only usages for these image sizes. Possible values are `256x256`, `512x512`, `1024x1024`, `1792x1792`, `1024x1792` or any combination of them.",
+          "refTypeName": "AdminOrganizationUsageImagesListSizesItem"
         },
         {
           "name": "ProjectIds",
@@ -72,7 +74,8 @@
           "name": "GroupBy",
           "langType": "[]AdminOrganizationUsageImagesListGroupByItem",
           "required": false,
-          "description": "Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model`, `size`, `source` or any combination of them."
+          "description": "Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model`, `size`, `source` or any combination of them.",
+          "refTypeName": "AdminOrganizationUsageImagesListGroupByItem"
         },
         {
           "name": "Limit",
@@ -90,7 +93,7 @@
     },
     "response": {
       "typeName": "UsageTimeBucket",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "UsageTimeBucket",
       "fields": [
         {
           "name": "Object",
@@ -110,9 +113,11 @@
         {
           "name": "Results",
           "langType": "[]UsageTimeBucketResultsItem",
-          "required": true
+          "required": true,
+          "refTypeName": "UsageTimeBucketResultsItem"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

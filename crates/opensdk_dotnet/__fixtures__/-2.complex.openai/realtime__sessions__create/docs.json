@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Realtime.Sessions.Create(body) -> Task<RealtimeSessionCreateResponse>",
     "request": {
+      "refTypeName": "RealtimeSessionCreateRequest",
       "fields": [
         {
           "name": "ClientSecret",
@@ -77,7 +78,8 @@
           "name": "Tools",
           "langType": "List<RealtimeSessionCreateRequestToolsItem>?",
           "required": false,
-          "description": "Tools (functions) available to the model."
+          "description": "Tools (functions) available to the model.",
+          "refTypeName": "RealtimeSessionCreateRequestToolsItem"
         },
         {
           "name": "ToolChoice",
@@ -114,6 +116,7 @@
     },
     "response": {
       "typeName": "RealtimeSessionCreateResponse",
+      "refTypeName": "RealtimeSessionCreateResponse",
       "fields": [
         {
           "name": "Id",
@@ -182,7 +185,8 @@
           "name": "Tools",
           "langType": "List<RealtimeFunctionTool>",
           "required": false,
-          "description": "Tools (functions) available to the model."
+          "description": "Tools (functions) available to the model.",
+          "refTypeName": "RealtimeFunctionTool"
         },
         {
           "name": "ToolChoice",

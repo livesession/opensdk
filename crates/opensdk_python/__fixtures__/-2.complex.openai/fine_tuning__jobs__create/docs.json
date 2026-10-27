@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.fine_tuning.jobs.create(model, training_file, hyperparameters=..., suffix=..., validation_file=..., integrations=..., seed=..., method=..., metadata=...) -> FineTuningJob",
     "request": {
+      "refTypeName": "CreateFineTuningJobRequest",
       "fields": [
         {
           "name": "model",
@@ -46,7 +47,8 @@
           "name": "integrations",
           "langType": "Optional[list[CreateFineTuningJobRequestIntegrationsItem]]",
           "required": false,
-          "description": "A list of integrations to enable for your fine-tuning job."
+          "description": "A list of integrations to enable for your fine-tuning job.",
+          "refTypeName": "CreateFineTuningJobRequestIntegrationsItem"
         },
         {
           "name": "seed",
@@ -70,6 +72,7 @@
     },
     "response": {
       "typeName": "FineTuningJob",
+      "refTypeName": "FineTuningJob",
       "fields": [
         {
           "name": "id",
@@ -156,7 +159,8 @@
         {
           "name": "integrations",
           "langType": "Optional[list[FineTuningIntegration]]",
-          "required": false
+          "required": false,
+          "refTypeName": "FineTuningIntegration"
         },
         {
           "name": "seed",

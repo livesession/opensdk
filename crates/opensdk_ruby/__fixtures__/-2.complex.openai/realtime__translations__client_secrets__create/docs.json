@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.realtime.translations.client_secrets.create(expires_after: nil, session:) -> Models::RealtimeTranslationClientSecretCreateResponse",
     "request": {
+      "refTypeName": "RealtimeTranslationClientSecretCreateRequest",
       "fields": [
         {
           "name": "expires_after",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "Models::RealtimeTranslationClientSecretCreateResponse",
+      "refTypeName": "RealtimeTranslationClientSecretCreateResponse",
       "fields": [
         {
           "name": "value",

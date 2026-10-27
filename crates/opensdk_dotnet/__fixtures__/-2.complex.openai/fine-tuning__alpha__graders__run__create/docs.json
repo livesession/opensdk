@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.FineTuning.Alpha.Graders.Run.Create(body) -> Task<RunGraderResponse>",
     "request": {
+      "refTypeName": "RunGraderRequest",
       "fields": [
         {
           "name": "Grader",
@@ -34,6 +35,7 @@
     },
     "response": {
       "typeName": "RunGraderResponse",
+      "refTypeName": "RunGraderResponse",
       "fields": [
         {
           "name": "Reward",

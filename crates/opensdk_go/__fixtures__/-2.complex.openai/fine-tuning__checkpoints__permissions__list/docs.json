@@ -41,7 +41,7 @@
     },
     "response": {
       "typeName": "FineTuningCheckpointPermission",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "FineTuningCheckpointPermission",
       "fields": [
         {
           "name": "ID",
@@ -67,7 +67,8 @@
           "required": true,
           "description": "The object type, which is always \"checkpoint.permission\"."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

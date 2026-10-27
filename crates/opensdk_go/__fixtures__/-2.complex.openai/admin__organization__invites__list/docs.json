@@ -28,7 +28,7 @@
     },
     "response": {
       "typeName": "Invite",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "Invite",
       "fields": [
         {
           "name": "Object",
@@ -84,9 +84,11 @@
           "name": "Projects",
           "langType": "[]InviteProjectsItem",
           "required": true,
-          "description": "The projects that were granted membership upon acceptance of the invite."
+          "description": "The projects that were granted membership upon acceptance of the invite.",
+          "refTypeName": "InviteProjectsItem"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

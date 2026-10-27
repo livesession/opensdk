@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "VectorStoreFileObject",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "ID",

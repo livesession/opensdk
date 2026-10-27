@@ -20,6 +20,7 @@
     },
     "response": {
       "typeName": "Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "Object",

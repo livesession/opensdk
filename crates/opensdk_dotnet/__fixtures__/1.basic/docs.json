@@ -22,7 +22,7 @@
     },
     "response": {
       "typeName": "Pet",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "Pet",
       "fields": [
         {
           "name": "Id",
@@ -45,7 +45,8 @@
           "langType": "List<string>",
           "required": false
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

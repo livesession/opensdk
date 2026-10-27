@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.beta.threads.runs.create(thread_id, assistant_id:, model: nil, reasoning_effort: nil, instructions: nil, additional_instructions: nil, additional_messages: nil, tools: nil, metadata: nil, temperature: nil, top_p: nil, stream: nil, max_prompt_tokens: nil, max_completion_tokens: nil, truncation_strategy: nil, tool_choice: nil, parallel_tool_calls: nil, response_format: nil, include: nil) -> Models::RunObject",
     "request": {
+      "refTypeName": "CreateRunRequest",
       "fields": [
         {
           "name": "assistant_id",
@@ -45,13 +46,15 @@
           "name": "additional_messages",
           "langType": "Array<Models::CreateMessageRequest>",
           "required": false,
-          "description": "Adds additional messages to the thread before creating the run."
+          "description": "Adds additional messages to the thread before creating the run.",
+          "refTypeName": "CreateMessageRequest"
         },
         {
           "name": "tools",
           "langType": "Array<Models::CreateRunRequestToolsItem>",
           "required": false,
-          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis."
+          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis.",
+          "refTypeName": "CreateRunRequestToolsItem"
         },
         {
           "name": "metadata",
@@ -123,6 +126,7 @@
     },
     "response": {
       "typeName": "Models::RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -228,7 +232,8 @@
           "name": "tools",
           "langType": "Array<Models::CreateRunRequestToolsItem>",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "CreateRunRequestToolsItem"
         },
         {
           "name": "metadata",

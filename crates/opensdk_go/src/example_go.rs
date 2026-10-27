@@ -30,7 +30,10 @@ use crate::model::{go_const_literal, go_enum_const_name, is_const_field};
 use crate::naming::{go_method_name, go_var, json_string, pascal_case, slug};
 use crate::plan::{plan_operation, OperationPlan, PrimaryResponse};
 use crate::service::{plan_params, query_kind, resource_qualifier, QueryKind};
-use crate::type_plan::{plan_type_reference, ref_schema_name, FieldLocation, NeutralTypeField};
+use crate::type_plan::{
+    plan_type_reference, ref_schema_name, to_field, FieldLocation, NeutralTypeField,
+};
+use opensdk_core::nested::{finish_type_reference, NestedRender, TypeReferenceRoots};
 
 /// The vendored test helper — faithful to openai-go internal/testutil, stdlib
 /// -only (header prepended by the caller's `with_header`).
@@ -926,6 +929,7 @@ fn go_render_field(
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(f.type_ref.as_ref()),
+        schema_ref: None,
     }
 }
 
@@ -938,6 +942,7 @@ fn go_render_response_field(f: &NeutralTypeField) -> RenderedTypeField {
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(f.type_ref.as_ref()),
+        schema_ref: None,
     }
 }
 
@@ -970,6 +975,8 @@ fn go_response(
     if let Some(ct) = &op.binary_content_type {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("*http.Response".to_string()),
             note: Some(format!("binary download ({ct})")),
@@ -978,6 +985,8 @@ fn go_response(
     let Some(ref_) = neutral.response_type_ref.as_ref() else {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("error".to_string()),
             note: Some("no response body".to_string()),
@@ -986,6 +995,8 @@ fn go_response(
     if op.primary_response == PrimaryResponse::None {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("error".to_string()),
             note: Some("no response body".to_string()),
@@ -998,12 +1009,16 @@ fn go_response(
     match &neutral.response_fields {
         Some(fields) => RenderedTypeResponse {
             type_name: Some(type_name),
+            ref_type_name: None,
+            schema_ref: None,
             fields: Some(fields.iter().map(go_render_response_field).collect()),
             lang_type: None,
             note,
         },
         None => RenderedTypeResponse {
             type_name: Some(type_name.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(type_name),
             note,
@@ -1015,9 +1030,11 @@ fn go_response(
 /// params type's field rows, and the response type — the SDK-native view Atlas
 /// renders in place of the REST param definitions.
 pub(crate) fn go_type_reference(
+    spec: &Value,
     method: &Value,
     segments: &[String],
     types: &Map<String, Value>,
+    options: &Value,
 ) -> RenderedTypeReference {
     let op = plan_operation(method, types);
     let neutral = plan_type_reference(method, types);
@@ -1051,15 +1068,39 @@ pub(crate) fn go_type_reference(
         go_return_display(method, &op)
     );
 
-    RenderedTypeReference {
+    let mut tr = RenderedTypeReference {
         signature,
         request: RenderedTypeGroup {
             type_name: plan.as_ref().map(|p| p.type_name.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             arg_name: plan.as_ref().map(|p| p.arg_name.clone()),
             fields: request_fields,
         },
         response: go_response(&op, &neutral),
-    }
+        nested: Default::default(),
+    };
+    // The transitive view behind the two groups (`opensdk_core::nested`): a
+    // nested struct's rows render as a response model's do (declared Go types).
+    let response = tr
+        .response
+        .type_name
+        .is_some()
+        .then_some(neutral.response_type_ref.as_ref())
+        .flatten();
+    let render_field = |raw: &Value| go_render_response_field(&to_field(raw, FieldLocation::Body));
+    let render_type = |raw: Option<&Value>| go_type(raw);
+    finish_type_reference(
+        &mut tr,
+        spec,
+        &TypeReferenceRoots::from_method(method, response),
+        options,
+        &NestedRender {
+            field: &render_field,
+            lang_type: &render_type,
+        },
+    );
+    tr
 }
 
 // ---- docs: usage snippet ----------------------------------------------------

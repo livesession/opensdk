@@ -10,6 +10,7 @@
     "request": {
       "typeName": "VectorStoreFileUpdateParams",
       "argName": "params",
+      "refTypeName": "UpdateVectorStoreFileAttributesRequest",
       "fields": [
         {
           "name": "attributes",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "VectorStoreFileObject",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "id",

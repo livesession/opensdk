@@ -10,12 +10,14 @@
   "typeReference": {
     "signature": "client.beta.threads.runs.submit_tool_outputs.create(thread_id, run_id, tool_outputs:, stream: nil) -> Models::RunObject",
     "request": {
+      "refTypeName": "SubmitToolOutputsRunRequest",
       "fields": [
         {
           "name": "tool_outputs",
           "langType": "Array<Models::SubmitToolOutputsRunRequestToolOutputsItem>",
           "required": true,
-          "description": "A list of tools for which the outputs are being submitted."
+          "description": "A list of tools for which the outputs are being submitted.",
+          "refTypeName": "SubmitToolOutputsRunRequestToolOutputsItem"
         },
         {
           "name": "stream",
@@ -26,6 +28,7 @@
     },
     "response": {
       "typeName": "Models::RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -131,7 +134,8 @@
           "name": "tools",
           "langType": "Array<Models::RunObjectToolsItem>",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "RunObjectToolsItem"
         },
         {
           "name": "metadata",

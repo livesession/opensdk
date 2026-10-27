@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Beta.Threads.Runs.Update(threadId, runId, body) -> Task<RunObject>",
     "request": {
+      "refTypeName": "ModifyRunRequest",
       "fields": [
         {
           "name": "Metadata",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "Id",
@@ -125,7 +127,8 @@
           "name": "Tools",
           "langType": "List<object>",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "RunObjectToolsItem"
         },
         {
           "name": "Metadata",

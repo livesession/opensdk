@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Audio.Speech.Create(body) -> Task<byte[]>",
     "request": {
+      "refTypeName": "CreateSpeechRequest",
       "fields": [
         {
           "name": "Model",

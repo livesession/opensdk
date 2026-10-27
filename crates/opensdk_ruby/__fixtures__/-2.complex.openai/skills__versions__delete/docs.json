@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::DeletedSkillVersionResource",
+      "refTypeName": "DeletedSkillVersionResource",
       "fields": [
         {
           "name": "object",

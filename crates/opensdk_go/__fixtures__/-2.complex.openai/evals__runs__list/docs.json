@@ -41,7 +41,7 @@
     },
     "response": {
       "typeName": "EvalRun",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "EvalRun",
       "fields": [
         {
           "name": "Object",
@@ -102,13 +102,15 @@
           "name": "PerModelUsage",
           "langType": "[]EvalRunPerModelUsageItem",
           "required": true,
-          "description": "Usage statistics for each model during the evaluation run."
+          "description": "Usage statistics for each model during the evaluation run.",
+          "refTypeName": "EvalRunPerModelUsageItem"
         },
         {
           "name": "PerTestingCriteriaResults",
           "langType": "[]EvalRunPerTestingCriteriaResultsItem",
           "required": true,
-          "description": "Results per testing criteria applied during the evaluation run."
+          "description": "Results per testing criteria applied during the evaluation run.",
+          "refTypeName": "EvalRunPerTestingCriteriaResultsItem"
         },
         {
           "name": "DataSource",
@@ -129,7 +131,8 @@
           "required": true,
           "refTypeName": "EvalApiError"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

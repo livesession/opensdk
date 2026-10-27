@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeSessionNewParams",
       "argName": "body",
+      "refTypeName": "RealtimeSessionCreateRequest",
       "fields": [
         {
           "name": "ClientSecret",
@@ -79,7 +80,8 @@
           "name": "Tools",
           "langType": "[]RealtimeSessionCreateRequestToolsItem",
           "required": false,
-          "description": "Tools (functions) available to the model."
+          "description": "Tools (functions) available to the model.",
+          "refTypeName": "RealtimeSessionCreateRequestToolsItem"
         },
         {
           "name": "ToolChoice",
@@ -116,6 +118,7 @@
     },
     "response": {
       "typeName": "RealtimeSessionCreateResponse",
+      "refTypeName": "RealtimeSessionCreateResponse",
       "fields": [
         {
           "name": "ID",
@@ -184,7 +187,8 @@
           "name": "Tools",
           "langType": "[]RealtimeFunctionTool",
           "required": false,
-          "description": "Tools (functions) available to the model."
+          "description": "Tools (functions) available to the model.",
+          "refTypeName": "RealtimeFunctionTool"
         },
         {
           "name": "ToolChoice",

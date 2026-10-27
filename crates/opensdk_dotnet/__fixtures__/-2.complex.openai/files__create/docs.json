@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Files.Create(body) -> Task<OpenAiFile>",
     "request": {
+      "refTypeName": "CreateFileRequest",
       "fields": [
         {
           "name": "File",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "OpenAiFile",
+      "refTypeName": "OpenAiFile",
       "fields": [
         {
           "name": "Id",

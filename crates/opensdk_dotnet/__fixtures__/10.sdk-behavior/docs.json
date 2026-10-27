@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Files.Upload(body, idempotencyKey, requestPriority) -> Task<File>",
     "request": {
+      "refTypeName": "UploadFileRequest",
       "fields": [
         {
           "name": "File",
@@ -38,6 +39,7 @@
     },
     "response": {
       "typeName": "File",
+      "refTypeName": "File",
       "fields": [
         {
           "name": "Id",

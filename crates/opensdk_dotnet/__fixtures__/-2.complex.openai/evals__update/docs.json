@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.Evals.Update(evalId, body) -> Task<Eval>",
     "request": {
+      "refTypeName": "EvalsUpdateRequest",
       "fields": [
         {
           "name": "Name",
@@ -24,6 +25,7 @@
     },
     "response": {
       "typeName": "Eval",
+      "refTypeName": "Eval",
       "fields": [
         {
           "name": "Object",
@@ -54,7 +56,8 @@
           "name": "TestingCriteria",
           "langType": "List<object>",
           "required": true,
-          "description": "A list of testing criteria."
+          "description": "A list of testing criteria.",
+          "refTypeName": "EvalTestingCriteriaItem"
         },
         {
           "name": "CreatedAt",

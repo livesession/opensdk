@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Beta.Threads.Messages.Update(threadId, messageId, body) -> Task<MessageObject>",
     "request": {
+      "refTypeName": "ModifyMessageRequest",
       "fields": [
         {
           "name": "Metadata",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "MessageObject",
+      "refTypeName": "MessageObject",
       "fields": [
         {
           "name": "Id",
@@ -79,7 +81,8 @@
           "name": "Content",
           "langType": "List<object>",
           "required": true,
-          "description": "The content of the message in array of text and/or images."
+          "description": "The content of the message in array of text and/or images.",
+          "refTypeName": "MessageObjectContentItem"
         },
         {
           "name": "AssistantId",
@@ -94,7 +97,8 @@
         {
           "name": "Attachments",
           "langType": "List<MessageObjectAttachmentsItem>",
-          "required": true
+          "required": true,
+          "refTypeName": "MessageObjectAttachmentsItem"
         },
         {
           "name": "Metadata",

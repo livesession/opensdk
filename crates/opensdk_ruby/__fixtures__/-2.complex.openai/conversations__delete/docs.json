@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Models::DeletedConversationResource",
+      "refTypeName": "DeletedConversationResource",
       "fields": [
         {
           "name": "object",

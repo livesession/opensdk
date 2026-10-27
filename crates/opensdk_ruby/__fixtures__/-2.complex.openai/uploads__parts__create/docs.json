@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.uploads.parts.create(upload_id, data:) -> Models::UploadPart",
     "request": {
+      "refTypeName": "AddUploadPartRequest",
       "fields": [
         {
           "name": "data",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "Models::UploadPart",
+      "refTypeName": "UploadPart",
       "fields": [
         {
           "name": "id",

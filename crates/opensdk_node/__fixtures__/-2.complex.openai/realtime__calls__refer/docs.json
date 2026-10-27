@@ -10,6 +10,7 @@
     "request": {
       "typeName": "RealtimeCallReferParams",
       "argName": "body",
+      "refTypeName": "RealtimeCallReferRequest",
       "fields": [
         {
           "name": "target_uri",

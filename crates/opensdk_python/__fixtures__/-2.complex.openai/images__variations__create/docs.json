@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.images.variations.create(image, model=..., n=..., response_format=..., size=..., user=...) -> ImagesResponse",
     "request": {
+      "refTypeName": "CreateImageVariationRequest",
       "fields": [
         {
           "name": "image",
@@ -52,6 +53,7 @@
     },
     "response": {
       "typeName": "ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "created",
@@ -63,7 +65,8 @@
           "name": "data",
           "langType": "list[Image]",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "background",

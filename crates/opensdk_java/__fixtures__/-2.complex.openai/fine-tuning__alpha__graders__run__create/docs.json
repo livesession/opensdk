@@ -12,6 +12,7 @@
     "request": {
       "typeName": "FineTuningAlphaGraderRunCreateParams",
       "argName": "params",
+      "refTypeName": "RunGraderRequest",
       "fields": [
         {
           "name": "grader",
@@ -36,6 +37,7 @@
     },
     "response": {
       "typeName": "RunGraderResponse",
+      "refTypeName": "RunGraderResponse",
       "fields": [
         {
           "name": "reward",

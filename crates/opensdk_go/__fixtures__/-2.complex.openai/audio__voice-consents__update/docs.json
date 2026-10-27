@@ -10,6 +10,7 @@
     "request": {
       "typeName": "AudioVoiceConsentUpdateParams",
       "argName": "body",
+      "refTypeName": "UpdateVoiceConsentRequest",
       "fields": [
         {
           "name": "Name",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "VoiceConsentResource",
+      "refTypeName": "VoiceConsentResource",
       "fields": [
         {
           "name": "Object",

@@ -9,6 +9,7 @@
     "request": {
       "typeName": "FileNewParams",
       "argName": "body",
+      "refTypeName": "CreateFileRequest",
       "fields": [
         {
           "name": "File",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "OpenAiFile",
+      "refTypeName": "OpenAiFile",
       "fields": [
         {
           "name": "ID",

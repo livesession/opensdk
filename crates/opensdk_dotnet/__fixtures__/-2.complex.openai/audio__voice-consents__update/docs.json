@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Audio.VoiceConsents.Update(consentId, body) -> Task<VoiceConsentResource>",
     "request": {
+      "refTypeName": "UpdateVoiceConsentRequest",
       "fields": [
         {
           "name": "Name",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "VoiceConsentResource",
+      "refTypeName": "VoiceConsentResource",
       "fields": [
         {
           "name": "Object",

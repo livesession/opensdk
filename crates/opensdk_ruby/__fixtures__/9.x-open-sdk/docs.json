@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Array<Models::Thing>",
+      "refTypeName": "Thing",
       "langType": "Array<Models::Thing>"
     }
   }

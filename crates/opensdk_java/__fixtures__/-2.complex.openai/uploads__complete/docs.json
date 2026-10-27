@@ -9,6 +9,7 @@
     "request": {
       "typeName": "UploadCompleteParams",
       "argName": "params",
+      "refTypeName": "CompleteUploadRequest",
       "fields": [
         {
           "name": "partIds",
@@ -26,6 +27,7 @@
     },
     "response": {
       "typeName": "Upload",
+      "refTypeName": "Upload",
       "fields": [
         {
           "name": "id",

@@ -31,7 +31,7 @@
     },
     "response": {
       "typeName": "FineTuningJob",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "FineTuningJob",
       "fields": [
         {
           "name": "Id",
@@ -118,7 +118,8 @@
         {
           "name": "Integrations",
           "langType": "List<FineTuningIntegration>",
-          "required": false
+          "required": false,
+          "refTypeName": "FineTuningIntegration"
         },
         {
           "name": "Seed",
@@ -143,7 +144,8 @@
           "required": false,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

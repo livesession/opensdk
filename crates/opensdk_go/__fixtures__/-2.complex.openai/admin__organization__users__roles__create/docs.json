@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationUserRoleNewParams",
       "argName": "body",
+      "refTypeName": "PublicAssignOrganizationGroupRoleBody",
       "fields": [
         {
           "name": "RoleID",
@@ -23,6 +24,7 @@
     },
     "response": {
       "typeName": "UserRoleAssignment",
+      "refTypeName": "UserRoleAssignment",
       "fields": [
         {
           "name": "Object",

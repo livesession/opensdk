@@ -11,6 +11,7 @@
     "request": {
       "typeName": "AdminOrganizationGroupUpdateParams",
       "argName": "body",
+      "refTypeName": "UpdateGroupBody",
       "fields": [
         {
           "name": "Name",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "GroupResourceWithSuccess",
+      "refTypeName": "GroupResourceWithSuccess",
       "fields": [
         {
           "name": "ID",

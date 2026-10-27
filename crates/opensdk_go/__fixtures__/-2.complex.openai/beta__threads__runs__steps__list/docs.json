@@ -48,7 +48,7 @@
     },
     "response": {
       "typeName": "RunStepObject",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "RunStepObject",
       "fields": [
         {
           "name": "ID",
@@ -145,7 +145,8 @@
           "required": true,
           "refTypeName": "RunStepCompletionUsage"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

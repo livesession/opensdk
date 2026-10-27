@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationProjectRateLimitUpdateRateLimitParams",
       "argName": "body",
+      "refTypeName": "ProjectRateLimitUpdateRequest",
       "fields": [
         {
           "name": "max_requests_per_1_minute",
@@ -53,6 +54,7 @@
     },
     "response": {
       "typeName": "ProjectRateLimit",
+      "refTypeName": "ProjectRateLimit",
       "fields": [
         {
           "name": "object",

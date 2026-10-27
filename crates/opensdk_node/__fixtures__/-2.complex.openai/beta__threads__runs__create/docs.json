@@ -11,6 +11,7 @@
     "request": {
       "typeName": "BetaThreadRunCreateParams",
       "argName": "params",
+      "refTypeName": "CreateRunRequest",
       "fields": [
         {
           "name": "assistant_id",
@@ -47,13 +48,15 @@
           "name": "additional_messages",
           "langType": "CreateMessageRequest[] | null",
           "required": false,
-          "description": "Adds additional messages to the thread before creating the run."
+          "description": "Adds additional messages to the thread before creating the run.",
+          "refTypeName": "CreateMessageRequest"
         },
         {
           "name": "tools",
           "langType": "CreateRunRequestToolsItem[] | null",
           "required": false,
-          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis."
+          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis.",
+          "refTypeName": "CreateRunRequestToolsItem"
         },
         {
           "name": "metadata",
@@ -125,6 +128,7 @@
     },
     "response": {
       "typeName": "RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -230,7 +234,8 @@
           "name": "tools",
           "langType": "CreateRunRequestToolsItem[]",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "CreateRunRequestToolsItem"
         },
         {
           "name": "metadata",

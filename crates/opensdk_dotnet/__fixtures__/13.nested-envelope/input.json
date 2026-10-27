@@ -1,0 +1,469 @@
+{
+  "opensdk": "1.0.0",
+  "info": {
+    "title": "Widgetco",
+    "version": "1.0.0",
+    "description": "A widget catalogue whose list envelope nests its paging block as an inline object."
+  },
+  "servers": [
+    "https://api.widgetco.test/v1"
+  ],
+  "security": [
+    {
+      "type": "http",
+      "kind": "bearer",
+      "schemeName": "bearer",
+      "envVar": "WIDGETCO_API_KEY",
+      "scheme": "bearer"
+    }
+  ],
+  "types": [
+    {
+      "name": "WidgetStatus",
+      "schemaRef": "#/components/schemas/WidgetStatus",
+      "kind": "enum",
+      "base": "string",
+      "values": [
+        {
+          "value": "draft"
+        },
+        {
+          "value": "active"
+        },
+        {
+          "value": "retired"
+        }
+      ],
+      "description": "Where a widget is in its life cycle."
+    },
+    {
+      "name": "WidgetList",
+      "schemaRef": "#/components/schemas/WidgetList",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "data",
+          "type": {
+            "kind": "array",
+            "items": {
+              "kind": "ref",
+              "name": "Widget"
+            }
+          },
+          "required": true
+        },
+        {
+          "name": "list",
+          "type": {
+            "kind": "ref",
+            "name": "WidgetListList"
+          },
+          "required": true,
+          "description": "Paging markers, nested beside the items."
+        }
+      ],
+      "description": "A page of widgets; the paging block is an inline object."
+    },
+    {
+      "name": "Widget",
+      "schemaRef": "#/components/schemas/Widget",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "id",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": {
+            "kind": "ref",
+            "name": "WidgetStatus"
+          },
+          "required": false
+        },
+        {
+          "name": "part",
+          "type": {
+            "kind": "ref",
+            "name": "Part"
+          },
+          "required": false
+        }
+      ],
+      "description": "A widget in the catalogue."
+    },
+    {
+      "name": "Part",
+      "schemaRef": "#/components/schemas/Part",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "sku",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "weight_grams",
+          "type": {
+            "kind": "scalar",
+            "scalar": "integer"
+          },
+          "required": false
+        },
+        {
+          "name": "material",
+          "type": {
+            "kind": "ref",
+            "name": "Material"
+          },
+          "required": false
+        },
+        {
+          "name": "finish",
+          "type": {
+            "kind": "ref",
+            "name": "Finish"
+          },
+          "required": false
+        },
+        {
+          "name": "codes",
+          "type": {
+            "kind": "ref",
+            "name": "PartCodes"
+          },
+          "required": false
+        }
+      ],
+      "description": "A part a widget is assembled from."
+    },
+    {
+      "name": "Material",
+      "schemaRef": "#/components/schemas/Material",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "name",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "recycled",
+          "type": {
+            "kind": "scalar",
+            "scalar": "boolean"
+          },
+          "required": false,
+          "description": "Whether the stock is reclaimed."
+        }
+      ],
+      "description": "What a part is made of."
+    },
+    {
+      "name": "Finish",
+      "schemaRef": "#/components/schemas/Finish",
+      "kind": "union",
+      "semantics": "oneOf",
+      "variants": [
+        {
+          "kind": "ref",
+          "name": "Paint"
+        },
+        {
+          "kind": "ref",
+          "name": "Plating"
+        }
+      ],
+      "description": "How a part's surface is treated: painted or plated."
+    },
+    {
+      "name": "Paint",
+      "schemaRef": "#/components/schemas/Paint",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "color",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "gloss",
+          "type": {
+            "kind": "scalar",
+            "scalar": "boolean"
+          },
+          "required": false,
+          "description": "Whether the coat is glossy."
+        }
+      ],
+      "description": "A painted finish."
+    },
+    {
+      "name": "Plating",
+      "schemaRef": "#/components/schemas/Plating",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "metal",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "microns",
+          "type": {
+            "kind": "scalar",
+            "scalar": "integer"
+          },
+          "required": false
+        }
+      ],
+      "description": "A plated finish."
+    },
+    {
+      "name": "PartCodes",
+      "schemaRef": "#/components/schemas/PartCodes",
+      "kind": "alias",
+      "of": {
+        "kind": "array",
+        "items": {
+          "kind": "scalar",
+          "scalar": "string"
+        }
+      }
+    },
+    {
+      "name": "WidgetListList",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "has_more",
+          "type": {
+            "kind": "scalar",
+            "scalar": "boolean"
+          },
+          "required": true
+        },
+        {
+          "name": "next_cursor",
+          "type": {
+            "kind": "scalar",
+            "scalar": "string",
+            "nullable": true
+          },
+          "required": false,
+          "nullable": true,
+          "description": "Pass as `cursor` to fetch the next page."
+        },
+        {
+          "name": "total",
+          "type": {
+            "kind": "scalar",
+            "scalar": "integer"
+          },
+          "required": false
+        }
+      ],
+      "description": "Paging markers, nested beside the items."
+    }
+  ],
+  "resources": [
+    {
+      "name": "widgets",
+      "methods": [
+        {
+          "action": "list",
+          "httpMethod": "get",
+          "path": "/widgets",
+          "operationId": "listWidgets",
+          "description": "List widgets",
+          "queryParams": [
+            {
+              "name": "limit",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "example": 20
+            },
+            {
+              "name": "cursor",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "example": "cur_1"
+            },
+            {
+              "name": "status",
+              "type": {
+                "kind": "ref",
+                "name": "WidgetStatus"
+              },
+              "required": false,
+              "description": "Only widgets in this state."
+            }
+          ],
+          "responses": [
+            {
+              "status": "200",
+              "description": "A page of widgets with its inline `list` block.",
+              "contentType": "application/json",
+              "type": {
+                "kind": "ref",
+                "name": "WidgetList"
+              }
+            }
+          ],
+          "primaryResponse": {
+            "kind": "ref",
+            "name": "WidgetList"
+          }
+        },
+        {
+          "action": "retrieve",
+          "httpMethod": "get",
+          "path": "/widgets/{widget_id}",
+          "operationId": "getWidget",
+          "description": "Retrieve a widget",
+          "pathParams": [
+            {
+              "name": "widget_id",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "example": "wgt_1"
+            }
+          ],
+          "responses": [
+            {
+              "status": "200",
+              "description": "The widget.",
+              "contentType": "application/json",
+              "type": {
+                "kind": "ref",
+                "name": "Widget"
+              }
+            }
+          ],
+          "primaryResponse": {
+            "kind": "ref",
+            "name": "Widget"
+          }
+        }
+      ]
+    }
+  ],
+  "sdk": {
+    "retry": {
+      "maxRetries": 2,
+      "retryableStatusCodes": [
+        408,
+        429,
+        500,
+        502,
+        503,
+        504
+      ],
+      "retryConnectionErrors": true,
+      "honorRetryAfterHeader": true,
+      "backoff": {
+        "initialDelayMs": 500,
+        "maxDelayMs": 8000,
+        "multiplier": 2,
+        "jitter": 0.25
+      }
+    },
+    "timeout": {
+      "defaultTimeoutMs": 60000
+    },
+    "errors": {
+      "statusCodeMap": {
+        "400": "BadRequest",
+        "401": "Unauthorized",
+        "403": "PermissionDenied",
+        "404": "NotFound",
+        "409": "Conflict",
+        "422": "UnprocessableEntity",
+        "429": "RateLimited"
+      },
+      "clientErrorKind": "API",
+      "serverErrorKind": "Internal"
+    },
+    "userAgent": {
+      "sdkIdentifierTemplate": "{package}-{language}/{version}",
+      "includeRuntimeVersion": false,
+      "aiAgentEnvVars": {
+        "CLAUDE_CODE": "claude-code",
+        "CURSOR_AGENT": "cursor",
+        "CLINE_ACTIVE": "cline",
+        "WINDSURF_ACTIVE": "windsurf",
+        "COPILOT_AGENT": "copilot"
+      }
+    },
+    "telemetry": {
+      "requestIdHeader": "X-Request-ID",
+      "headerName": "X-Client-Telemetry",
+      "enabledByDefault": false
+    },
+    "logging": {
+      "events": [
+        "request.start",
+        "request.success",
+        "request.retry",
+        "request.rate_limited",
+        "request.error",
+        "request.connection_error"
+      ]
+    },
+    "idempotency": {
+      "headerName": "Idempotency-Key",
+      "autoGenerateForPost": true
+    },
+    "pagination": {
+      "autoPageDelayMs": 0
+    },
+    "requestGuard": {
+      "optionKeys": [
+        "api_key",
+        "apiKey",
+        "idempotency_key",
+        "idempotencyKey",
+        "extra_headers",
+        "extraHeaders",
+        "max_retries",
+        "maxRetries",
+        "base_url",
+        "baseUrl",
+        "timeout"
+      ]
+    }
+  }
+}

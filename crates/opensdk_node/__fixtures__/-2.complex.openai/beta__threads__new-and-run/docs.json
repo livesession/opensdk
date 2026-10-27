@@ -10,6 +10,7 @@
     "request": {
       "typeName": "BetaThreadNewAndRunParams",
       "argName": "body",
+      "refTypeName": "CreateThreadAndRunRequest",
       "fields": [
         {
           "name": "assistant_id",
@@ -40,7 +41,8 @@
           "name": "tools",
           "langType": "CreateThreadAndRunRequestToolsItem[] | null",
           "required": false,
-          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis."
+          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis.",
+          "refTypeName": "CreateThreadAndRunRequestToolsItem"
         },
         {
           "name": "tool_resources",
@@ -113,6 +115,7 @@
     },
     "response": {
       "typeName": "RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -218,7 +221,8 @@
           "name": "tools",
           "langType": "CreateThreadAndRunRequestToolsItem[]",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "CreateThreadAndRunRequestToolsItem"
         },
         {
           "name": "metadata",

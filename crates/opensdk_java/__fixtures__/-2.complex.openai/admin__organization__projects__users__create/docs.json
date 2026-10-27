@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationProjectUserCreateParams",
       "argName": "params",
+      "refTypeName": "ProjectUserCreateRequest",
       "fields": [
         {
           "name": "userId",
@@ -35,6 +36,7 @@
     },
     "response": {
       "typeName": "ProjectUser",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "object",

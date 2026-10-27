@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Videos.Extensions.Create(body) -> Task<VideoResource>",
     "request": {
+      "refTypeName": "CreateVideoExtendJsonBody",
       "fields": [
         {
           "name": "Video",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "Id",

@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.audio.translations.create(file, model, prompt=..., response_format=..., temperature=...) -> AudioTranslationsCreateResponse",
     "request": {
+      "refTypeName": "CreateTranslationRequest",
       "fields": [
         {
           "name": "file",
@@ -45,6 +46,7 @@
     },
     "response": {
       "typeName": "AudioTranslationsCreateResponse",
+      "refTypeName": "AudioTranslationsCreateResponse",
       "langType": "AudioTranslationsCreateResponse"
     }
   }

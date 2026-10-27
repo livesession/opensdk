@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::ConversationResource",
+      "refTypeName": "ConversationResource",
       "fields": [
         {
           "name": "id",

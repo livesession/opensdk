@@ -9,6 +9,7 @@
     "request": {
       "typeName": "SkillCreateParams",
       "argName": "body",
+      "refTypeName": "CreateSkillBody",
       "fields": [
         {
           "name": "files",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "SkillResource",
+      "refTypeName": "SkillResource",
       "fields": [
         {
           "name": "id",

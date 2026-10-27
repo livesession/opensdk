@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Groups.Update(groupId, body) -> Task<GroupResourceWithSuccess>",
     "request": {
+      "refTypeName": "UpdateGroupBody",
       "fields": [
         {
           "name": "Name",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "GroupResourceWithSuccess",
+      "refTypeName": "GroupResourceWithSuccess",
       "fields": [
         {
           "name": "Id",

@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "CursorPage[ChatCompletionMessageListDataItem]",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "ChatCompletionMessageListDataItem",
       "fields": [
         {
           "name": "content",
@@ -55,7 +55,8 @@
           "name": "annotations",
           "langType": "list[ChatCompletionMessageListDataItemAnnotationsItem]",
           "required": false,
-          "description": "Annotations for the message, when applicable, as when using the\n[web search tool](/docs/guides/tools-web-search?api-mode=chat).\n"
+          "description": "Annotations for the message, when applicable, as when using the\n[web search tool](/docs/guides/tools-web-search?api-mode=chat).\n",
+          "refTypeName": "ChatCompletionMessageListDataItemAnnotationsItem"
         },
         {
           "name": "role",
@@ -86,9 +87,11 @@
         {
           "name": "content_parts",
           "langType": "Optional[list[ChatCompletionMessageListDataItemContentPartsItem]]",
-          "required": false
+          "required": false,
+          "refTypeName": "ChatCompletionMessageListDataItemContentPartsItem"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.evals.update(eval_id, name: nil, metadata: nil) -> Models::Eval",
     "request": {
+      "refTypeName": "EvalsUpdateRequest",
       "fields": [
         {
           "name": "name",
@@ -24,6 +25,7 @@
     },
     "response": {
       "typeName": "Models::Eval",
+      "refTypeName": "Eval",
       "fields": [
         {
           "name": "object",
@@ -54,7 +56,8 @@
           "name": "testing_criteria",
           "langType": "Array<Models::EvalTestingCriteriaItem>",
           "required": true,
-          "description": "A list of testing criteria."
+          "description": "A list of testing criteria.",
+          "refTypeName": "EvalTestingCriteriaItem"
         },
         {
           "name": "created_at",

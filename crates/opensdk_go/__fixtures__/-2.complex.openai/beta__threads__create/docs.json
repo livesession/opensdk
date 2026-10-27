@@ -10,12 +10,14 @@
     "request": {
       "typeName": "BetaThreadNewParams",
       "argName": "body",
+      "refTypeName": "CreateThreadRequest",
       "fields": [
         {
           "name": "Messages",
           "langType": "[]CreateMessageRequest",
           "required": false,
-          "description": "A list of [messages](/docs/api-reference/messages) to start the thread with."
+          "description": "A list of [messages](/docs/api-reference/messages) to start the thread with.",
+          "refTypeName": "CreateMessageRequest"
         },
         {
           "name": "ToolResources",
@@ -33,6 +35,7 @@
     },
     "response": {
       "typeName": "ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "ID",

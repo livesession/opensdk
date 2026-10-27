@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.responses.compact.create(model:, input: nil, previous_response_id: nil, instructions: nil, prompt_cache_key: nil, prompt_cache_retention: nil, service_tier: nil) -> Models::CompactResource",
     "request": {
+      "refTypeName": "CompactResponseMethodPublicBody",
       "fields": [
         {
           "name": "model",
@@ -52,6 +53,7 @@
     },
     "response": {
       "typeName": "Models::CompactResource",
+      "refTypeName": "CompactResource",
       "fields": [
         {
           "name": "id",
@@ -69,7 +71,8 @@
           "name": "output",
           "langType": "Array<Models::ItemField>",
           "required": true,
-          "description": "The compacted list of output items."
+          "description": "The compacted list of output items.",
+          "refTypeName": "ItemField"
         },
         {
           "name": "created_at",

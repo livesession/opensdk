@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "User",
+      "refTypeName": "User",
       "fields": [
         {
           "name": "Object",

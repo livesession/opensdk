@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.audio.voice_consents.update(consent_id, name:) -> Models::VoiceConsentResource",
     "request": {
+      "refTypeName": "UpdateVoiceConsentRequest",
       "fields": [
         {
           "name": "name",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "Models::VoiceConsentResource",
+      "refTypeName": "VoiceConsentResource",
       "fields": [
         {
           "name": "object",

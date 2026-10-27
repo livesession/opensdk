@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Certificates.Create(body) -> Task<Certificate>",
     "request": {
+      "refTypeName": "UploadCertificateRequest",
       "fields": [
         {
           "name": "Name",
@@ -26,6 +27,7 @@
     },
     "response": {
       "typeName": "Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "Object",

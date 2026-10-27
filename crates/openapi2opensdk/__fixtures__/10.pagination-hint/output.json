@@ -20,6 +20,7 @@
   "types": [
     {
       "name": "WidgetList",
+      "schemaRef": "#/components/schemas/WidgetList",
       "kind": "struct",
       "fields": [
         {
@@ -45,6 +46,7 @@
     },
     {
       "name": "Widget",
+      "schemaRef": "#/components/schemas/Widget",
       "kind": "struct",
       "fields": [
         {
@@ -76,6 +78,7 @@
     },
     {
       "name": "GadgetList",
+      "schemaRef": "#/components/schemas/GadgetList",
       "kind": "struct",
       "fields": [
         {
@@ -101,6 +104,7 @@
     },
     {
       "name": "Gadget",
+      "schemaRef": "#/components/schemas/Gadget",
       "kind": "struct",
       "fields": [
         {
@@ -123,6 +127,7 @@
     },
     {
       "name": "ListInfo",
+      "schemaRef": "#/components/schemas/ListInfo",
       "kind": "struct",
       "fields": [
         {

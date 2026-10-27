@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::DeleteAssistantResponse",
+      "refTypeName": "DeleteAssistantResponse",
       "fields": [
         {
           "name": "id",

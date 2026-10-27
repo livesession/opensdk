@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.beta.threads.runs.create(thread_id, assistant_id, model=..., reasoning_effort=..., instructions=..., additional_instructions=..., additional_messages=..., tools=..., metadata=..., temperature=..., top_p=..., stream=..., max_prompt_tokens=..., max_completion_tokens=..., truncation_strategy=..., tool_choice=..., parallel_tool_calls=..., response_format=..., include=...) -> RunObject",
     "request": {
+      "refTypeName": "CreateRunRequest",
       "fields": [
         {
           "name": "assistant_id",
@@ -45,13 +46,15 @@
           "name": "additional_messages",
           "langType": "Optional[list[CreateMessageRequest]]",
           "required": false,
-          "description": "Adds additional messages to the thread before creating the run."
+          "description": "Adds additional messages to the thread before creating the run.",
+          "refTypeName": "CreateMessageRequest"
         },
         {
           "name": "tools",
           "langType": "Optional[list[CreateRunRequestToolsItem]]",
           "required": false,
-          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis."
+          "description": "Override the tools the assistant can use for this run. This is useful for modifying the behavior on a per-run basis.",
+          "refTypeName": "CreateRunRequestToolsItem"
         },
         {
           "name": "metadata",
@@ -123,6 +126,7 @@
     },
     "response": {
       "typeName": "RunObject",
+      "refTypeName": "RunObject",
       "fields": [
         {
           "name": "id",
@@ -228,7 +232,8 @@
           "name": "tools",
           "langType": "list[CreateRunRequestToolsItem]",
           "required": true,
-          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run."
+          "description": "The list of tools that the [assistant](/docs/api-reference/assistants) used for this run.",
+          "refTypeName": "CreateRunRequestToolsItem"
         },
         {
           "name": "metadata",

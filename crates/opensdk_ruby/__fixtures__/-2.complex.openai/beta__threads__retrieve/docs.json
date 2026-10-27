@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::ThreadObject",
+      "refTypeName": "ThreadObject",
       "fields": [
         {
           "name": "id",

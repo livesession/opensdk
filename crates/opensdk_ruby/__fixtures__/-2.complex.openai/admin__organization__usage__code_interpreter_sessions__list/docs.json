@@ -58,7 +58,7 @@
     },
     "response": {
       "typeName": "Page<Models::UsageTimeBucket>",
-      "note": "paginated (Page)",
+      "refTypeName": "UsageTimeBucket",
       "fields": [
         {
           "name": "object",
@@ -78,9 +78,11 @@
         {
           "name": "results",
           "langType": "Array<Models::UsageTimeBucketResultsItem>",
-          "required": true
+          "required": true,
+          "refTypeName": "UsageTimeBucketResultsItem"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

@@ -9,6 +9,7 @@
     "request": {
       "typeName": "UploadNewParams",
       "argName": "body",
+      "refTypeName": "CreateUploadRequest",
       "fields": [
         {
           "name": "Filename",
@@ -45,6 +46,7 @@
     },
     "response": {
       "typeName": "Upload",
+      "refTypeName": "Upload",
       "fields": [
         {
           "name": "ID",

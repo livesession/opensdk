@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Containers.Files.Create(containerId, body) -> Task<ContainerFileResource>",
     "request": {
+      "refTypeName": "CreateContainerFileBody",
       "fields": [
         {
           "name": "FileId",
@@ -25,6 +26,7 @@
     },
     "response": {
       "typeName": "ContainerFileResource",
+      "refTypeName": "ContainerFileResource",
       "fields": [
         {
           "name": "Id",

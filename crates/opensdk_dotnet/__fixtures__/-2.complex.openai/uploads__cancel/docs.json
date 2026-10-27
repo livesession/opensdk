@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Upload",
+      "refTypeName": "Upload",
       "fields": [
         {
           "name": "Id",

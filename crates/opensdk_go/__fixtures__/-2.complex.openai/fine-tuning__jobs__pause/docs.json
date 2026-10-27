@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "FineTuningJob",
+      "refTypeName": "FineTuningJob",
       "fields": [
         {
           "name": "ID",
@@ -98,7 +99,8 @@
         {
           "name": "Integrations",
           "langType": "[]FineTuningIntegration",
-          "required": false
+          "required": false,
+          "refTypeName": "FineTuningIntegration"
         },
         {
           "name": "Seed",

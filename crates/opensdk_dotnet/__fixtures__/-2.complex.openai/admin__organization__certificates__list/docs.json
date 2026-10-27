@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "OrganizationCertificate",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "OrganizationCertificate",
       "fields": [
         {
           "name": "Object",
@@ -71,7 +71,8 @@
           "required": true,
           "description": "Whether the certificate is currently active at the organization level."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.AdminApiKeys.Create(body) -> Task<AdminApiKeyCreateResponse>",
     "request": {
+      "refTypeName": "AdminOrganizationAdminApiKeysCreateRequest",
       "fields": [
         {
           "name": "Name",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "AdminApiKeyCreateResponse",
+      "refTypeName": "AdminApiKeyCreateResponse",
       "fields": [
         {
           "name": "Object",

@@ -11,6 +11,7 @@
     "request": {
       "typeName": "RealtimeTranslationClientSecretCreateParams",
       "argName": "body",
+      "refTypeName": "RealtimeTranslationClientSecretCreateRequest",
       "fields": [
         {
           "name": "expires_after",
@@ -29,6 +30,7 @@
     },
     "response": {
       "typeName": "RealtimeTranslationClientSecretCreateResponse",
+      "refTypeName": "RealtimeTranslationClientSecretCreateResponse",
       "fields": [
         {
           "name": "value",

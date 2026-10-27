@@ -42,6 +42,7 @@
     },
     "response": {
       "typeName": "ThreadItem",
+      "refTypeName": "ThreadItem",
       "langType": "ThreadItem",
       "note": "paginated (pagination.CursorPage)"
     }

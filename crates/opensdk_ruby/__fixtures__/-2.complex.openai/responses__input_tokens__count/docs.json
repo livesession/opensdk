@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.responses.input_tokens.count(model: nil, input: nil, previous_response_id: nil, tools: nil, text: nil, reasoning: nil, truncation: nil, instructions: nil, conversation: nil, tool_choice: nil, parallel_tool_calls: nil) -> Models::TokenCountsResource",
     "request": {
+      "refTypeName": "TokenCountsBody",
       "fields": [
         {
           "name": "model",
@@ -28,7 +29,8 @@
         {
           "name": "tools",
           "langType": "Array<Models::Tool>",
-          "required": false
+          "required": false,
+          "refTypeName": "Tool"
         },
         {
           "name": "text",
@@ -74,6 +76,7 @@
     },
     "response": {
       "typeName": "Models::TokenCountsResource",
+      "refTypeName": "TokenCountsResource",
       "fields": [
         {
           "name": "object",

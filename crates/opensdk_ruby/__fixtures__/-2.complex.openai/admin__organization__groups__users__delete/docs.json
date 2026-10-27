@@ -14,6 +14,7 @@
     },
     "response": {
       "typeName": "Models::GroupUserDeletedResource",
+      "refTypeName": "GroupUserDeletedResource",
       "fields": [
         {
           "name": "object",

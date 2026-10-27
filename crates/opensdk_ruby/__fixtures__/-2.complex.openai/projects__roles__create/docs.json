@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.projects.roles.create(project_id, role_name:, permissions:, description: nil) -> Models::Role",
     "request": {
+      "refTypeName": "PublicCreateOrganizationRoleBody",
       "fields": [
         {
           "name": "role_name",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "Models::Role",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "object",

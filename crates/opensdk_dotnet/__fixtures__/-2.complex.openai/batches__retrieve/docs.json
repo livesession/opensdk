@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Batch",
+      "refTypeName": "Batch",
       "fields": [
         {
           "name": "Id",

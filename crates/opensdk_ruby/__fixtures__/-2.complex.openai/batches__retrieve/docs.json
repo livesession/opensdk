@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Models::Batch",
+      "refTypeName": "Batch",
       "fields": [
         {
           "name": "id",

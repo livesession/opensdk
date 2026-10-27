@@ -11,6 +11,7 @@
     "request": {
       "typeName": "AdminOrganizationAdminApiKeyCreateParams",
       "argName": "params",
+      "refTypeName": "AdminOrganizationAdminApiKeysCreateRequest",
       "fields": [
         {
           "name": "name",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "AdminApiKeyCreateResponse",
+      "refTypeName": "AdminApiKeyCreateResponse",
       "fields": [
         {
           "name": "object",

@@ -11,6 +11,7 @@
     "request": {
       "typeName": "ProjectUserRoleCreateParams",
       "argName": "params",
+      "refTypeName": "PublicAssignOrganizationGroupRoleBody",
       "fields": [
         {
           "name": "roleId",
@@ -22,6 +23,7 @@
     },
     "response": {
       "typeName": "UserRoleAssignment",
+      "refTypeName": "UserRoleAssignment",
       "fields": [
         {
           "name": "object",

@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "DeleteThreadResponse",
+      "refTypeName": "DeleteThreadResponse",
       "fields": [
         {
           "name": "ID",

@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Realtime.ClientSecrets.Create(body) -> Task<RealtimeCreateClientSecretResponse>",
     "request": {
+      "refTypeName": "RealtimeCreateClientSecretRequest",
       "fields": [
         {
           "name": "ExpiresAfter",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "RealtimeCreateClientSecretResponse",
+      "refTypeName": "RealtimeCreateClientSecretResponse",
       "fields": [
         {
           "name": "Value",

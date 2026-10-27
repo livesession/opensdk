@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Beta.Assistants.Update(assistantId, body) -> Task<AssistantObject>",
     "request": {
+      "refTypeName": "ModifyAssistantRequest",
       "fields": [
         {
           "name": "Model",
@@ -41,7 +42,8 @@
           "name": "Tools",
           "langType": "List<object>?",
           "required": false,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "ModifyAssistantRequestToolsItem"
         },
         {
           "name": "ToolResources",
@@ -75,6 +77,7 @@
     },
     "response": {
       "typeName": "AssistantObject",
+      "refTypeName": "AssistantObject",
       "fields": [
         {
           "name": "Id",
@@ -119,7 +122,8 @@
           "name": "Tools",
           "langType": "List<object>",
           "required": true,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "ModifyAssistantRequestToolsItem"
         },
         {
           "name": "ToolResources",

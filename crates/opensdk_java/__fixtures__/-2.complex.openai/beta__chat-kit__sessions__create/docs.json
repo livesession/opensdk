@@ -11,6 +11,7 @@
     "request": {
       "typeName": "BetaChatKitSessionCreateParams",
       "argName": "params",
+      "refTypeName": "CreateChatSessionBody",
       "fields": [
         {
           "name": "workflow",
@@ -46,6 +47,7 @@
     },
     "response": {
       "typeName": "ChatSessionResource",
+      "refTypeName": "ChatSessionResource",
       "fields": [
         {
           "name": "id",

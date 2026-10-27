@@ -40,7 +40,7 @@
     },
     "response": {
       "typeName": "AssistantObject",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "AssistantObject",
       "fields": [
         {
           "name": "id",
@@ -85,7 +85,8 @@
           "name": "tools",
           "langType": "AssistantObjectToolsItem[]",
           "required": true,
-          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n"
+          "description": "A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types `code_interpreter`, `file_search`, or `function`.\n",
+          "refTypeName": "AssistantObjectToolsItem"
         },
         {
           "name": "tool_resources",
@@ -115,7 +116,8 @@
           "required": false,
           "refTypeName": "AssistantsApiResponseFormatOption"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

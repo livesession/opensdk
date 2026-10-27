@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.groups.update(group_id, name:) -> Models::GroupResourceWithSuccess",
     "request": {
+      "refTypeName": "UpdateGroupBody",
       "fields": [
         {
           "name": "name",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "Models::GroupResourceWithSuccess",
+      "refTypeName": "GroupResourceWithSuccess",
       "fields": [
         {
           "name": "id",

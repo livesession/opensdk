@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "GroupDeletedResource",
+      "refTypeName": "GroupDeletedResource",
       "fields": [
         {
           "name": "Object",

@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.VectorStores.Search(vectorStoreId, body) -> Task<CursorPage<VectorStoreSearchResultItem>>",
     "request": {
+      "refTypeName": "VectorStoreSearchRequest",
       "fields": [
         {
           "name": "Query",
@@ -45,7 +46,7 @@
     },
     "response": {
       "typeName": "VectorStoreSearchResultItem",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "VectorStoreSearchResultItem",
       "fields": [
         {
           "name": "FileId",
@@ -75,9 +76,11 @@
           "name": "Content",
           "langType": "List<VectorStoreSearchResultContentObject>",
           "required": true,
-          "description": "Content chunks from the file."
+          "description": "Content chunks from the file.",
+          "refTypeName": "VectorStoreSearchResultContentObject"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.vector_stores.search(vector_store_id, query:, rewrite_query: nil, max_num_results: nil, filters: nil, ranking_options: nil) -> Page<Models::VectorStoreSearchResultItem>",
     "request": {
+      "refTypeName": "VectorStoreSearchRequest",
       "fields": [
         {
           "name": "query",
@@ -45,7 +46,7 @@
     },
     "response": {
       "typeName": "Page<Models::VectorStoreSearchResultItem>",
-      "note": "paginated (Page)",
+      "refTypeName": "VectorStoreSearchResultItem",
       "fields": [
         {
           "name": "file_id",
@@ -75,9 +76,11 @@
           "name": "content",
           "langType": "Array<Models::VectorStoreSearchResultContentObject>",
           "required": true,
-          "description": "Content chunks from the file."
+          "description": "Content chunks from the file.",
+          "refTypeName": "VectorStoreSearchResultContentObject"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

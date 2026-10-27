@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Projects.Users.Create(projectId, body) -> Task<ProjectUser>",
     "request": {
+      "refTypeName": "ProjectUserCreateRequest",
       "fields": [
         {
           "name": "UserId",
@@ -33,6 +34,7 @@
     },
     "response": {
       "typeName": "ProjectUser",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "Object",

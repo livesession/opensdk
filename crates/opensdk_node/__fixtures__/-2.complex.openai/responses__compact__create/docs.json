@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ResponseCompactCreateParams",
       "argName": "body",
+      "refTypeName": "CompactResponseMethodPublicBody",
       "fields": [
         {
           "name": "model",
@@ -54,6 +55,7 @@
     },
     "response": {
       "typeName": "CompactResource",
+      "refTypeName": "CompactResource",
       "fields": [
         {
           "name": "id",
@@ -71,7 +73,8 @@
           "name": "output",
           "langType": "ItemField[]",
           "required": true,
-          "description": "The compacted list of output items."
+          "description": "The compacted list of output items.",
+          "refTypeName": "ItemField"
         },
         {
           "name": "created_at",

@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "InviteDeleteResponse",
+      "refTypeName": "InviteDeleteResponse",
       "fields": [
         {
           "name": "Object",

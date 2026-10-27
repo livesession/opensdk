@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.evals.runs.create(eval_id, name: nil, metadata: nil, data_source:) -> Models::EvalRun",
     "request": {
+      "refTypeName": "CreateEvalRunRequest",
       "fields": [
         {
           "name": "name",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "Models::EvalRun",
+      "refTypeName": "EvalRun",
       "fields": [
         {
           "name": "object",
@@ -92,13 +94,15 @@
           "name": "per_model_usage",
           "langType": "Array<Models::EvalRunPerModelUsageItem>",
           "required": true,
-          "description": "Usage statistics for each model during the evaluation run."
+          "description": "Usage statistics for each model during the evaluation run.",
+          "refTypeName": "EvalRunPerModelUsageItem"
         },
         {
           "name": "per_testing_criteria_results",
           "langType": "Array<Models::EvalRunPerTestingCriteriaResultsItem>",
           "required": true,
-          "description": "Results per testing criteria applied during the evaluation run."
+          "description": "Results per testing criteria applied during the evaluation run.",
+          "refTypeName": "EvalRunPerTestingCriteriaResultsItem"
         },
         {
           "name": "data_source",

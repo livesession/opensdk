@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Skills.Versions.Create(skillId, body) -> Task<SkillVersionResource>",
     "request": {
+      "refTypeName": "CreateSkillVersionBody",
       "fields": [
         {
           "name": "Files",
@@ -25,6 +26,7 @@
     },
     "response": {
       "typeName": "SkillVersionResource",
+      "refTypeName": "SkillVersionResource",
       "fields": [
         {
           "name": "Object",

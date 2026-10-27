@@ -37,7 +37,7 @@
     },
     "response": {
       "typeName": "Page<Models::ContainerResource>",
-      "note": "paginated (Page)",
+      "refTypeName": "ContainerResource",
       "fields": [
         {
           "name": "id",
@@ -96,7 +96,8 @@
           "description": "Network access policy for the container.",
           "refTypeName": "ContainerResourceNetworkPolicy"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

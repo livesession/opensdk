@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.conversations.update(conversation_id, metadata) -> ConversationResource",
     "request": {
+      "refTypeName": "UpdateConversationBody",
       "fields": [
         {
           "name": "metadata",
@@ -18,6 +19,7 @@
     },
     "response": {
       "typeName": "ConversationResource",
+      "refTypeName": "ConversationResource",
       "fields": [
         {
           "name": "id",

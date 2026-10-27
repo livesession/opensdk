@@ -32,7 +32,7 @@
     },
     "response": {
       "typeName": "AdminAPIKey",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "AdminApiKey",
       "fields": [
         {
           "name": "Object",
@@ -75,7 +75,8 @@
           "required": true,
           "refTypeName": "AdminApiKeyOwner"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

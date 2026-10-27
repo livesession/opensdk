@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.service_accounts.create(project_id, name) -> ProjectServiceAccountCreateResponse",
     "request": {
+      "refTypeName": "ProjectServiceAccountCreateRequest",
       "fields": [
         {
           "name": "name",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "ProjectServiceAccountCreateResponse",
+      "refTypeName": "ProjectServiceAccountCreateResponse",
       "fields": [
         {
           "name": "object",

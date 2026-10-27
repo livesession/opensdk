@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "VideoCharacterResource",
+      "refTypeName": "VideoCharacterResource",
       "fields": [
         {
           "name": "id",

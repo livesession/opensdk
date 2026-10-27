@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Projects.RateLimits.UpdateRateLimit(projectId, rateLimitId, body) -> Task<ProjectRateLimit>",
     "request": {
+      "refTypeName": "ProjectRateLimitUpdateRequest",
       "fields": [
         {
           "name": "MaxRequestsPer1Minute",
@@ -51,6 +52,7 @@
     },
     "response": {
       "typeName": "ProjectRateLimit",
+      "refTypeName": "ProjectRateLimit",
       "fields": [
         {
           "name": "Object",

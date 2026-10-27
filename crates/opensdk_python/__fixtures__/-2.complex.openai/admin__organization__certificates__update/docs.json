@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.certificates.update(certificate_id, name=...) -> Certificate",
     "request": {
+      "refTypeName": "ModifyCertificateRequest",
       "fields": [
         {
           "name": "name",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "object",

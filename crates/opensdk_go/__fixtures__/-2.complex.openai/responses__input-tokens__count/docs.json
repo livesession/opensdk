@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ResponseInputTokenCountParams",
       "argName": "body",
+      "refTypeName": "TokenCountsBody",
       "fields": [
         {
           "name": "Model",
@@ -30,7 +31,8 @@
         {
           "name": "Tools",
           "langType": "[]Tool",
-          "required": false
+          "required": false,
+          "refTypeName": "Tool"
         },
         {
           "name": "Text",
@@ -76,6 +78,7 @@
     },
     "response": {
       "typeName": "TokenCountsResource",
+      "refTypeName": "TokenCountsResource",
       "fields": [
         {
           "name": "Object",

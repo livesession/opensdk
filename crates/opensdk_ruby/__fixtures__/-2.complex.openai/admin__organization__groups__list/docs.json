@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "Page<Models::GroupResponse>",
-      "note": "paginated (Page)",
+      "refTypeName": "GroupResponse",
       "fields": [
         {
           "name": "id",
@@ -65,7 +65,8 @@
           "required": true,
           "description": "The type of the group."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

@@ -27,7 +27,7 @@
     },
     "response": {
       "typeName": "Page<Models::ProjectUser>",
-      "note": "paginated (Page)",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "object",
@@ -65,7 +65,8 @@
           "required": true,
           "description": "The Unix timestamp (in seconds) of when the project was added."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

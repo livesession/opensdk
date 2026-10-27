@@ -12,6 +12,7 @@
     "request": {
       "typeName": "AdminOrganizationProjectServiceAccountCreateParams",
       "argName": "body",
+      "refTypeName": "ProjectServiceAccountCreateRequest",
       "fields": [
         {
           "name": "name",
@@ -23,6 +24,7 @@
     },
     "response": {
       "typeName": "ProjectServiceAccountCreateResponse",
+      "refTypeName": "ProjectServiceAccountCreateResponse",
       "fields": [
         {
           "name": "object",

@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.realtime.transcription_sessions.create(turn_detection=..., input_audio_noise_reduction=..., input_audio_format=..., input_audio_transcription=..., include=...) -> RealtimeTranscriptionSessionCreateResponse",
     "request": {
+      "refTypeName": "RealtimeTranscriptionSessionCreateRequest",
       "fields": [
         {
           "name": "turn_detection",
@@ -46,6 +47,7 @@
     },
     "response": {
       "typeName": "RealtimeTranscriptionSessionCreateResponse",
+      "refTypeName": "RealtimeTranscriptionSessionCreateResponse",
       "fields": [
         {
           "name": "client_secret",

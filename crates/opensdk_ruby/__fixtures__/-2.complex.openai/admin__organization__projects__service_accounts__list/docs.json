@@ -27,7 +27,7 @@
     },
     "response": {
       "typeName": "Page<Models::ProjectServiceAccount>",
-      "note": "paginated (Page)",
+      "refTypeName": "ProjectServiceAccount",
       "fields": [
         {
           "name": "object",
@@ -60,7 +60,8 @@
           "required": true,
           "description": "The Unix timestamp (in seconds) of when the service account was created"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

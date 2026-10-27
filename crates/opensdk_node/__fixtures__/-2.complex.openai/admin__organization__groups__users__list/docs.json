@@ -36,7 +36,7 @@
     },
     "response": {
       "typeName": "GroupUser",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "GroupUser",
       "fields": [
         {
           "name": "id",
@@ -56,7 +56,8 @@
           "required": true,
           "description": "The email address of the user."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.FineTuning.Checkpoints.Permissions.Create(fineTunedModelCheckpoint, body) -> Task<CursorPage<FineTuningCheckpointPermission>>",
     "request": {
+      "refTypeName": "CreateFineTuningCheckpointPermissionRequest",
       "fields": [
         {
           "name": "ProjectIds",
@@ -20,7 +21,7 @@
     },
     "response": {
       "typeName": "FineTuningCheckpointPermission",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "FineTuningCheckpointPermission",
       "fields": [
         {
           "name": "Id",
@@ -46,7 +47,8 @@
           "required": true,
           "description": "The object type, which is always \"checkpoint.permission\"."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.Admin.Organization.Projects.Groups.Create(projectId, body) -> Task<ProjectGroup>",
     "request": {
+      "refTypeName": "InviteProjectGroupBody",
       "fields": [
         {
           "name": "GroupId",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "ProjectGroup",
+      "refTypeName": "ProjectGroup",
       "fields": [
         {
           "name": "Object",

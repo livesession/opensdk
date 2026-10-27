@@ -13,6 +13,7 @@
     },
     "response": {
       "typeName": "AdminApiKey",
+      "refTypeName": "AdminApiKey",
       "fields": [
         {
           "name": "object",

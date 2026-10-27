@@ -20,6 +20,7 @@
     },
     "response": {
       "typeName": "Models::Certificate",
+      "refTypeName": "Certificate",
       "fields": [
         {
           "name": "object",

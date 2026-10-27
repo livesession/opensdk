@@ -13,10 +13,13 @@
 use opensdk_core::emitter::{
     opt_str, RenderedTypeField, RenderedTypeGroup, RenderedTypeReference, RenderedTypeResponse,
 };
+use opensdk_core::nested::{
+    finish_type_reference, response_root, NestedRender, TypeReferenceRoots,
+};
 use serde_json::Value;
 
 use crate::example_plan::{plan_method_example, ExampleOpts};
-use crate::ir::{Method, NamedType, Spec};
+use crate::ir::{Field, Method, NamedType, Spec, TypeRef};
 use crate::jsrt::{camel_case, json_string, node_method_name, prop_key};
 use crate::model::{node_type, ModelRefs};
 use crate::plan::plan_operation;
@@ -24,7 +27,7 @@ use crate::resource::{
     node_return_display, params_arg_name, params_required, params_type_name, NodeCtx,
 };
 use crate::tests_gen::{has_response, render_call_args};
-use crate::type_plan::{plan_type_reference, ref_schema_name, NeutralTypeField};
+use crate::type_plan::{field_to_neutral, plan_type_reference, ref_schema_name, NeutralTypeField};
 
 fn parse_spec(spec_json: &Value) -> Spec {
     serde_json::from_value(spec_json.clone()).expect("OpenSDK IR did not match the expected shape")
@@ -33,6 +36,16 @@ fn parse_spec(spec_json: &Value) -> Spec {
 fn parse_method(method_json: &Value) -> Method {
     serde_json::from_value(method_json.clone())
         .expect("OpenSDK IR method did not match the expected shape")
+}
+
+fn parse_field(field_json: &Value) -> Field {
+    serde_json::from_value(field_json.clone())
+        .expect("OpenSDK IR field did not match the expected shape")
+}
+
+fn parse_type_ref(type_json: &Value) -> TypeRef {
+    serde_json::from_value(type_json.clone())
+        .expect("OpenSDK IR type did not match the expected shape")
 }
 
 /// `client.<attr>.<attr>.<action>` for a resource-name chain + a method action.
@@ -132,6 +145,7 @@ fn node_render_field(f: &NeutralTypeField) -> RenderedTypeField {
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(&f.type_ref),
+        schema_ref: None,
     }
 }
 
@@ -140,13 +154,13 @@ fn node_render_field(f: &NeutralTypeField) -> RenderedTypeField {
 /// SDK-native view Atlas renders in place of the REST param definitions. Node
 /// carries a synthesized params interface, so `request.typeName` is set.
 ///
-/// `_options` is accepted for a uniform cross-language surface; the TS emitter
-/// reads no `emitterOptions` on this path.
+/// `options` is the `emitterOptions` bag; the only key this path reads is the
+/// `nestedDepth` cap of `opensdk_core::nested`.
 pub fn generate_node_type_reference(
     spec_json: &Value,
     chain: &[String],
     method_json: &Value,
-    _options: &Value,
+    options: &Value,
 ) -> RenderedTypeReference {
     let spec = parse_spec(spec_json);
     let method = parse_method(method_json);
@@ -207,15 +221,41 @@ pub fn generate_node_type_reference(
         node_return_display(&op, &method, &ctx)
     );
 
-    RenderedTypeReference {
+    let mut tr = RenderedTypeReference {
         signature,
         request: RenderedTypeGroup {
             type_name: has_params.then(|| params_type_name(chain, &method.action)),
+            ref_type_name: None,
+            schema_ref: None,
             arg_name: arg_name.map(str::to_string),
             fields: request_fields,
         },
         response: node_response(&op, &neutral),
-    }
+        nested: Default::default(),
+    };
+    // The transitive view behind the two groups (`opensdk_core::nested`): a
+    // nested struct's rows render as the models file declares them — the same
+    // `node_render_field` over a MODEL field, plain `node_type` for a type.
+    let response = tr
+        .response
+        .type_name
+        .is_some()
+        .then(|| response_root(method_json, op.page_name.is_some()))
+        .flatten();
+    let render_field = |raw: &Value| node_render_field(&field_to_neutral(&parse_field(raw)));
+    let render_type =
+        |raw: Option<&Value>| node_type(raw.map(parse_type_ref).as_ref(), &mut ModelRefs::new());
+    finish_type_reference(
+        &mut tr,
+        spec_json,
+        &TypeReferenceRoots::from_method(method_json, response),
+        options,
+        &NestedRender {
+            field: &render_field,
+            lang_type: &render_type,
+        },
+    );
+    tr
 }
 
 fn node_response(
@@ -225,6 +265,8 @@ fn node_response(
     if let Some(ct) = op.binary_content_type.as_deref() {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("Response".to_string()),
             note: Some(format!("binary download ({ct})")),
@@ -237,6 +279,8 @@ fn node_response(
     else {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("void".to_string()),
             note: Some("no response body".to_string()),
@@ -247,12 +291,16 @@ fn node_response(
     match neutral.response_fields.as_ref() {
         Some(fields) => RenderedTypeResponse {
             type_name: Some(type_name),
+            ref_type_name: None,
+            schema_ref: None,
             fields: Some(fields.iter().map(node_render_field).collect()),
             lang_type: None,
             note,
         },
         None => RenderedTypeResponse {
             type_name: Some(type_name.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(type_name),
             note,

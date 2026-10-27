@@ -10,6 +10,7 @@
     "request": {
       "typeName": "AudioTranslationCreateParams",
       "argName": "params",
+      "refTypeName": "CreateTranslationRequest",
       "fields": [
         {
           "name": "file",
@@ -47,6 +48,7 @@
     },
     "response": {
       "typeName": "Object",
+      "refTypeName": "AudioTranslationsCreateResponse",
       "langType": "Object"
     }
   }

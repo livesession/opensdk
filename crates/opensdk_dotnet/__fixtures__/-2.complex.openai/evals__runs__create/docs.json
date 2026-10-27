@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Evals.Runs.Create(evalId, body) -> Task<EvalRun>",
     "request": {
+      "refTypeName": "CreateEvalRunRequest",
       "fields": [
         {
           "name": "Name",
@@ -32,6 +33,7 @@
     },
     "response": {
       "typeName": "EvalRun",
+      "refTypeName": "EvalRun",
       "fields": [
         {
           "name": "Object",
@@ -92,13 +94,15 @@
           "name": "PerModelUsage",
           "langType": "List<EvalRunPerModelUsageItem>",
           "required": true,
-          "description": "Usage statistics for each model during the evaluation run."
+          "description": "Usage statistics for each model during the evaluation run.",
+          "refTypeName": "EvalRunPerModelUsageItem"
         },
         {
           "name": "PerTestingCriteriaResults",
           "langType": "List<EvalRunPerTestingCriteriaResultsItem>",
           "required": true,
-          "description": "Results per testing criteria applied during the evaluation run."
+          "description": "Results per testing criteria applied during the evaluation run.",
+          "refTypeName": "EvalRunPerTestingCriteriaResultsItem"
         },
         {
           "name": "DataSource",

@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.batches.create(input_file_id:, endpoint:, completion_window:, metadata: nil, output_expires_after: nil) -> Models::Batch",
     "request": {
+      "refTypeName": "BatchesCreateRequest",
       "fields": [
         {
           "name": "input_file_id",
@@ -43,6 +44,7 @@
     },
     "response": {
       "typeName": "Models::Batch",
+      "refTypeName": "Batch",
       "fields": [
         {
           "name": "id",

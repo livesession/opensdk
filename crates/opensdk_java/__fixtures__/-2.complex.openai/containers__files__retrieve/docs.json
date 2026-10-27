@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "ContainerFileResource",
+      "refTypeName": "ContainerFileResource",
       "fields": [
         {
           "name": "id",

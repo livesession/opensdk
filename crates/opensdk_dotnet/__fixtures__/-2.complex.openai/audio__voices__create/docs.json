@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Audio.Voices.Create(body) -> Task<VoiceResource>",
     "request": {
+      "refTypeName": "CreateVoiceRequest",
       "fields": [
         {
           "name": "Name",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "VoiceResource",
+      "refTypeName": "VoiceResource",
       "fields": [
         {
           "name": "Object",

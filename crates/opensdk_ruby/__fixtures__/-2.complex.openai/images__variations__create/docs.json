@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.images.variations.create(image:, model: nil, n: nil, response_format: nil, size: nil, user: nil) -> Models::ImagesResponse",
     "request": {
+      "refTypeName": "CreateImageVariationRequest",
       "fields": [
         {
           "name": "image",
@@ -52,6 +53,7 @@
     },
     "response": {
       "typeName": "Models::ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "created",
@@ -63,7 +65,8 @@
           "name": "data",
           "langType": "Array<Models::Image>",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "background",

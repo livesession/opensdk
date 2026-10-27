@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ImageEditNewParams",
       "argName": "body",
+      "refTypeName": "EditImageBodyJsonParam",
       "fields": [
         {
           "name": "Model",
@@ -22,7 +23,8 @@
           "name": "Images",
           "langType": "[]ImageRefParam",
           "required": true,
-          "description": "Input image references to edit.\nFor GPT image models, you can provide up to 16 images.\n"
+          "description": "Input image references to edit.\nFor GPT image models, you can provide up to 16 images.\n",
+          "refTypeName": "ImageRefParam"
         },
         {
           "name": "Mask",
@@ -112,6 +114,7 @@
     },
     "response": {
       "typeName": "ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "Created",
@@ -123,7 +126,8 @@
           "name": "Data",
           "langType": "[]Image",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "Background",

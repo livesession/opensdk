@@ -8,10 +8,12 @@
   "typeReference": {
     "signature": "client.vector_stores.file_batches.create(vector_store_id) -> Models::VectorStoreFileBatchObject",
     "request": {
+      "refTypeName": "CreateVectorStoreFileBatchRequest",
       "fields": []
     },
     "response": {
       "typeName": "Models::VectorStoreFileBatchObject",
+      "refTypeName": "VectorStoreFileBatchObject",
       "fields": [
         {
           "name": "id",

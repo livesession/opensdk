@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.responses.input_tokens.count(model=..., input=..., previous_response_id=..., tools=..., text=..., reasoning=..., truncation=..., instructions=..., conversation=..., tool_choice=..., parallel_tool_calls=...) -> TokenCountsResource",
     "request": {
+      "refTypeName": "TokenCountsBody",
       "fields": [
         {
           "name": "model",
@@ -28,7 +29,8 @@
         {
           "name": "tools",
           "langType": "Optional[list[Tool]]",
-          "required": false
+          "required": false,
+          "refTypeName": "Tool"
         },
         {
           "name": "text",
@@ -74,6 +76,7 @@
     },
     "response": {
       "typeName": "TokenCountsResource",
+      "refTypeName": "TokenCountsResource",
       "fields": [
         {
           "name": "object",

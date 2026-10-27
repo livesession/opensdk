@@ -10,6 +10,7 @@
     "request": {
       "typeName": "UploadPartCreateParams",
       "argName": "body",
+      "refTypeName": "AddUploadPartRequest",
       "fields": [
         {
           "name": "data",
@@ -21,6 +22,7 @@
     },
     "response": {
       "typeName": "UploadPart",
+      "refTypeName": "UploadPart",
       "fields": [
         {
           "name": "id",

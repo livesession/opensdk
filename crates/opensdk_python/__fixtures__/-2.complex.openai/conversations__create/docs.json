@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.conversations.create(metadata=..., items=...) -> ConversationResource",
     "request": {
+      "refTypeName": "CreateConversationBody",
       "fields": [
         {
           "name": "metadata",
@@ -17,12 +18,14 @@
         {
           "name": "items",
           "langType": "Optional[list[InputItem]]",
-          "required": false
+          "required": false,
+          "refTypeName": "InputItem"
         }
       ]
     },
     "response": {
       "typeName": "ConversationResource",
+      "refTypeName": "ConversationResource",
       "fields": [
         {
           "name": "id",

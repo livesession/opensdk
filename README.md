@@ -132,4 +132,28 @@ the same contract: convert with the converter bag (`sdkName`, `mountRules`,
 `operationHints`, `sdkBehavior`), then call a language's docs with that
 language's section as the options bag.
 
+**Type references.** Each `x-sdk.<lang>.types` (and `typeReference` in the
+`docs_map` form) has three parts. `request` and `response` are one level deep:
+the field rows of the request params type and of the response type, each row
+carrying `name`, `langType`, `required`, `description`, `deprecated` and — when
+the field's type is, or wraps through arrays and maps, a named IR type —
+`refTypeName` (the IR type name) and `schemaRef` (`#/components/schemas/<Name>`
+when that IR type came from a component schema; absent for a type the converter
+hoisted from an inline schema, such as a `list` block named `<Model>ListList`).
+The two groups carry `typeName` (the language's name for the type),
+`refTypeName` and `schemaRef` the same way. `nested` is the lookup table behind
+both: every IR type reachable from the request — the body type and the
+query/header parameter types — or from the response type (those roots
+included), keyed by `refTypeName`, each entry `{ typeName, kind, schemaRef?,
+description?, fields | values | variants | of }` with struct fields rendered as
+the language's models declare them — so a page can expand `list` into
+`has_more`, `next_cursor`, `total`, follow `data[]` to the item type and on to
+its own nested types, and link a type to its schema page only when `schemaRef`
+says one exists. The walk is breadth-first with a visited set (a
+self-referencing type terminates) and stops `nestedDepth` hops from the
+operation (default 8, set in a language's section of the options bag as a
+non-negative integer or a string holding one; `0` leaves `nested` out; any
+other value falls back to the default). The IR records the origin as
+`types[].schemaRef`, which the IR schema declares on `NamedType`.
+
 MIT licensed.

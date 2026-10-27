@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.vector_stores.search(vector_store_id, query, rewrite_query=..., max_num_results=..., filters=..., ranking_options=...) -> CursorPage[VectorStoreSearchResultItem]",
     "request": {
+      "refTypeName": "VectorStoreSearchRequest",
       "fields": [
         {
           "name": "query",
@@ -45,7 +46,7 @@
     },
     "response": {
       "typeName": "CursorPage[VectorStoreSearchResultItem]",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "VectorStoreSearchResultItem",
       "fields": [
         {
           "name": "file_id",
@@ -75,9 +76,11 @@
           "name": "content",
           "langType": "list[VectorStoreSearchResultContentObject]",
           "required": true,
-          "description": "Content chunks from the file."
+          "description": "Content chunks from the file.",
+          "refTypeName": "VectorStoreSearchResultContentObject"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

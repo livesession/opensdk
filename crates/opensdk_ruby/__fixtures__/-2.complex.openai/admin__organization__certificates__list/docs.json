@@ -33,7 +33,7 @@
     },
     "response": {
       "typeName": "Page<Models::OrganizationCertificate>",
-      "note": "paginated (Page)",
+      "refTypeName": "OrganizationCertificate",
       "fields": [
         {
           "name": "object",
@@ -71,7 +71,8 @@
           "required": true,
           "description": "Whether the certificate is currently active at the organization level."
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

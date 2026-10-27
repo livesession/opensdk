@@ -34,7 +34,7 @@
     },
     "response": {
       "typeName": "Project",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "Project",
       "fields": [
         {
           "name": "ID",
@@ -77,7 +77,8 @@
           "required": false,
           "description": "The external key associated with the project."
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

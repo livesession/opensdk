@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.groups.create(name) -> GroupResponse",
     "request": {
+      "refTypeName": "CreateGroupBody",
       "fields": [
         {
           "name": "name",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "GroupResponse",
+      "refTypeName": "GroupResponse",
       "fields": [
         {
           "name": "id",

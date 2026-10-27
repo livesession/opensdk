@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::ContainerFileResource",
+      "refTypeName": "ContainerFileResource",
       "fields": [
         {
           "name": "id",

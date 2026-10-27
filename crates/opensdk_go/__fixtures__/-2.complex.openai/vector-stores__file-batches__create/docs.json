@@ -10,10 +10,12 @@
     "request": {
       "typeName": "VectorStoreFileBatchNewParams",
       "argName": "body",
+      "refTypeName": "CreateVectorStoreFileBatchRequest",
       "fields": []
     },
     "response": {
       "typeName": "VectorStoreFileBatchObject",
+      "refTypeName": "VectorStoreFileBatchObject",
       "fields": [
         {
           "name": "ID",

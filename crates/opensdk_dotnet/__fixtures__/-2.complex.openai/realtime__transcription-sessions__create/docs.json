@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Realtime.TranscriptionSessions.Create(body) -> Task<RealtimeTranscriptionSessionCreateResponse>",
     "request": {
+      "refTypeName": "RealtimeTranscriptionSessionCreateRequest",
       "fields": [
         {
           "name": "TurnDetection",
@@ -46,6 +47,7 @@
     },
     "response": {
       "typeName": "RealtimeTranscriptionSessionCreateResponse",
+      "refTypeName": "RealtimeTranscriptionSessionCreateResponse",
       "fields": [
         {
           "name": "ClientSecret",

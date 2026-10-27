@@ -9,6 +9,7 @@
     "request": {
       "typeName": "ConversationUpdateParams",
       "argName": "body",
+      "refTypeName": "UpdateConversationBody",
       "fields": [
         {
           "name": "metadata",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "ConversationResource",
+      "refTypeName": "ConversationResource",
       "fields": [
         {
           "name": "id",

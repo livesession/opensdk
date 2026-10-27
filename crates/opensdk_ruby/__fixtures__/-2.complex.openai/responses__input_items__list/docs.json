@@ -32,12 +32,14 @@
           "name": "include",
           "langType": "Array<Models::IncludeEnum>",
           "required": false,
-          "description": "Additional fields to include in the response. See the `include`\nparameter for Response creation above for more information.\n"
+          "description": "Additional fields to include in the response. See the `include`\nparameter for Response creation above for more information.\n",
+          "refTypeName": "IncludeEnum"
         }
       ]
     },
     "response": {
       "typeName": "Page<Models::ItemResource>",
+      "refTypeName": "ItemResource",
       "langType": "Page<Models::ItemResource>",
       "note": "paginated (Page)"
     }

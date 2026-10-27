@@ -22,7 +22,7 @@
     },
     "response": {
       "typeName": "Page<Models::Pet>",
-      "note": "paginated (Page)",
+      "refTypeName": "Pet",
       "fields": [
         {
           "name": "id",
@@ -45,7 +45,8 @@
           "langType": "Array<String>",
           "required": false
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

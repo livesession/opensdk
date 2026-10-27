@@ -14,6 +14,7 @@
     },
     "response": {
       "typeName": "Models::ProjectUser",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "object",

@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.conversations.create(metadata: nil, items: nil) -> Models::ConversationResource",
     "request": {
+      "refTypeName": "CreateConversationBody",
       "fields": [
         {
           "name": "metadata",
@@ -17,12 +18,14 @@
         {
           "name": "items",
           "langType": "Array<Models::InputItem>",
-          "required": false
+          "required": false,
+          "refTypeName": "InputItem"
         }
       ]
     },
     "response": {
       "typeName": "Models::ConversationResource",
+      "refTypeName": "ConversationResource",
       "fields": [
         {
           "name": "id",

@@ -29,7 +29,7 @@
     },
     "response": {
       "typeName": "ProjectApiKey",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "ProjectApiKey",
       "fields": [
         {
           "name": "object",
@@ -73,7 +73,8 @@
           "required": true,
           "refTypeName": "ProjectApiKeyOwner"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

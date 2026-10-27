@@ -27,8 +27,9 @@ use crate::plan::{plan_operation, OperationPlan, PrimaryResponse};
 use crate::rbtype::rb_doc_type;
 use crate::service::return_doc;
 use crate::tests_gen::render_call_args;
-use crate::type_plan::{plan_type_reference, ref_schema_name, NeutralTypeField};
+use crate::type_plan::{plan_type_reference, ref_schema_name, to_field, NeutralTypeField};
 use crate::writer::rb_string;
+use opensdk_core::nested::{finish_type_reference, NestedRender, TypeReferenceRoots};
 
 /// The spec's symbol table, keyed by type name (the `ctx.types` map the TS
 /// emitter context carries).
@@ -141,6 +142,7 @@ fn rb_render_field(f: &NeutralTypeField) -> RenderedTypeField {
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(f.type_ref.as_ref()),
+        schema_ref: None,
     }
 }
 
@@ -154,6 +156,8 @@ fn rb_response(
     if let Some(ct) = &op.binary_content_type {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(lang_type),
             note: Some(format!("binary download ({ct})")),
@@ -162,6 +166,8 @@ fn rb_response(
     if neutral.type_ref.is_none() || op.primary_response == PrimaryResponse::None {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("nil".to_string()),
             note: Some("no response body".to_string()),
@@ -171,12 +177,16 @@ fn rb_response(
     match &neutral.fields {
         Some(fields) => RenderedTypeResponse {
             type_name: Some(lang_type),
+            ref_type_name: None,
+            schema_ref: None,
             fields: Some(fields.iter().map(rb_render_field).collect()),
             lang_type: None,
             note,
         },
         None => RenderedTypeResponse {
             type_name: Some(lang_type.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(lang_type),
             note,
@@ -191,15 +201,15 @@ fn rb_response(
 /// Go/Python emitters, using Ruby's primitives). `chain` is the resource-name
 /// path (root→owner) the method hangs off.
 ///
-/// `options` is accepted for a uniform cross-language signature; no emitter
-/// option reaches this output (the TS twin builds a `RubyCtx` whose `moduleName`
-/// and `pkg` it then never reads — Ruby doc types are `Models::`-qualified, not
-/// module-qualified).
+/// `options` is the emitter options bag; the only key this output reads is
+/// the `nestedDepth` cap of `opensdk_core::nested` (Ruby doc types are
+/// `Models::`-qualified, not module-qualified, so `moduleName`/`pkg` never
+/// appear in it).
 pub fn generate_ruby_type_reference(
     spec: &Value,
     chain: &[String],
     method: &Value,
-    _options: &Value,
+    options: &Value,
 ) -> RenderedTypeReference {
     let types = symbol_table(spec);
     let op = plan_operation(method, &types);
@@ -228,13 +238,37 @@ pub fn generate_ruby_type_reference(
         return_doc(method, &op)
     );
 
-    RenderedTypeReference {
+    let mut tr = RenderedTypeReference {
         signature,
         request: RenderedTypeGroup {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             arg_name: None,
             fields: neutral.request.fields.iter().map(rb_render_field).collect(),
         },
         response: rb_response(method, &op, &neutral.response),
-    }
+        nested: Default::default(),
+    };
+    // The transitive view behind the two groups (`opensdk_core::nested`): a
+    // nested struct's rows carry the same YARD types a model's do.
+    let response = tr
+        .response
+        .type_name
+        .is_some()
+        .then_some(neutral.response.type_ref.as_ref())
+        .flatten();
+    let render_field = |raw: &Value| rb_render_field(&to_field(raw));
+    let render_type = |raw: Option<&Value>| rb_doc_type(raw);
+    finish_type_reference(
+        &mut tr,
+        spec,
+        &TypeReferenceRoots::from_method(method, response),
+        options,
+        &NestedRender {
+            field: &render_field,
+            lang_type: &render_type,
+        },
+    );
+    tr
 }

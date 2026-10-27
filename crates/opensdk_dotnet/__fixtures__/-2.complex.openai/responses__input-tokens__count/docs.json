@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Responses.InputTokens.Count(body) -> Task<TokenCountsResource>",
     "request": {
+      "refTypeName": "TokenCountsBody",
       "fields": [
         {
           "name": "Model",
@@ -28,7 +29,8 @@
         {
           "name": "Tools",
           "langType": "List<object>?",
-          "required": false
+          "required": false,
+          "refTypeName": "Tool"
         },
         {
           "name": "Text",
@@ -74,6 +76,7 @@
     },
     "response": {
       "typeName": "TokenCountsResource",
+      "refTypeName": "TokenCountsResource",
       "fields": [
         {
           "name": "Object",

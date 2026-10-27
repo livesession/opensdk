@@ -42,7 +42,7 @@
     },
     "response": {
       "typeName": "EvalRunOutputItem",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "EvalRunOutputItem",
       "fields": [
         {
           "name": "Object",
@@ -96,7 +96,8 @@
           "name": "Results",
           "langType": "[]EvalRunOutputItemResult",
           "required": true,
-          "description": "A list of grader results for this output item."
+          "description": "A list of grader results for this output item.",
+          "refTypeName": "EvalRunOutputItemResult"
         },
         {
           "name": "Sample",
@@ -105,7 +106,8 @@
           "description": "A sample containing the input and output of the evaluation run.",
           "refTypeName": "EvalRunOutputItemSample"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

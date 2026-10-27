@@ -10,6 +10,7 @@
     "request": {
       "typeName": "ImageGenerationCreateParams",
       "argName": "body",
+      "refTypeName": "CreateImageRequest",
       "fields": [
         {
           "name": "prompt",
@@ -107,6 +108,7 @@
     },
     "response": {
       "typeName": "ImagesResponse",
+      "refTypeName": "ImagesResponse",
       "fields": [
         {
           "name": "created",
@@ -118,7 +120,8 @@
           "name": "data",
           "langType": "Image[]",
           "required": false,
-          "description": "The list of generated images."
+          "description": "The list of generated images.",
+          "refTypeName": "Image"
         },
         {
           "name": "background",

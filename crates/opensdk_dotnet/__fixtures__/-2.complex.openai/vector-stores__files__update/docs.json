@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.VectorStores.Files.Update(vectorStoreId, fileId, body) -> Task<VectorStoreFileObject>",
     "request": {
+      "refTypeName": "UpdateVectorStoreFileAttributesRequest",
       "fields": [
         {
           "name": "Attributes",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "VectorStoreFileObject",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "Id",

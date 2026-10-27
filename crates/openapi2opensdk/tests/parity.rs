@@ -104,3 +104,9 @@ parity_case!(x_open_sdk, "9.x-open-sdk");
 //      `GET /widgets` forces it back on for that one.
 parity_case!(pagination_hint, "10.pagination-hint");
 parity_case!(pagination_none, "11.pagination-none");
+// 12 — the docs fixture for nested type groups: a list envelope kept as the
+//      declared type (`pagination: false`) whose paging block is an INLINE
+//      object (hoisted as `WidgetListList`, no `schemaRef`) beside an array of
+//      a component that names a component that names another; a query param
+//      that refs an enum component. Every component type carries `schemaRef`.
+parity_case!(nested_envelope, "12.nested-envelope");

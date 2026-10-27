@@ -11,6 +11,7 @@
     },
     "response": {
       "typeName": "Models::DeleteVectorStoreResponse",
+      "refTypeName": "DeleteVectorStoreResponse",
       "fields": [
         {
           "name": "id",

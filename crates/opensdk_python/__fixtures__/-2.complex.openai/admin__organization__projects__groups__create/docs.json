@@ -10,6 +10,7 @@
   "typeReference": {
     "signature": "client.admin.organization.projects.groups.create(project_id, group_id, role) -> ProjectGroup",
     "request": {
+      "refTypeName": "InviteProjectGroupBody",
       "fields": [
         {
           "name": "group_id",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "ProjectGroup",
+      "refTypeName": "ProjectGroup",
       "fields": [
         {
           "name": "object",

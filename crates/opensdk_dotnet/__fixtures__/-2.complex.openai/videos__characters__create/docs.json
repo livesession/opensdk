@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Videos.Characters.Create(body) -> Task<VideoCharacterResource>",
     "request": {
+      "refTypeName": "CreateVideoCharacterBody",
       "fields": [
         {
           "name": "Video",
@@ -25,6 +26,7 @@
     },
     "response": {
       "typeName": "VideoCharacterResource",
+      "refTypeName": "VideoCharacterResource",
       "fields": [
         {
           "name": "Id",

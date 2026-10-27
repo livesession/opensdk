@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "Models::VoiceConsentDeletedResource",
+      "refTypeName": "VoiceConsentDeletedResource",
       "fields": [
         {
           "name": "id",

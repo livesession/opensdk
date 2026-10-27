@@ -7,6 +7,7 @@
   "typeReference": {
     "signature": "client.containers.create(name:, file_ids: nil, expires_after: nil, skills: nil, memory_limit: nil, network_policy: nil) -> Models::ContainerResource",
     "request": {
+      "refTypeName": "CreateContainerBody",
       "fields": [
         {
           "name": "name",
@@ -31,7 +32,8 @@
           "name": "skills",
           "langType": "Array<Models::CreateContainerBodySkillsItem>",
           "required": false,
-          "description": "An optional list of skills referenced by id or inline data."
+          "description": "An optional list of skills referenced by id or inline data.",
+          "refTypeName": "CreateContainerBodySkillsItem"
         },
         {
           "name": "memory_limit",
@@ -51,6 +53,7 @@
     },
     "response": {
       "typeName": "Models::ContainerResource",
+      "refTypeName": "ContainerResource",
       "fields": [
         {
           "name": "id",

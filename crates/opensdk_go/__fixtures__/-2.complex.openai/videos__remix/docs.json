@@ -9,6 +9,7 @@
     "request": {
       "typeName": "VideoRemixParams",
       "argName": "body",
+      "refTypeName": "CreateVideoRemixBody",
       "fields": [
         {
           "name": "Prompt",
@@ -20,6 +21,7 @@
     },
     "response": {
       "typeName": "VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "ID",

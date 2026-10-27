@@ -45,7 +45,7 @@
     },
     "response": {
       "typeName": "CreateChatCompletionResponse",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "CreateChatCompletionResponse",
       "fields": [
         {
           "name": "Id",
@@ -57,7 +57,8 @@
           "name": "Choices",
           "langType": "List<CreateChatCompletionResponseChoicesItem>",
           "required": true,
-          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1."
+          "description": "A list of chat completion choices. Can be more than one if `n` is greater than 1.",
+          "refTypeName": "CreateChatCompletionResponseChoicesItem"
         },
         {
           "name": "Created",
@@ -96,7 +97,8 @@
           "required": false,
           "refTypeName": "CompletionUsage"
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

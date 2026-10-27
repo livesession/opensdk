@@ -45,7 +45,7 @@
     },
     "response": {
       "typeName": "Page<Models::VectorStoreFileObject>",
-      "note": "paginated (Page)",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "id",
@@ -103,7 +103,8 @@
           "required": false,
           "refTypeName": "VectorStoreFileAttributes"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

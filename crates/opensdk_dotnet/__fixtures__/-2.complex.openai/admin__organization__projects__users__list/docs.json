@@ -27,7 +27,7 @@
     },
     "response": {
       "typeName": "ProjectUser",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "ProjectUser",
       "fields": [
         {
           "name": "Object",
@@ -65,7 +65,8 @@
           "required": true,
           "description": "The Unix timestamp (in seconds) of when the project was added."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

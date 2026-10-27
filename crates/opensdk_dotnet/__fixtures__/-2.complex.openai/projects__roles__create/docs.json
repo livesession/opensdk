@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.Projects.Roles.Create(projectId, body) -> Task<Role>",
     "request": {
+      "refTypeName": "PublicCreateOrganizationRoleBody",
       "fields": [
         {
           "name": "RoleName",
@@ -31,6 +32,7 @@
     },
     "response": {
       "typeName": "Role",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "Object",

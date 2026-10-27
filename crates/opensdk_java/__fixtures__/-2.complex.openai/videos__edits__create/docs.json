@@ -10,6 +10,7 @@
     "request": {
       "typeName": "VideoEditCreateParams",
       "argName": "params",
+      "refTypeName": "CreateVideoEditJsonBody",
       "fields": [
         {
           "name": "video",
@@ -27,6 +28,7 @@
     },
     "response": {
       "typeName": "VideoResource",
+      "refTypeName": "VideoResource",
       "fields": [
         {
           "name": "id",

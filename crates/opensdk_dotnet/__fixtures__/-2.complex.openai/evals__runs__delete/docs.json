@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "EvalsRunsDeleteResponse",
+      "refTypeName": "EvalsRunsDeleteResponse",
       "fields": [
         {
           "name": "Object",

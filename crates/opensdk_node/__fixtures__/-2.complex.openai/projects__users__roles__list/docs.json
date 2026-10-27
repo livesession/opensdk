@@ -35,7 +35,7 @@
     },
     "response": {
       "typeName": "AssignedRoleDetails",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "AssignedRoleDetails",
       "fields": [
         {
           "name": "id",
@@ -103,7 +103,8 @@
           "required": true,
           "description": "Arbitrary metadata stored on the role."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }

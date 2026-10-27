@@ -34,7 +34,7 @@
     },
     "response": {
       "typeName": "User",
-      "note": "paginated (pagination.CursorPage)",
+      "refTypeName": "User",
       "fields": [
         {
           "name": "Object",
@@ -134,7 +134,8 @@
           "description": "Projects associated with the user, if included.",
           "refTypeName": "UserProjects"
         }
-      ]
+      ],
+      "note": "paginated (pagination.CursorPage)"
     }
   }
 }

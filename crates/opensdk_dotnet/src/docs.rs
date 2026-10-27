@@ -23,7 +23,10 @@ use crate::cswriter::{cs_file, indent};
 use crate::jsrt::{camel_case, json_string, method_name, pascal_case, screaming_snake_case};
 use crate::plan::{plan_operation, OperationPlan};
 use crate::tests_gen::{call_args, method_has_result};
-use crate::type_plan::{plan_type_reference, ref_schema_name, FieldLocation, NeutralTypeField};
+use crate::type_plan::{
+    plan_type_reference, ref_schema_name, to_field, FieldLocation, NeutralTypeField,
+};
+use opensdk_core::nested::{finish_type_reference, NestedRender, TypeReferenceRoots};
 
 /// `client.<Chain>.<Method>` — the accessor chain a call hangs off.
 fn chain_expr(chain: &[String], method: &Value) -> String {
@@ -121,6 +124,7 @@ fn cs_render_field(f: &NeutralTypeField, types: Types) -> RenderedTypeField {
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(f.type_ref.as_ref()),
+        schema_ref: None,
     }
 }
 
@@ -133,6 +137,7 @@ fn cs_response_field(f: &NeutralTypeField, types: Types) -> RenderedTypeField {
         description: f.description.clone(),
         deprecated: f.deprecated,
         ref_type_name: ref_schema_name(f.type_ref.as_ref()),
+        schema_ref: None,
     }
 }
 
@@ -165,6 +170,8 @@ fn cs_response(
     if let Some(ct) = &op.binary_content_type {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("byte[]".to_string()),
             note: Some(format!("binary download ({ct})")),
@@ -173,6 +180,8 @@ fn cs_response(
     let Some(ref_) = neutral_ref.filter(|_| op.primary_response != "none") else {
         return RenderedTypeResponse {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some("Task".to_string()),
             note: Some("no response body".to_string()),
@@ -183,12 +192,16 @@ fn cs_response(
     match neutral_fields {
         Some(fields) => RenderedTypeResponse {
             type_name: Some(type_name),
+            ref_type_name: None,
+            schema_ref: None,
             fields: Some(fields.iter().map(|f| cs_response_field(f, types)).collect()),
             lang_type: None,
             note,
         },
         None => RenderedTypeResponse {
             type_name: Some(type_name.clone()),
+            ref_type_name: None,
+            schema_ref: None,
             fields: None,
             lang_type: Some(type_name),
             note,
@@ -199,15 +212,14 @@ fn cs_response(
 /// The per-operation SDK TYPE reference for .NET: the method signature + the
 /// request field rows (flattened args — no dedicated params class) + the response.
 ///
-/// `options` is accepted for signature symmetry with [`generate_dotnet_usage`]
-/// (and so the napi layer can call both the same way); the TypeScript capability
-/// resolves the options bag too but reads nothing from it — a type reference is
-/// derived entirely from the IR.
+/// `options` is the emitter options bag; a type reference is derived entirely
+/// from the IR, and the only key read here is the `nestedDepth` cap of
+/// `opensdk_core::nested`.
 pub fn generate_dotnet_type_reference(
     spec: &Value,
     chain: &[String],
     method: &Value,
-    _options: &Value,
+    options: &Value,
 ) -> RenderedTypeReference {
     let table = crate::symbol_table(spec);
     let types: Types = &table;
@@ -230,10 +242,12 @@ pub fn generate_dotnet_type_reference(
         cs_return_display(method, &op, types)
     );
 
-    RenderedTypeReference {
+    let mut tr = RenderedTypeReference {
         signature,
         request: RenderedTypeGroup {
             type_name: None,
+            ref_type_name: None,
+            schema_ref: None,
             arg_name: None,
             fields: neutral
                 .request_fields
@@ -247,5 +261,27 @@ pub fn generate_dotnet_type_reference(
             neutral.response_fields.as_ref(),
             types,
         ),
-    }
+        nested: Default::default(),
+    };
+    // The transitive view behind the two groups (`opensdk_core::nested`): a
+    // nested struct's rows render as a response model's properties do.
+    let response = tr
+        .response
+        .type_name
+        .is_some()
+        .then_some(neutral.response_type_ref.as_ref())
+        .flatten();
+    let render_field = |raw: &Value| cs_response_field(&to_field(raw, FieldLocation::Body), types);
+    let render_type = |raw: Option<&Value>| cs_type(raw, types);
+    finish_type_reference(
+        &mut tr,
+        spec,
+        &TypeReferenceRoots::from_method(method, response),
+        options,
+        &NestedRender {
+            field: &render_field,
+            lang_type: &render_type,
+        },
+    );
+    tr
 }

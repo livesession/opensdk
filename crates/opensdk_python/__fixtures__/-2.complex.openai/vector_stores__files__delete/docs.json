@@ -12,6 +12,7 @@
     },
     "response": {
       "typeName": "DeleteVectorStoreFileResponse",
+      "refTypeName": "DeleteVectorStoreFileResponse",
       "fields": [
         {
           "name": "id",

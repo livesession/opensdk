@@ -8,6 +8,7 @@
   "typeReference": {
     "signature": "client.vector_stores.files.update(vector_store_id, file_id, attributes:) -> Models::VectorStoreFileObject",
     "request": {
+      "refTypeName": "UpdateVectorStoreFileAttributesRequest",
       "fields": [
         {
           "name": "attributes",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "Models::VectorStoreFileObject",
+      "refTypeName": "VectorStoreFileObject",
       "fields": [
         {
           "name": "id",

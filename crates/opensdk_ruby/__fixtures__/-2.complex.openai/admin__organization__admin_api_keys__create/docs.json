@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.admin.organization.admin_api_keys.create(name:) -> Models::AdminApiKeyCreateResponse",
     "request": {
+      "refTypeName": "AdminOrganizationAdminApiKeysCreateRequest",
       "fields": [
         {
           "name": "name",
@@ -19,6 +20,7 @@
     },
     "response": {
       "typeName": "Models::AdminApiKeyCreateResponse",
+      "refTypeName": "AdminApiKeyCreateResponse",
       "fields": [
         {
           "name": "object",

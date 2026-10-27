@@ -27,7 +27,7 @@
     },
     "response": {
       "typeName": "Page<Models::ProjectApiKey>",
-      "note": "paginated (Page)",
+      "refTypeName": "ProjectApiKey",
       "fields": [
         {
           "name": "object",
@@ -71,7 +71,8 @@
           "required": true,
           "refTypeName": "ProjectApiKeyOwner"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

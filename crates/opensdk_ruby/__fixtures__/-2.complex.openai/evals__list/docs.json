@@ -38,7 +38,7 @@
     },
     "response": {
       "typeName": "Page<Models::Eval>",
-      "note": "paginated (Page)",
+      "refTypeName": "Eval",
       "fields": [
         {
           "name": "object",
@@ -69,7 +69,8 @@
           "name": "testing_criteria",
           "langType": "Array<Models::EvalTestingCriteriaItem>",
           "required": true,
-          "description": "A list of testing criteria."
+          "description": "A list of testing criteria.",
+          "refTypeName": "EvalTestingCriteriaItem"
         },
         {
           "name": "created_at",
@@ -83,7 +84,8 @@
           "required": true,
           "refTypeName": "Metadata"
         }
-      ]
+      ],
+      "note": "paginated (Page)"
     }
   }
 }

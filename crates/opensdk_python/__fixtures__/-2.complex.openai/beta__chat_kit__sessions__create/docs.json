@@ -9,6 +9,7 @@
   "typeReference": {
     "signature": "client.beta.chat_kit.sessions.create(workflow, user, expires_after=..., rate_limits=..., chatkit_configuration=...) -> ChatSessionResource",
     "request": {
+      "refTypeName": "CreateChatSessionBody",
       "fields": [
         {
           "name": "workflow",
@@ -44,6 +45,7 @@
     },
     "response": {
       "typeName": "ChatSessionResource",
+      "refTypeName": "ChatSessionResource",
       "fields": [
         {
           "name": "id",

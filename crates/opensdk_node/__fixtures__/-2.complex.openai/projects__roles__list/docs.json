@@ -34,7 +34,7 @@
     },
     "response": {
       "typeName": "Role",
-      "note": "paginated (CursorPage)",
+      "refTypeName": "Role",
       "fields": [
         {
           "name": "object",
@@ -78,7 +78,8 @@
           "required": true,
           "description": "Whether the role is predefined and managed by OpenAI."
         }
-      ]
+      ],
+      "note": "paginated (CursorPage)"
     }
   }
 }
