@@ -17,7 +17,13 @@
     "authEnvVar",
     "rootCommand",
     "grammar",
-    "singularOverrides"
+    "singularOverrides",
+    "namesFrom",
+    "namesFromRequired",
+    "pathPrefixStrip",
+    "headersFromExtension",
+    "defaultHeaders",
+    "includeSecurity"
   ],
   "split": null,
   "error": "Not a CLI target: go"

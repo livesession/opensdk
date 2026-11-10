@@ -22,7 +22,13 @@
     "authEnvVar",
     "rootCommand",
     "grammar",
-    "singularOverrides"
+    "singularOverrides",
+    "namesFrom",
+    "namesFromRequired",
+    "pathPrefixStrip",
+    "headersFromExtension",
+    "defaultHeaders",
+    "includeSecurity"
   ],
   "split": {
     "converter": {
@@ -52,7 +58,17 @@
       "grammar": "verb-noun",
       "singularOverrides": {
         "apis": "api"
-      }
+      },
+      "namesFrom": "x-docs.path",
+      "namesFromRequired": true,
+      "pathPrefixStrip": "/v1",
+      "headersFromExtension": {
+        "X-Api-Version": "x-release"
+      },
+      "defaultHeaders": {
+        "X-Client": "acme-cli"
+      },
+      "includeSecurity": true
     },
     "backend": {},
     "converterOrder": [
@@ -71,7 +87,13 @@
       "authEnvVar",
       "rootCommand",
       "grammar",
-      "singularOverrides"
+      "singularOverrides",
+      "namesFrom",
+      "namesFromRequired",
+      "pathPrefixStrip",
+      "headersFromExtension",
+      "defaultHeaders",
+      "includeSecurity"
     ],
     "backendOrder": []
   },

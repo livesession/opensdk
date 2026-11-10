@@ -1,0 +1,64 @@
+openapi: 3.1.0
+info:
+  title: Widgets
+  version: 2.4.0
+  x-release: "2024-10-01"
+servers:
+  - url: https://api.widgets.test
+security:
+  - token: [widgets:read]
+components:
+  securitySchemes:
+    token:
+      type: http
+      scheme: bearer
+paths:
+  /v3/widgets:
+    get:
+      operationId: listWidgets
+      summary: List widgets
+      x-docs: { path: widgets/list }
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+      responses: { "200": { description: ok } }
+    post:
+      operationId: createWidget
+      summary: Create a widget
+      x-docs: { path: widgets/create }
+      security:
+        - token: [widgets:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses: { "201": { description: created } }
+  /v3/widgets/{widgetId}:
+    parameters:
+      - { name: widgetId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getWidget
+      summary: Retrieve a widget
+      x-docs: { path: widgets/retrieve }
+      responses: { "200": { description: ok } }
+    put:
+      operationId: replaceWidget
+      summary: Replace a widget
+      x-docs: { path: widgets/replace }
+      security:
+        - token: [widgets:write]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: string }
+      responses: { "200": { description: ok } }
+  /v3/status:
+    get:
+      operationId: getStatus
+      summary: Service status
+      security: []
+      responses: { "200": { description: ok } }

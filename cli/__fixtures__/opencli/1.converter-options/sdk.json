@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "api": "openapi.yaml",
+  "sdkName": "widgets",
+  "rust-cli": {
+    "crateName": "widgets-cli",
+    "rootCommand": "api",
+    "namesFrom": "x-docs.path",
+    "pathPrefixStrip": "/v3",
+    "includeSecurity": true,
+    "defaultHeaders": { "X-Client": "widgets-cli" },
+    "headersFromExtension": { "X-Api-Version": "x-release" }
+  }
+}

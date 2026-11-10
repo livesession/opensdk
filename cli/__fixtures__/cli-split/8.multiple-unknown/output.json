@@ -23,8 +23,14 @@
     "authEnvVar",
     "rootCommand",
     "grammar",
-    "singularOverrides"
+    "singularOverrides",
+    "namesFrom",
+    "namesFromRequired",
+    "pathPrefixStrip",
+    "headersFromExtension",
+    "defaultHeaders",
+    "includeSecurity"
   ],
   "split": null,
-  "error": "Unknown option(s) for \"rust-cli\": modulePath, packageName. Valid: cliName, version, grouping, bodyStrategy, includeMethods, includeHeaders, flagCase, actionAliases, verbMap, customActionVerbs, includePaths, maxBodyDepth, authEnvVar, rootCommand, grammar, singularOverrides, crateName, binName, edition, baseURL, versionFrom"
+  "error": "Unknown option(s) for \"rust-cli\": modulePath, packageName. Valid: cliName, version, grouping, bodyStrategy, includeMethods, includeHeaders, flagCase, actionAliases, verbMap, customActionVerbs, includePaths, maxBodyDepth, authEnvVar, rootCommand, grammar, singularOverrides, namesFrom, namesFromRequired, pathPrefixStrip, headersFromExtension, defaultHeaders, includeSecurity, crateName, binName, edition, baseURL, versionFrom"
 }
