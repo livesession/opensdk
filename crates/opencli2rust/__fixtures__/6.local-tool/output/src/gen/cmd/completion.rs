@@ -18,11 +18,6 @@ pub fn command() -> Command {
 }
 
 pub async fn run<O: CliOverrides>(_ctx: &Context, _o: &O, cmd_path: &[String], _m: &ArgMatches) -> ExitCode {
-    let parts: Vec<&str> = cmd_path.iter().map(String::as_str).collect();
-    match parts.as_slice() {
-        _ => {
-            eprintln!("error: unknown command: {}", cmd_path.join(" "));
-            ExitCode::FAILURE
-        }
-    }
+    eprintln!("error: unknown command: {}", cmd_path.join(" "));
+    ExitCode::FAILURE
 }

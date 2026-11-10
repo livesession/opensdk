@@ -106,6 +106,7 @@ async fn handle_widgets_create<O: CliOverrides>(
             let mut buf = Vec::new();
             std::io::Read::read_to_end(&mut std::io::stdin(), &mut buf).map(|_| buf).map_err(|err| format!("stdin: {err}"))
         }
+        Some(literal) if literal.starts_with('@') => Ok(literal.as_bytes().to_vec()),
         Some(file) => std::fs::read(file).map_err(|err| format!("{file}: {err}")),
         None => Ok(v.clone().into_bytes()),
     }) {
@@ -136,6 +137,7 @@ async fn handle_widgets_import<O: CliOverrides>(
             let mut buf = Vec::new();
             std::io::Read::read_to_end(&mut std::io::stdin(), &mut buf).map(|_| buf).map_err(|err| format!("stdin: {err}"))
         }
+        Some(literal) if literal.starts_with('@') => Ok(literal.as_bytes().to_vec()),
         Some(file) => std::fs::read(file).map_err(|err| format!("{file}: {err}")),
         None => Ok(v.clone().into_bytes()),
     }) {
@@ -171,6 +173,7 @@ async fn handle_widgets_update<O: CliOverrides>(
             let mut buf = Vec::new();
             std::io::Read::read_to_end(&mut std::io::stdin(), &mut buf).map(|_| buf).map_err(|err| format!("stdin: {err}"))
         }
+        Some(literal) if literal.starts_with('@') => Ok(literal.as_bytes().to_vec()),
         Some(file) => std::fs::read(file).map_err(|err| format!("{file}: {err}")),
         None => Ok(v.clone().into_bytes()),
     }) {

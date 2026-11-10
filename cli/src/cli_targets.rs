@@ -65,7 +65,8 @@ impl CliBackend {
             CliBackend::Rust => {
                 let opts = serde_json::from_value(options)
                     .map_err(|e| Error::msg(format!("bad rust-cli options: {e}")))?;
-                Ok(opencli2rust::opencli2rust(spec, Some(opts))
+                Ok(opencli2rust::try_opencli2rust(spec, Some(opts))
+                    .map_err(|e| Error::msg(e.to_string()))?
                     .into_iter()
                     .map(|(path, entry)| {
                         let write_mode = match entry.write_mode {

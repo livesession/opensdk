@@ -5,25 +5,27 @@
 //! server that records every request, header by header:
 //!
 //!   * `12.default-headers` — the spec's default headers are sent unless the
-//!     request sets them, `--body @file` / `@-` / inline, the declared
-//!     `Content-Type`, and the JSON body never doubling as a query parameter;
+//!     request sets them, `--body @file` / `@-` / `@@literal` / inline, the
+//!     declared `Content-Type`, and the JSON body never doubling as a query
+//!     parameter;
 //!   * `11.root-options` — with a `src/custom/mod.rs` that turns the root
 //!     `--token` into an `Authorization` header in `before_dispatch`: exactly
 //!     ONE `Authorization` reaches the server (the root option's, not also the
 //!     environment's), and `print_usage_error` chooses a usage error's exit code.
 //!
-//! Gated like the compile smokes: `XYD_SMOKE_RUST=1 cargo test -p opencli2rust
-//! --test runtime_smoke`. The crates pull reqwest/tokio/clap from crates.io, so a
-//! dependency that cannot be fetched SKIPS (an environment problem) while any
-//! compile error FAILS.
+//! Runs only under `XYD_SMOKE_RUST=1` (`cargo test -p opencli2rust --test
+//! runtime_smoke`), which CI sets — and then every failure FAILS, a dependency
+//! that cannot be fetched from crates.io included, the way `XYD_SMOKE_RUST=1`
+//! turns the compile smoke's skip into a failure. Unset, the tier is skipped.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+/// Skip unless `XYD_SMOKE_RUST` is exactly `1`.
 fn gated() -> bool {
-    std::env::var("XYD_SMOKE_RUST").is_err()
+    std::env::var("XYD_SMOKE_RUST").as_deref() != Ok("1")
 }
 
 #[derive(Debug, Clone)]
@@ -134,27 +136,10 @@ fn shared_target_dir() -> PathBuf {
     dir
 }
 
-/// Registry/network phrasing only; any rustc diagnostic is a real failure.
-fn is_dependency_failure(stderr: &str) -> bool {
-    if stderr.contains("error[") {
-        return false;
-    }
-    [
-        "failed to get ",
-        "failed to download",
-        "failed to fetch",
-        "network failure",
-        "could not connect",
-        "unable to get packages from source",
-        "registry index was not found",
-    ]
-    .iter()
-    .any(|p| stderr.contains(p))
-}
-
 /// Copy a fixture crate (with optional file overrides), build it, and return
-/// the binary — or `None` when its dependencies cannot be fetched.
-fn build(case: &str, overrides: &[(&str, &str)]) -> Option<PathBuf> {
+/// the binary. Any build failure fails the test — this tier only runs when
+/// asked for, so an unreachable registry is a failure too.
+fn build(case: &str, overrides: &[(&str, &str)]) -> PathBuf {
     let project = std::env::temp_dir().join(format!(
         "opencli2rust-runtime-smoke-{}-{case}",
         std::process::id()
@@ -186,11 +171,7 @@ fn build(case: &str, overrides: &[(&str, &str)]) -> Option<PathBuf> {
         .expect("run cargo (is it on PATH?)");
     let stderr = String::from_utf8_lossy(&out.stderr);
     if !out.status.success() {
-        if is_dependency_failure(&stderr) {
-            eprintln!("runtime_smoke: SKIP {case} — dependencies unavailable:\n{stderr}");
-            return None;
-        }
-        panic!("{case}: the generated crate does not build:\n{stderr}");
+        panic!("{case}: the generated crate does not build (XYD_SMOKE_RUST=1):\n{stderr}");
     }
     // Keep a copy: both fixtures build a `widgets` binary into the shared dir.
     // The project itself is no longer needed (its build lives in the target).
@@ -200,11 +181,12 @@ fn build(case: &str, overrides: &[(&str, &str)]) -> Option<PathBuf> {
     ));
     std::fs::copy(target.join("debug").join("widgets"), &bin).unwrap();
     let _ = std::fs::remove_dir_all(&project);
-    Some(bin)
+    bin
 }
 
 struct Run {
     code: i32,
+    stdout: String,
     stderr: String,
 }
 
@@ -230,6 +212,7 @@ fn run(bin: &Path, server: &Server, args: &[&str], stdin: Option<&str>) -> Run {
     let out = child.wait_with_output().unwrap();
     Run {
         code: out.status.code().unwrap_or(-1),
+        stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
         stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
     }
 }
@@ -249,9 +232,7 @@ fn default_headers_bodies_and_content_types() {
         eprintln!("runtime_smoke: skipped (set XYD_SMOKE_RUST=1)");
         return;
     }
-    let Some(bin) = build("12.default-headers", &[]) else {
-        return;
-    };
+    let bin = build("12.default-headers", &[]);
     let server = Server::start();
 
     let r = one(&bin, &server, &["widgets", "list"], None);
@@ -302,6 +283,15 @@ fn default_headers_bodies_and_content_types() {
         Some("x,y\n"),
     );
     assert_eq!(r.body, "x,y\n");
+
+    // `@@`: a literal value that starts with `@`, one `@` dropped.
+    let r = one(
+        &bin,
+        &server,
+        &["widgets", "import", "--body", "@@handle,1\n"],
+        None,
+    );
+    assert_eq!(r.body, "@handle,1\n");
 
     // A header flag beside the declared media type.
     let r = one(
@@ -387,9 +377,7 @@ fn root_options_reach_before_dispatch_and_authorization_is_sent_once() {
         eprintln!("runtime_smoke: skipped (set XYD_SMOKE_RUST=1)");
         return;
     }
-    let Some(bin) = build("11.root-options", &[("src/custom/mod.rs", ROOT_CUSTOM)]) else {
-        return;
-    };
+    let bin = build("11.root-options", &[("src/custom/mod.rs", ROOT_CUSTOM)]);
     let server = Server::start();
 
     let r = one(&bin, &server, &["widgets", "list"], None);
@@ -424,6 +412,14 @@ fn root_options_reach_before_dispatch_and_authorization_is_sent_once() {
     );
     assert_eq!(run(&bin, &server, &["--bogus"], None).code, 64);
     assert_eq!(run(&bin, &server, &["--help"], None).code, 0);
+    // A subcommand's help lists the global options under their own heading.
+    let help = run(&bin, &server, &["widgets", "list", "--help"], None);
+    assert_eq!(help.code, 0);
+    let global = help
+        .stdout
+        .find("Global options:")
+        .expect("a Global options heading");
+    assert!(help.stdout[global..].contains("--token"), "{}", help.stdout);
     assert!(server.take().is_empty());
     std::fs::remove_file(&bin).ok();
 }

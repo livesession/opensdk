@@ -26,7 +26,7 @@ use std::process::{exit, Command};
 use serde::Deserialize;
 use serde_json::Value;
 
-use opencli2rust::{opencli2rust, Options, WriteMode as GenWriteMode};
+use opencli2rust::{try_opencli2rust, Options, WriteMode as GenWriteMode};
 use opensdk_framework::{write_project, FileEntry, FileMap, WriteMode, WriteProjectOptions};
 
 /// The `<crateDir>/regen.toml` schema — the single home of the generator +
@@ -125,7 +125,7 @@ fn main() {
         .unwrap_or_else(|e| die(format!("parse {}: {e}", spec_path.display())));
 
     // 3) generate the Rust CLI project file map.
-    let files_gen = opencli2rust(
+    let files_gen = try_opencli2rust(
         &spec,
         Some(Options {
             module_name: cfg.module.clone(),
@@ -136,7 +136,8 @@ fn main() {
             base_url: cfg.base_url.clone(),
             ..Default::default()
         }),
-    );
+    )
+    .unwrap_or_else(|e| die(e.to_string()));
 
     // 4) adapt opencli2rust's 2-variant WriteMode → the framework's 3-variant one.
     let files: FileMap = files_gen

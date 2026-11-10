@@ -203,17 +203,27 @@ pub fn render_resource_file(top_command: &Value, module: &str) -> ResourceFile {
     } else {
         "_ctx: &Context, _o: &O, cmd_path: &[String], _m: &ArgMatches"
     };
-    let mut match_lines = arms.clone();
-    match_lines.push("_ => {".to_string());
-    match_lines
-        .push("    eprintln!(\"error: unknown command: {}\", cmd_path.join(\" \"));".to_string());
-    match_lines.push("    ExitCode::FAILURE".to_string());
-    match_lines.push("}".to_string());
-    let match_body = match_lines.join("\n");
-    let run_fn = format!(
-        "pub async fn run<O: CliOverrides>({params}) -> ExitCode {{\n    let parts: Vec<&str> = cmd_path.iter().map(String::as_str).collect();\n    match parts.as_slice() {{\n{}\n    }}\n}}",
-        indent(&match_body, 2)
-    );
+    let unknown =
+        "eprintln!(\"error: unknown command: {}\", cmd_path.join(\" \"));\nExitCode::FAILURE";
+    // A resource with no API leaf (only non-API actions, which `cli::run`
+    // dispatches before reaching here) has nothing to match on: a `match` whose
+    // only arm is `_` trips clippy's `match_single_binding` in the generated
+    // crate, so the fallback is the whole body.
+    let run_fn = if arms.is_empty() {
+        format!(
+            "pub async fn run<O: CliOverrides>({params}) -> ExitCode {{\n{}\n}}",
+            indent(unknown, 1)
+        )
+    } else {
+        let mut match_lines = arms.clone();
+        match_lines.push("_ => {".to_string());
+        match_lines.push(indent(unknown, 1));
+        match_lines.push("}".to_string());
+        format!(
+            "pub async fn run<O: CliOverrides>({params}) -> ExitCode {{\n    let parts: Vec<&str> = cmd_path.iter().map(String::as_str).collect();\n    match parts.as_slice() {{\n{}\n    }}\n}}",
+            indent(&match_lines.join("\n"), 2)
+        )
+    };
 
     let mut uses = Uses::new();
     uses.add(&["std::process::ExitCode"]);

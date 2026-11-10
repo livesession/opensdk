@@ -14,6 +14,7 @@ mod flags;
 mod handler;
 mod model;
 mod naming;
+mod root_options;
 mod rslit;
 mod runtime;
 
@@ -99,8 +100,31 @@ fn str_at(spec: &Value, path: &[&str]) -> Option<String> {
     cur.as_str().map(|s| s.to_string())
 }
 
+/// A document the generator refuses: what it emits would not run.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error(pub String);
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "opencli2rust: {}", self.0)
+    }
+}
+
+impl std::error::Error for Error {}
+
 /// Generate the Rust CLI project file map from an OpenCLI document.
+///
+/// Panics where [`try_opencli2rust`] returns an error — a document whose root
+/// options collide with clap's built-ins, each other or a command's flags,
+/// which the generated CLI would otherwise panic on (debug) or misparse
+/// (release). Prefer [`try_opencli2rust`].
 pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
+    try_opencli2rust(spec, options).unwrap_or_else(|e| panic!("{e}"))
+}
+
+/// Generate the Rust CLI project file map from an OpenCLI document, refusing
+/// one the generated CLI could not parse its arguments with.
+pub fn try_opencli2rust(spec: &Value, options: Option<Options>) -> Result<FileMap, Error> {
     let options = options.unwrap_or_default();
     let title = str_at(spec, &["info", "title"]).unwrap_or_default();
     let bin_name = options.bin_name.clone().unwrap_or_else(|| {
@@ -162,6 +186,11 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
     // Root options / exit codes / default headers switch on the root seam;
     // without them every file is what it always was.
     let root_seam = cli::has_root_seam(spec);
+    if root_seam {
+        let has_version =
+            version_from == cli::VersionFrom::Crate || str_at(spec, &["info", "version"]).is_some();
+        root_options::check(spec, has_version).map_err(Error)?;
+    }
 
     files.push((
         "Cargo.toml".into(),
@@ -229,7 +258,7 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
         scaffold(custom_scaffold_rs(has_actions, &module_name, &action_paths)),
     ));
 
-    files
+    Ok(files)
 }
 
 fn cmd_mod_rs(resources: &[ResourceFile]) -> String {

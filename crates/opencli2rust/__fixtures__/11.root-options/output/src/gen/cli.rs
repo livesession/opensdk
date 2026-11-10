@@ -16,7 +16,8 @@ pub fn root_command() -> clap::Command {
             Arg::new("token")
                 .long("token")
                 .help("Access token (overrides WIDGETS_API_KEY)")
-                .global(true),
+                .global(true)
+                .help_heading("Global options"),
         )
         .arg(
             Arg::new("output")
@@ -24,7 +25,8 @@ pub fn root_command() -> clap::Command {
                 .short('o')
                 .value_parser(["json", "table"])
                 .help("Output format")
-                .global(true),
+                .global(true)
+                .help_heading("Global options"),
         )
         .arg(
             Arg::new("verbose")

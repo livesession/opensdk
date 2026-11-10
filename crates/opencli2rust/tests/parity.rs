@@ -238,3 +238,142 @@ fn a_required_recursive_root_option_is_emitted_optional() {
     assert!(arg.contains(".global(true)"), "{arg}");
     assert!(!arg.contains(".required(true)"), "{arg}");
 }
+
+/// Root options are checked against everything clap also registers: its
+/// built-ins, the other root options, and — for a global (recursive) option,
+/// which clap copies onto every subcommand — each command's options and
+/// positionals. Every clash names both sides.
+#[test]
+fn colliding_root_options_are_a_generation_error() {
+    use opencli2rust::try_opencli2rust;
+    let spec = |options: Value, version: Option<&str>| {
+        let mut info = serde_json::json!({ "title": "widgets" });
+        if let Some(v) = version {
+            info["version"] = serde_json::json!(v);
+        }
+        serde_json::json!({
+            "opencli": "1.0.0",
+            "info": info,
+            "options": options,
+            "commands": [{
+                "name": "widgets",
+                "commands": [{
+                    "name": "list",
+                    "arguments": [{ "name": "widget-id" }],
+                    "options": [
+                        { "name": "limit", "aliases": ["n"], "arguments": [{ "name": "integer" }] },
+                        { "name": "format", "aliases": ["f", "fmt"], "arguments": [{ "name": "string" }] }
+                    ],
+                    "x-openapi": { "method": "get", "path": "/widgets" }
+                }]
+            }]
+        })
+    };
+    let err = |options: Value, version: Option<&str>| {
+        try_opencli2rust(&spec(options, version), None)
+            .err()
+            .map(|e| e.to_string())
+    };
+
+    // A global option against a command's short, long alias, id, positional.
+    assert_eq!(
+        err(
+            serde_json::json!([{ "name": "output", "aliases": ["n"], "recursive": true }]),
+            Some("1")
+        )
+        .as_deref(),
+        Some(
+            "opencli2rust: root option `--output` and option `--limit` of `widgets list` both use \
+             `-n` — rename one, or change its aliases"
+        )
+    );
+    assert!(err(
+        serde_json::json!([{ "name": "x", "aliases": ["fmt"], "recursive": true }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("both use `--fmt`"));
+    assert!(err(
+        serde_json::json!([{ "name": "limit", "recursive": true }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("both use the argument id `limit`"));
+    assert!(err(
+        serde_json::json!([{ "name": "widget-id", "recursive": true }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("argument `<widget-id>` of `widgets list`"));
+    // A non-global option lives on the root only: no clash with a subcommand.
+    assert!(err(
+        serde_json::json!([{ "name": "limit", "aliases": ["n"] }]),
+        Some("1")
+    )
+    .is_none());
+
+    // clap's built-ins: help always, version when the root has one.
+    assert!(err(serde_json::json!([{ "name": "help" }]), Some("1"))
+        .unwrap()
+        .contains("clap's built-in `-h/--help`"));
+    assert!(err(
+        serde_json::json!([{ "name": "verbose", "aliases": ["V"] }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("clap's built-in `-V/--version`"));
+    assert!(err(
+        serde_json::json!([{ "name": "verbose", "aliases": ["V"] }]),
+        None
+    )
+    .is_none());
+
+    // Two root options.
+    assert!(err(
+        serde_json::json!([{ "name": "a", "aliases": ["x"] }, { "name": "b", "aliases": ["x"] }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("root option `--a` and root option `--b` both use `-x`"));
+}
+
+/// The declared media type is sent only for a `json`-style body, the one the
+/// user writes. A `flatten` body is assembled from flags into JSON, so it keeps
+/// the runtime's `application/json` whatever the binding declares.
+#[test]
+fn a_flatten_body_never_sends_its_declared_media_type() {
+    let command = |style: &str| {
+        serde_json::json!({
+            "opencli": "1.0.0",
+            "info": { "title": "widgets", "version": "1.0.0" },
+            "commands": [{
+                "name": "widgets",
+                "commands": [{
+                    "name": "update",
+                    "options": [{ "name": "name", "arguments": [{ "name": "string" }] }],
+                    "x-openapi": {
+                        "method": "patch",
+                        "path": "/widgets",
+                        "contentType": "application/merge-patch+json",
+                        "body": {
+                            "style": style,
+                            "contentType": "application/merge-patch+json",
+                            "from": "option:name",
+                            "properties": [{
+                                "name": "name", "from": "option:name", "jsonPath": "name", "encoding": "string"
+                            }]
+                        }
+                    }
+                }]
+            }]
+        })
+    };
+    let handler = |style: &str| {
+        flatten(&opencli2rust(&command(style), None))["src/gen/cmd/widgets.rs"].clone()
+    };
+    assert!(!handler("flatten").contains("Content-Type"));
+    assert!(!handler("multipart").contains("Content-Type"));
+    assert!(
+        handler("json").contains(r#"("Content-Type", "application/merge-patch+json".to_string())"#)
+    );
+}

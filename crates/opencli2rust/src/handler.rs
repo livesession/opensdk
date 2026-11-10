@@ -181,10 +181,12 @@ fn json_str_inner(s: &str) -> String {
 }
 
 /// The binding's declared body media type when the handler must send it
-/// itself: present, not `application/json` (the runtime's default), and not a
-/// multipart/form binding (sent as JSON by this backend).
+/// itself: present, not `application/json` (the runtime's default), and only
+/// for a `json`-style body — the one sent as the user wrote it. A `flatten` or
+/// `multipart` body is assembled from flags into JSON by this backend, so
+/// labelling it with another media type would misdescribe the bytes.
 fn declared_body_content_type(command: &Value, model: &LeafModel) -> Option<String> {
-    if !model.has_body || model.body_style.as_deref() == Some("multipart") {
+    if !model.has_body || model.body_style.as_deref() != Some("json") {
         return None;
     }
     let x = command.get("x-openapi")?;
@@ -362,11 +364,9 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
         .iter()
         .filter(|f| f.location == "header" || f.location == "cookie")
         .collect();
-    // The body's declared media type, sent as `Content-Type` when it is not the
-    // runtime's default (`application/json`, which the runtime adds itself — so
-    // a JSON body emits exactly what it always did). A multipart/form binding
-    // keeps the default: this backend sends that body as JSON, and labelling it
-    // otherwise would misdescribe the bytes.
+    // A `json`-style body's declared media type, sent as `Content-Type` when it
+    // is not the runtime's default (`application/json`, which the runtime adds
+    // itself — so a JSON body emits exactly what it always did).
     let declared_content_type = declared_body_content_type(command, &model);
     let has_headers = !header_flags.is_empty() || declared_content_type.is_some();
     if !header_flags.is_empty() {
@@ -391,9 +391,10 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
         if let (Some("json"), Some(opt)) =
             (model.body_style.as_deref(), model.body_json_option.as_ref())
         {
-            // `@file` reads the body from a file, `@-` from stdin, anything else
-            // is the body itself (curl's convention; a JSON body never starts
-            // with `@`).
+            // `@file` reads the body from a file, `@-` from stdin, `@@...` is the
+            // literal value with one `@` dropped (a body that itself starts with
+            // `@`, which any non-JSON media type allows), anything else is the
+            // body itself.
             let flag = format!("--{opt}");
             lines.push(format!(
                 "let body_bytes = match m.get_one::<String>({}).map(|v| match v.strip_prefix('@') {{",
@@ -403,6 +404,10 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
             lines.push("        let mut buf = Vec::new();".to_string());
             lines.push("        std::io::Read::read_to_end(&mut std::io::stdin(), &mut buf).map(|_| buf).map_err(|err| format!(\"stdin: {err}\"))".to_string());
             lines.push("    }".to_string());
+            lines.push(
+                "    Some(literal) if literal.starts_with('@') => Ok(literal.as_bytes().to_vec()),"
+                    .to_string(),
+            );
             lines.push(
                 "    Some(file) => std::fs::read(file).map_err(|err| format!(\"{file}: {err}\")),"
                     .to_string(),

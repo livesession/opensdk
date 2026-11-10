@@ -53,6 +53,18 @@ fn redundant_field_names(line: &str) -> Option<String> {
     Some(format!("redundant field name `{lhs}: {rhs}`"))
 }
 
+/// A `match` whose first arm is `_` — clippy::match_single_binding when it is
+/// the only arm, which is how the generator ever emits one.
+fn single_arm_match(line: &str, next: Option<&str>) -> Option<String> {
+    let t = line.trim();
+    if !(t.starts_with("match ") || t.contains(" match ")) || !t.ends_with('{') {
+        return None;
+    }
+    let next = next?.trim();
+    next.starts_with("_ =>")
+        .then(|| "a `match` whose only arm is `_` (match_single_binding)".to_string())
+}
+
 #[test]
 fn generated_rust_has_no_deny_by_default_lint_trips() {
     let mut files = Vec::new();
@@ -67,8 +79,11 @@ fn generated_rust_has_no_deny_by_default_lint_trips() {
         let Ok(src) = std::fs::read_to_string(f) else {
             continue;
         };
-        for (i, line) in src.lines().enumerate() {
-            if let Some(what) = redundant_field_names(line) {
+        let lines: Vec<&str> = src.lines().collect();
+        for (i, line) in lines.iter().enumerate() {
+            let found = redundant_field_names(line)
+                .or_else(|| single_arm_match(line, lines.get(i + 1).copied()));
+            if let Some(what) = found {
                 problems.push(format!("{}:{}: {what}", f.display(), i + 1));
             }
         }
@@ -80,4 +95,15 @@ fn generated_rust_has_no_deny_by_default_lint_trips() {
         problems.len(),
         problems.join("\n")
     );
+}
+
+#[test]
+fn the_single_arm_check_bites() {
+    assert!(single_arm_match("    match parts.as_slice() {", Some("        _ => {")).is_some());
+    assert!(single_arm_match(
+        "    match parts.as_slice() {",
+        Some(r#"        ["a"] => x,"#)
+    )
+    .is_none());
+    assert!(single_arm_match("    let m = 1;", Some("        _ => {")).is_none());
 }

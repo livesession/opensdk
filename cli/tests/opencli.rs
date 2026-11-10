@@ -312,3 +312,38 @@ fn without_a_cli_section_the_converter_runs_with_its_defaults() {
     assert!(doc["x-openapi"].get("defaultHeaders").is_none());
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn a_root_option_colliding_with_a_clap_builtin_fails_the_rust_generation() {
+    let dir = tmp("collide");
+    let doc = dir.join("opencli.json");
+    std::fs::write(
+        &doc,
+        serde_json::to_string(&serde_json::json!({
+            "opencli": "1.0.0",
+            "info": { "title": "widgets", "version": "1.0.0" },
+            "options": [{ "name": "verbose", "aliases": ["h"], "recursive": true }],
+            "commands": [{ "name": "ping", "x-openapi": { "method": "get", "path": "/ping" } }]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let out = dir.join("cli");
+    let err = generate_command(
+        &GenerateCommandOptions {
+            spec: doc.to_string_lossy().to_string(),
+            lang: "rust-cli".into(),
+            output: out.to_string_lossy().to_string(),
+            ..Default::default()
+        },
+        &dir,
+    )
+    .unwrap_err();
+    assert_eq!(
+        err.0,
+        "opencli2rust: root option `--verbose` and clap's built-in `-h/--help` both use `-h` — \
+         rename one, or change its aliases"
+    );
+    assert!(!out.exists());
+    std::fs::remove_dir_all(&dir).ok();
+}
