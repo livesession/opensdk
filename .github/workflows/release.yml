@@ -54,7 +54,7 @@ jobs:
             artifact: opensdk-linux-x64
           - os: ubuntu-24.04-arm
             artifact: opensdk-linux-arm64
-          - os: macos-14
+          - os: macos-15
             artifact: opensdk-darwin-arm64
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +97,7 @@ jobs:
       # An unsigned arm64 Mach-O does not execute at all on Apple silicon. Ad-hoc
       # is enough: this is a pure codegen CLI with no JIT and no entitlements.
       - name: Codesign + verify (darwin)
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-15'
         run: |
           codesign -s - --force "target/release/${{ matrix.artifact }}"
           codesign --verify --strict --verbose=2 "target/release/${{ matrix.artifact }}"
@@ -216,7 +216,7 @@ jobs:
 # (`partial`) is Pro-only, and the Rust builder declares
 # `AllowConcurrentBuilds() = false`. So on OSS it must build all three targets
 # SERIALLY ON ONE RUNNER. darwin-arm64 needs `codesign`, which exists only on
-# macOS — so that one runner must be macos-14, giving three serial
+# macOS — so that one runner must be macos-15, giving three serial
 # cross-compiles of a 22-crate LTO workspace on the priciest runner class, plus
 # zig + cargo-zigbuild, plus linux-from-macOS cross-compilation as a new
 # unproven variable. That replaces the three-way parallel native matrix above —

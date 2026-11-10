@@ -4,6 +4,13 @@ Releases are tagged `vX.Y.Z` on the `opensdk` binary (`cli/Cargo.toml`); the
 library crates are not versioned independently. Earlier releases are described
 on their GitHub release pages.
 
+## 0.3.1
+
+- The release workflow builds the macOS binary on the `macos-15` runner: the
+  `macos-14` image is no longer available, so the `v0.3.0` tag never produced
+  a release. 0.3.1 is the first published 0.3 release; it carries everything
+  listed under 0.3.0 and no other change.
+
 ## 0.3.0
 
 - Converter options (`openapi2opencli`, and the `go-cli`/`rust-cli` sdk.json
