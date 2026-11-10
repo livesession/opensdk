@@ -68,12 +68,12 @@ document (an explicit option wins over the block):
 | `version` | `info.version`; default: the publish version, else the document's |
 | `rootCommand` | wrap every generated command under one parent (`<cli> api ...`) |
 | `grammar` | `"noun-verb"` (default, `widgets list`) or `"verb-noun"` (`get widgets`) |
-| `namesFrom` | name each command from an OPERATION extension instead of its method and path: a dotted path such as `x-docs.path`, whose value `<group>/.../<verb>` gives the group path (every segment but the last) and the verb; kebab-cased, a `retrieve` verb keeps its `get` alias, recorded as the command's `docsPath` metadata. An operation without it falls back to the derived name; two operations naming one command is an error |
-| `namesFromRequired` | a missing `namesFrom` value is an error (every offending operation is listed) |
-| `pathPrefixStrip` | strip a leading path prefix (`/v3`) before deriving a name, segment-aligned; the request keeps the full path |
-| `defaultHeaders` | literal headers every request carries unless it sets them (`x-openapi.defaultHeaders`; sent by the `rust-cli` runtime, not yet by `go-cli`) |
+| `namesFrom` | name each command from an OPERATION extension instead of its method and path: a dotted path such as `x-docs.path`, whose value `<group>/.../<verb>` gives the group path (every segment but the last) and the verb; kebab-cased, a `retrieve` verb keeps its `get` alias, recorded as the command's `docsPath` metadata. A group it creates is described by the tag whose kebab-cased name matches (its `description`), else as `<name> commands`. An operation without the extension falls back to the derived name |
+| `namesFromRequired` | a missing `namesFrom` value is an error (every offending operation is listed); requires `namesFrom` |
+| `pathPrefixStrip` | strip a leading path prefix (`/v3`, `/orgs/{org}` — a `{param}` segment matches any parameter) before deriving a name, segment-aligned. The stripped path gives the name; the FULL path decides the shape (an item path still promotes a trailing custom verb), and the request keeps the full path |
+| `defaultHeaders` | literal headers every request carries unless it sets them, emitted as the root `x-openapi.defaultHeaders` — an extension property the OpenCLI schema does not declare (its objects are open); sent by the `rust-cli` runtime, not yet by `go-cli` |
 | `headersFromExtension` | header → a dotted path under `info` (then the document root) whose value is the header's, resolved at conversion time; a present value wins over a `defaultHeaders` entry of the same name |
-| `includeSecurity` | record each command's security requirements as `x-openapi.security`: `[{ scheme, scopes }]` from the operation's `security` (else the document's), as written |
+| `includeSecurity` | record each command's security requirements as `x-openapi.security`, from the operation's `security` (else the document's): one OpenCLI `XOpenApiSecurity` entry per scheme — the scheme's descriptor as the root entry has it (`type`, `kind`, `envVar`, `scheme`/`in`/`name`/`bearerFormat`) plus `ref` (its `components.securitySchemes` key) and `scopes`, as written |
 | `includePaths` | only paths starting with one of these prefixes |
 | `includeMethods` | the HTTP methods to convert (default `get put patch post delete`) |
 | `includeHeaders` | header and cookie parameters become flags (default: skipped) |
@@ -88,6 +88,13 @@ document (an explicit option wins over the block):
 
 Per operation, an `x-cli` block (`group`, `verb`, `aliases`, `hidden`,
 `description`, `grammar`, `ignore`) overrides whatever placed the command.
+Names and aliases share one namespace per level: two commands answering to one
+spelling — two operations named alike, or a stated `get` beside a `retrieve`
+whose alias is `get` — is a conversion error naming both.
+
+Every OpenCLI document the repo commits (the converter's fixture outputs, the
+backends' fixture inputs, the `opensdk opencli` goldens) is validated against
+the OpenCLI JSON Schema vendored in `crates/openapi2opencli/tests`.
 
 **Backend options.** `rust-cli`: `crateName`, `binName`, `edition`, `baseURL`,
 `versionFrom` (`"spec"` or `"crate"`); `go-cli`: `modulePath`, `binName`,
@@ -98,27 +105,41 @@ converter and writes the OpenCLI JSON, with the converter options of a CLI
 section (`--lang`, default: the first CLI section in the config):
 
 ```bash
+# opensdk opencli [--spec <openapi>] [--config sdk.json] [--lang rust-cli|go-cli]
+#                 [--declare <fragment>]... [--output <file>] [--sdk-name <name>]
 opensdk opencli --config sdk.json --lang rust-cli \
   --declare cli/root.json --declare cli/auth.json --output opencli.json
 opensdk generate --config sdk.json --lang rust-cli --spec opencli.json
 ```
 
+`--spec` defaults to the config's `api`, and `--sdk-name` to its `sdkName`
+(the CLI name when the section sets no `cliName`).
+
 Each `--declare` fragment is an OpenCLI-shaped object merged in order: root
 `options`, `exitCodes` and `info.description` replace; `commands` append — a
 fragment command named like an existing top-level command (the `rootCommand`
 wrapper, say) instead updates that command's `description`, `aliases` and
-`hidden` and leaves its children alone. An unknown root key is an error.
+`hidden` and leaves its children alone. A name or alias another top-level
+command already answers to is an error, and so is an unknown root key; keys
+the merge does not know (a `$schema`) keep their place.
 `generate` recognizes an OpenCLI document (a root `opencli` key) and hands it
 straight to the backend, so a CLI that is part generated and part hand-written
-is described by one document. Only the CLI targets generate from it.
+is described by one document. Only the CLI targets generate from it: a config
+that also declares SDK languages is refused before anything is written.
 
 **The Rust root seam.** A document with root `options`, root `exitCodes` or
 `x-openapi.defaultHeaders` gets a runtime with a seam for the hand-written
 half of a CLI (any other document generates exactly as before; `go-cli` does
 not read these yet):
 
-- root `options` become clap arguments on the root command (`recursive` →
-  `.global(true)`, accepted after any subcommand);
+- root `options` become clap arguments on the root command; a `recursive` one
+  is `.global(true)` (accepted after any subcommand, listed under a "Global
+  options" heading in every `--help`). clap cannot require a global argument,
+  so a recursive option that is also `required` is emitted optional, with a
+  warning. A root option sharing an id, long or short with clap's `-h/--help`
+  or `-V/--version`, another root option, or — when global — any command's
+  option or positional is a generation error naming both
+  (`opencli2rust::try_opencli2rust`; `opencli2rust` panics on it);
 - `CliOverrides::before_dispatch(&self, ctx: &mut Context, root: &ArgMatches)`
   runs after parsing and before any command, to read root options into the
   context;
@@ -130,9 +151,12 @@ not read these yet):
   request or in the context — replaces the environment credential instead of
   being sent beside it.
 
-In every Rust CLI a JSON `--body` takes `@file` (read the file) and `@-` (read
-stdin) as well as an inline value, and a binding whose body is declared with a
-media type other than `application/json` sends that `Content-Type`.
+In every Rust CLI a `json`-style `--body` takes `@file` (read the file), `@-`
+(read stdin) and `@@...` (the literal value with one `@` dropped, for a body
+that starts with `@`) as well as an inline value, and sends the binding's
+declared media type as the `Content-Type` when it is not `application/json`.
+A `flatten` or `multipart` body is assembled from flags into JSON by this
+backend, so it is always sent as `application/json`.
 
 ## Configuration (`sdk.json`)
 
