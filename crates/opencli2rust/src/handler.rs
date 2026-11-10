@@ -174,6 +174,31 @@ fn param_lines(flags: &[&FlagModel], target: &str) -> Vec<String> {
     lines
 }
 
+/// `s` escaped for the inside of a Rust string literal (no surrounding quotes).
+fn json_str_inner(s: &str) -> String {
+    let quoted = json_str(s);
+    quoted[1..quoted.len() - 1].to_string()
+}
+
+/// The binding's declared body media type when the handler must send it
+/// itself: present, not `application/json` (the runtime's default), and only
+/// for a `json`-style body — the one sent as the user wrote it. A `flatten` or
+/// `multipart` body is assembled from flags into JSON by this backend, so
+/// labelling it with another media type would misdescribe the bytes.
+fn declared_body_content_type(command: &Value, model: &LeafModel) -> Option<String> {
+    if !model.has_body || model.body_style.as_deref() != Some("json") {
+        return None;
+    }
+    let x = command.get("x-openapi")?;
+    let ct = x
+        .get("body")
+        .and_then(|b| b.get("contentType"))
+        .or_else(|| x.get("contentType"))
+        .and_then(|c| c.as_str())
+        .filter(|c| !c.is_empty())?;
+    (!ct.eq_ignore_ascii_case("application/json")).then(|| ct.to_string())
+}
+
 pub struct RenderedHandler {
     pub name: String,
     pub code: String,
@@ -339,9 +364,25 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
         .iter()
         .filter(|f| f.location == "header" || f.location == "cookie")
         .collect();
+    // A `json`-style body's declared media type, sent as `Content-Type` when it
+    // is not the runtime's default (`application/json`, which the runtime adds
+    // itself — so a JSON body emits exactly what it always did).
+    let declared_content_type = declared_body_content_type(command, &model);
+    let has_headers = !header_flags.is_empty() || declared_content_type.is_some();
     if !header_flags.is_empty() {
         lines.push("let mut headers: Vec<(&'static str, String)> = Vec::new();".to_string());
         lines.extend(param_lines_gated(&header_flags, "headers", &gate));
+        if let Some(ct) = declared_content_type.as_deref() {
+            lines.push(format!(
+                "headers.push((\"Content-Type\", {}.to_string()));",
+                q(ct)
+            ));
+        }
+    } else if let Some(ct) = declared_content_type.as_deref() {
+        lines.push(format!(
+            "let headers: Vec<(&'static str, String)> = vec![(\"Content-Type\", {}.to_string())];",
+            q(ct)
+        ));
     }
 
     // Body.
@@ -350,10 +391,36 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
         if let (Some("json"), Some(opt)) =
             (model.body_style.as_deref(), model.body_json_option.as_ref())
         {
+            // `@file` reads the body from a file, `@-` from stdin, `@@...` is the
+            // literal value with one `@` dropped (a body that itself starts with
+            // `@`, which any non-JSON media type allows), anything else is the
+            // body itself.
+            let flag = format!("--{opt}");
             lines.push(format!(
-                "let body_bytes = m.get_one::<String>({}).map(|v| v.clone().into_bytes());",
+                "let body_bytes = match m.get_one::<String>({}).map(|v| match v.strip_prefix('@') {{",
                 q(opt)
             ));
+            lines.push("    Some(\"-\") => {".to_string());
+            lines.push("        let mut buf = Vec::new();".to_string());
+            lines.push("        std::io::Read::read_to_end(&mut std::io::stdin(), &mut buf).map(|_| buf).map_err(|err| format!(\"stdin: {err}\"))".to_string());
+            lines.push("    }".to_string());
+            lines.push(
+                "    Some(literal) if literal.starts_with('@') => Ok(literal.as_bytes().to_vec()),"
+                    .to_string(),
+            );
+            lines.push(
+                "    Some(file) => std::fs::read(file).map_err(|err| format!(\"{file}: {err}\")),"
+                    .to_string(),
+            );
+            lines.push("    None => Ok(v.clone().into_bytes()),".to_string());
+            lines.push("}) {".to_string());
+            lines.push("    Some(Ok(bytes)) => Some(bytes),".to_string());
+            lines.push(format!(
+                "    Some(Err(err)) => return o.print_error(cmd_path, &runtime::Error::Invalid(format!(\"{} {{err}}\"))),",
+                json_str_inner(&flag)
+            ));
+            lines.push("    None => None,".to_string());
+            lines.push("};".to_string());
             body_expr = Some("body_bytes".to_string());
         } else {
             lines.push("let mut body = serde_json::Map::new();".to_string());
@@ -431,7 +498,7 @@ pub fn render_handler(path_names: &[String], command: &Value) -> RenderedHandler
     } else {
         "    query: Vec::new(),".to_string()
     });
-    lines.push(if !header_flags.is_empty() {
+    lines.push(if has_headers {
         "    headers,".to_string()
     } else {
         "    headers: Vec::new(),".to_string()

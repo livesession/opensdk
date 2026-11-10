@@ -26,7 +26,7 @@ use std::process::{exit, Command};
 use serde::Deserialize;
 use serde_json::Value;
 
-use opencli2rust::{opencli2rust, Options, WriteMode as GenWriteMode};
+use opencli2rust::{try_opencli2rust, Options, WriteMode as GenWriteMode};
 use opensdk_framework::{write_project, FileEntry, FileMap, WriteMode, WriteProjectOptions};
 
 /// The `<crateDir>/regen.toml` schema — the single home of the generator +
@@ -49,6 +49,12 @@ struct RegenConfig {
     impl_module: Option<String>,
     /// Skip the `cargo fmt` step when false. Default: true.
     fmt: Option<bool>,
+    /// Where `--version` reads from: `"spec"` (default) or `"crate"` — the
+    /// generator's `versionFrom`.
+    version_from: Option<String>,
+    /// The base URL baked into `config.rs` (default: the spec's first server) —
+    /// the generator's `baseURL`.
+    base_url: Option<String>,
 }
 
 fn die(msg: impl AsRef<str>) -> ! {
@@ -119,16 +125,19 @@ fn main() {
         .unwrap_or_else(|e| die(format!("parse {}: {e}", spec_path.display())));
 
     // 3) generate the Rust CLI project file map.
-    let files_gen = opencli2rust(
+    let files_gen = try_opencli2rust(
         &spec,
         Some(Options {
             module_name: cfg.module.clone(),
             impl_module: cfg.impl_module.clone(),
             bin_name: cfg.bin.clone(),
             crate_name: cfg.crate_name.clone(),
+            version_from: cfg.version_from.clone(),
+            base_url: cfg.base_url.clone(),
             ..Default::default()
         }),
-    );
+    )
+    .unwrap_or_else(|e| die(e.to_string()));
 
     // 4) adapt opencli2rust's 2-variant WriteMode → the framework's 3-variant one.
     let files: FileMap = files_gen

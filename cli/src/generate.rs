@@ -262,6 +262,14 @@ pub fn generate_targets(
     // only run the converter when SDK languages remain (a CLI-only config must
     // not pay for — or fail on — the IR conversion).
     let sdk_langs: Vec<&String> = langs.iter().filter(|l| !is_cli_target(Some(l))).collect();
+    // An OpenCLI document drives the CLI targets only. Refuse it for a config
+    // that also declares SDK languages BEFORE anything is written, rather than
+    // after the CLI targets already were.
+    if !sdk_langs.is_empty() {
+        if let Ok(doc) = oas_doc::read_spec(&opts.spec) {
+            reject_opencli(&opts.spec, &doc)?;
+        }
+    }
     for lang in langs.iter().filter(|l| is_cli_target(Some(l))) {
         let target = config.target_for(lang);
         generate_cli_target(
@@ -358,6 +366,9 @@ pub struct LoadedSource {
 }
 
 /// Accept either an OpenAPI spec (yaml/json) or an already-parsed OpenSDK IR json.
+///
+/// An OpenCLI document is refused: it drives the CLI targets only, and
+/// converting it as OpenAPI would produce an SDK with no operations.
 pub fn load_source(source: &str, options: &Map<String, Value>) -> Result<LoadedSource> {
     if source.ends_with(".json") {
         let raw = std::fs::read_to_string(source)
@@ -367,12 +378,24 @@ pub fn load_source(source: &str, options: &Map<String, Value>) -> Result<LoadedS
         if doc.get("opensdk").and_then(Value::as_str).is_some() {
             return Ok(LoadedSource { ir: doc, doc: None });
         }
+        reject_opencli(source, &doc)?;
         let ir = convert(&doc, options)?;
         return Ok(LoadedSource { ir, doc: Some(doc) });
     }
     let doc = oas_doc::read_spec(source).map_err(|e| Error::msg(e.to_string()))?;
+    reject_opencli(source, &doc)?;
     let ir = convert(&doc, options)?;
     Ok(LoadedSource { ir, doc: Some(doc) })
+}
+
+fn reject_opencli(source: &str, doc: &Value) -> Result<()> {
+    if crate::cli_targets::is_opencli_doc(doc) {
+        return Err(Error::msg(format!(
+            "{source} is an OpenCLI document, which only the CLI targets (go-cli, rust-cli) \
+             generate from. Pass the OpenAPI spec for an SDK language."
+        )));
+    }
+    Ok(())
 }
 
 /// [`load_source`] for callers that want only the IR.

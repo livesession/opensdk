@@ -1,0 +1,35 @@
+openapi: 3.0.0
+info: { title: accounts, version: 1.0.0 }
+paths:
+  # The prefix carries a parameter. `{account}` in the prefix matches any
+  # parameter segment, and the stripped path names the command while the FULL
+  # path decides its shape: `/v1/accounts/{accountId}/archive` addresses an
+  # item, so the trailing custom verb is promoted (`archive <account-id>`)
+  # instead of being read as a collection (`archive create`).
+  /v1/accounts/{accountId}/archive:
+    post:
+      operationId: archiveAccount
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: ok } }
+  # Nothing left after the prefix: the full path ends in a parameter, so this
+  # is an item read (`retrieve`), not a collection list.
+  /v1/accounts/{accountId}:
+    get:
+      operationId: getAccount
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: ok } }
+  # Under the prefix: named from the rest of the path, the prefix parameter
+  # still a positional.
+  /v1/accounts/{accountId}/members:
+    get:
+      operationId: listMembers
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: ok } }
+  # Not under the prefix: derived as usual.
+  /v1/status:
+    get:
+      operationId: getStatus
+      responses: { "200": { description: ok } }

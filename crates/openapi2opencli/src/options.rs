@@ -89,6 +89,39 @@ pub struct Options {
     /// for single-item commands. The built-in ladder handles regular English and
     /// no-ops on anything else; this is the escape hatch for the rest.
     pub singular_overrides: Option<std::collections::BTreeMap<String, String>>,
+    /// Name each command from an OPERATION extension instead of deriving it
+    /// from the method and path: a dotted path such as `x-docs.path`, whose
+    /// string value `<group>/.../<verb>` places the command — every segment but
+    /// the last is the group path, the last is the verb (each kebab-cased; a
+    /// `retrieve` verb keeps its `get` alias). The value is also recorded on the
+    /// command as the `docsPath` metadata entry.
+    ///
+    /// An operation without the extension falls back to the derived name,
+    /// unless `namesFromRequired` is set. Per-operation `x-cli` overrides still
+    /// apply on top, and two operations naming one command is the usual
+    /// collision error.
+    pub names_from: Option<String>,
+    /// Make a missing `namesFrom` value an error rather than a fallback to the
+    /// derived name. Every offending operation is listed.
+    pub names_from_required: Option<bool>,
+    /// Strip a leading path prefix (e.g. `/v3`) from the path BEFORE the
+    /// default derivation, so a version segment does not become a command
+    /// group. Segment-aligned (`/v3` never strips `/v30`); the request binding
+    /// keeps the full path.
+    pub path_prefix_strip: Option<String>,
+    /// Headers whose value is read from the document at conversion time:
+    /// header name → a dotted path under `info` (then the document root), e.g.
+    /// `{ "X-Api-Version": "x-release" }`. A present value wins over a
+    /// `defaultHeaders` entry of the same name; an absent one changes nothing.
+    /// Resolved into the root `x-openapi.defaultHeaders`.
+    pub headers_from_extension: Option<std::collections::BTreeMap<String, String>>,
+    /// Literal headers every generated request carries unless it sets them
+    /// itself. Emitted as the root `x-openapi.defaultHeaders`.
+    pub default_headers: Option<std::collections::BTreeMap<String, String>>,
+    /// Record each command's security requirements (the operation's
+    /// `security`, else the document's) as `x-openapi.security`: one
+    /// `{ scheme, scopes }` entry per scheme, names and scopes as written.
+    pub include_security: Option<bool>,
 }
 
 impl Options {
@@ -124,6 +157,12 @@ impl Options {
             root_command: self.root_command.or(base.root_command),
             grammar: self.grammar.or(base.grammar),
             singular_overrides: self.singular_overrides.or(base.singular_overrides),
+            names_from: self.names_from.or(base.names_from),
+            names_from_required: self.names_from_required.or(base.names_from_required),
+            path_prefix_strip: self.path_prefix_strip.or(base.path_prefix_strip),
+            headers_from_extension: self.headers_from_extension.or(base.headers_from_extension),
+            default_headers: self.default_headers.or(base.default_headers),
+            include_security: self.include_security.or(base.include_security),
         }
     }
 }

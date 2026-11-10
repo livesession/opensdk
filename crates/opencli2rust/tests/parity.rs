@@ -147,3 +147,233 @@ fn merged_read() {
 fn merged_read_nested() {
     run_case("10.merged-read-nested");
 }
+
+/// Root `options` + `exitCodes`: the root seam. The options are clap args on
+/// the root command (`recursive` → `.global(true)`), parsing goes through
+/// `try_get_matches` + `CliOverrides::print_usage_error`, and
+/// `CliOverrides::before_dispatch` sees the root matches before any command
+/// runs. Documents without root options keep the base output (fixtures 1-10).
+#[test]
+fn root_options() {
+    run_case("11.root-options");
+}
+
+/// `x-openapi.defaultHeaders`: `config::DEFAULT_HEADERS`, the context headers
+/// they seed (sent when a request lacks them), the one-`Authorization` rule in
+/// `send()`, and the request bodies — `--body @file` / `@-` / inline, and the
+/// declared `Content-Type` when it is not `application/json`.
+#[test]
+fn default_headers() {
+    run_case("12.default-headers");
+}
+
+/// `baseURL` (the spelling the sdk.json CLI sections use) and `baseUrl` both
+/// reach `config.rs`; before the alias, `baseURL` passed the option split and
+/// was then silently dropped.
+#[test]
+fn the_base_url_option_takes_both_spellings() {
+    let spec: Value = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "x-openapi": { "servers": ["https://api.widgets.test"] }
+    });
+    for key in ["baseURL", "baseUrl"] {
+        let options =
+            serde_json::from_value(serde_json::json!({ key: "https://override.test" })).unwrap();
+        let files = flatten(&opencli2rust(&spec, Some(options)));
+        assert!(
+            files["src/gen/runtime/config.rs"]
+                .contains(r#"const DEFAULT_BASE_URL: &str = "https://override.test";"#),
+            "{key} did not reach config.rs"
+        );
+    }
+}
+
+/// The root seam is switched on by any one of its three triggers and by
+/// nothing else; a document without them keeps the base runtime.
+#[test]
+fn the_root_seam_has_three_triggers() {
+    let base = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "commands": [{ "name": "ping", "x-openapi": { "method": "get", "path": "/ping" } }]
+    });
+    let seam = |spec: &Value| {
+        flatten(&opencli2rust(spec, None))["src/gen/runtime/overrides.rs"]
+            .contains("fn before_dispatch(")
+    };
+    assert!(!seam(&base));
+    let mut empty = base.clone();
+    empty["options"] = serde_json::json!([]);
+    empty["exitCodes"] = serde_json::json!([]);
+    empty["x-openapi"] = serde_json::json!({ "defaultHeaders": {} });
+    assert!(!seam(&empty), "empty triggers are no trigger");
+    for (key, value) in [
+        ("options", serde_json::json!([{ "name": "verbose" }])),
+        ("exitCodes", serde_json::json!([{ "code": 3 }])),
+        (
+            "x-openapi",
+            serde_json::json!({ "defaultHeaders": { "X-A": "1" } }),
+        ),
+    ] {
+        let mut spec = base.clone();
+        spec[key] = value;
+        assert!(seam(&spec), "{key} should switch the seam on");
+    }
+}
+
+/// A recursive root option cannot also be required (clap rejects a required
+/// global argument): it is emitted global and optional.
+#[test]
+fn a_required_recursive_root_option_is_emitted_optional() {
+    let spec = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "options": [{ "name": "profile", "required": true, "recursive": true, "arguments": [{ "name": "name" }] }],
+        "commands": [{ "name": "ping", "x-openapi": { "method": "get", "path": "/ping" } }]
+    });
+    let cli = flatten(&opencli2rust(&spec, None))["src/gen/cli.rs"].clone();
+    let arg = &cli[cli.find(r#"Arg::new("profile")"#).unwrap()..];
+    let arg = &arg[..arg.find(".subcommand_required").unwrap()];
+    assert!(arg.contains(".global(true)"), "{arg}");
+    assert!(!arg.contains(".required(true)"), "{arg}");
+}
+
+/// Root options are checked against everything clap also registers: its
+/// built-ins, the other root options, and — for a global (recursive) option,
+/// which clap copies onto every subcommand — each command's options and
+/// positionals. Every clash names both sides.
+#[test]
+fn colliding_root_options_are_a_generation_error() {
+    use opencli2rust::try_opencli2rust;
+    let spec = |options: Value, version: Option<&str>| {
+        let mut info = serde_json::json!({ "title": "widgets" });
+        if let Some(v) = version {
+            info["version"] = serde_json::json!(v);
+        }
+        serde_json::json!({
+            "opencli": "1.0.0",
+            "info": info,
+            "options": options,
+            "commands": [{
+                "name": "widgets",
+                "commands": [{
+                    "name": "list",
+                    "arguments": [{ "name": "widget-id" }],
+                    "options": [
+                        { "name": "limit", "aliases": ["n"], "arguments": [{ "name": "integer" }] },
+                        { "name": "format", "aliases": ["f", "fmt"], "arguments": [{ "name": "string" }] }
+                    ],
+                    "x-openapi": { "method": "get", "path": "/widgets" }
+                }]
+            }]
+        })
+    };
+    let err = |options: Value, version: Option<&str>| {
+        try_opencli2rust(&spec(options, version), None)
+            .err()
+            .map(|e| e.to_string())
+    };
+
+    // A global option against a command's short, long alias, id, positional.
+    assert_eq!(
+        err(
+            serde_json::json!([{ "name": "output", "aliases": ["n"], "recursive": true }]),
+            Some("1")
+        )
+        .as_deref(),
+        Some(
+            "opencli2rust: root option `--output` and option `--limit` of `widgets list` both use \
+             `-n` — rename one, or change its aliases"
+        )
+    );
+    assert!(err(
+        serde_json::json!([{ "name": "x", "aliases": ["fmt"], "recursive": true }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("both use `--fmt`"));
+    assert!(err(
+        serde_json::json!([{ "name": "limit", "recursive": true }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("both use the argument id `limit`"));
+    assert!(err(
+        serde_json::json!([{ "name": "widget-id", "recursive": true }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("argument `<widget-id>` of `widgets list`"));
+    // A non-global option lives on the root only: no clash with a subcommand.
+    assert!(err(
+        serde_json::json!([{ "name": "limit", "aliases": ["n"] }]),
+        Some("1")
+    )
+    .is_none());
+
+    // clap's built-ins: help always, version when the root has one.
+    assert!(err(serde_json::json!([{ "name": "help" }]), Some("1"))
+        .unwrap()
+        .contains("clap's built-in `-h/--help`"));
+    assert!(err(
+        serde_json::json!([{ "name": "verbose", "aliases": ["V"] }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("clap's built-in `-V/--version`"));
+    assert!(err(
+        serde_json::json!([{ "name": "verbose", "aliases": ["V"] }]),
+        None
+    )
+    .is_none());
+
+    // Two root options.
+    assert!(err(
+        serde_json::json!([{ "name": "a", "aliases": ["x"] }, { "name": "b", "aliases": ["x"] }]),
+        Some("1")
+    )
+    .unwrap()
+    .contains("root option `--a` and root option `--b` both use `-x`"));
+}
+
+/// The declared media type is sent only for a `json`-style body, the one the
+/// user writes. A `flatten` body is assembled from flags into JSON, so it keeps
+/// the runtime's `application/json` whatever the binding declares.
+#[test]
+fn a_flatten_body_never_sends_its_declared_media_type() {
+    let command = |style: &str| {
+        serde_json::json!({
+            "opencli": "1.0.0",
+            "info": { "title": "widgets", "version": "1.0.0" },
+            "commands": [{
+                "name": "widgets",
+                "commands": [{
+                    "name": "update",
+                    "options": [{ "name": "name", "arguments": [{ "name": "string" }] }],
+                    "x-openapi": {
+                        "method": "patch",
+                        "path": "/widgets",
+                        "contentType": "application/merge-patch+json",
+                        "body": {
+                            "style": style,
+                            "contentType": "application/merge-patch+json",
+                            "from": "option:name",
+                            "properties": [{
+                                "name": "name", "from": "option:name", "jsonPath": "name", "encoding": "string"
+                            }]
+                        }
+                    }
+                }]
+            }]
+        })
+    };
+    let handler = |style: &str| {
+        flatten(&opencli2rust(&command(style), None))["src/gen/cmd/widgets.rs"].clone()
+    };
+    assert!(!handler("flatten").contains("Content-Type"));
+    assert!(!handler("multipart").contains("Content-Type"));
+    assert!(
+        handler("json").contains(r#"("Content-Type", "application/merge-patch+json".to_string())"#)
+    );
+}

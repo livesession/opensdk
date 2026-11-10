@@ -1,0 +1,254 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "widgets",
+    "version": "2.4.0"
+  },
+  "x-openapi": {
+    "servers": [
+      "https://api.widgets.test"
+    ],
+    "security": [
+      {
+        "type": "http",
+        "kind": "bearer",
+        "envVar": "WIDGETS_API_KEY",
+        "scheme": "bearer"
+      }
+    ],
+    "defaultHeaders": {
+      "X-Api-Version": "2024-10-01",
+      "X-Client": "widgets-cli"
+    }
+  },
+  "commands": [
+    {
+      "name": "api",
+      "commands": [
+        {
+          "name": "status",
+          "commands": [
+            {
+              "name": "list",
+              "description": "Service status",
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/status",
+                "operationId": "getStatus"
+              }
+            }
+          ]
+        },
+        {
+          "name": "widgets",
+          "description": "widgets commands",
+          "commands": [
+            {
+              "name": "list",
+              "description": "List widgets",
+              "options": [
+                {
+                  "name": "limit",
+                  "group": "query",
+                  "arguments": [
+                    {
+                      "name": "integer"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/list"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/widgets",
+                "operationId": "listWidgets",
+                "params": [
+                  {
+                    "in": "query",
+                    "name": "limit",
+                    "from": "option:limit"
+                  }
+                ],
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:read"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "create",
+              "description": "Create a widget",
+              "options": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "group": "body",
+                  "arguments": [
+                    {
+                      "name": "string"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/create"
+                }
+              ],
+              "x-openapi": {
+                "method": "post",
+                "path": "/v3/widgets",
+                "operationId": "createWidget",
+                "contentType": "application/json",
+                "body": {
+                  "style": "flatten",
+                  "contentType": "application/json",
+                  "properties": [
+                    {
+                      "name": "name",
+                      "from": "option:name",
+                      "jsonPath": "name",
+                      "encoding": "string",
+                      "required": true
+                    }
+                  ]
+                },
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:write"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "retrieve",
+              "aliases": [
+                "get"
+              ],
+              "description": "Retrieve a widget",
+              "arguments": [
+                {
+                  "name": "widget-id",
+                  "required": true
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/retrieve"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/widgets/{widgetId}",
+                "operationId": "getWidget",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "widgetId",
+                    "from": "argument:widget-id",
+                    "required": true
+                  }
+                ],
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:read"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "replace",
+              "description": "Replace a widget",
+              "arguments": [
+                {
+                  "name": "widget-id",
+                  "required": true
+                }
+              ],
+              "options": [
+                {
+                  "name": "body",
+                  "required": false,
+                  "description": "Request body as a JSON string",
+                  "group": "body",
+                  "arguments": [
+                    {
+                      "name": "json"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/replace"
+                }
+              ],
+              "x-openapi": {
+                "method": "put",
+                "path": "/v3/widgets/{widgetId}",
+                "operationId": "replaceWidget",
+                "contentType": "application/json",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "widgetId",
+                    "from": "argument:widget-id",
+                    "required": true
+                  }
+                ],
+                "body": {
+                  "style": "json",
+                  "contentType": "application/json",
+                  "from": "option:body",
+                  "properties": []
+                },
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:write"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

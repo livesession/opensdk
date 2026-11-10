@@ -27,6 +27,16 @@
     "grammar": "verb-noun",
     "singularOverrides": {
       "apis": "api"
-    }
+    },
+    "namesFrom": "x-docs.path",
+    "namesFromRequired": true,
+    "pathPrefixStrip": "/v1",
+    "headersFromExtension": {
+      "X-Api-Version": "x-release"
+    },
+    "defaultHeaders": {
+      "X-Client": "acme-cli"
+    },
+    "includeSecurity": true
   }
 }

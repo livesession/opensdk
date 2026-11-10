@@ -23,7 +23,13 @@
     "authEnvVar",
     "rootCommand",
     "grammar",
-    "singularOverrides"
+    "singularOverrides",
+    "namesFrom",
+    "namesFromRequired",
+    "pathPrefixStrip",
+    "headersFromExtension",
+    "defaultHeaders",
+    "includeSecurity"
   ],
   "split": {
     "converter": {},

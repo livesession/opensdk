@@ -1,0 +1,111 @@
+{
+  "opencli": "1.0.0",
+  "info": { "title": "widgets", "version": "1.0.0" },
+  "x-openapi": {
+    "servers": ["https://api.widgets.test"],
+    "security": [
+      { "type": "http", "kind": "bearer", "envVar": "WIDGETS_API_KEY", "scheme": "bearer" }
+    ],
+    "defaultHeaders": { "X-Api-Version": "2024-10-01", "X-Client": "widgets-cli" }
+  },
+  "commands": [
+    {
+      "name": "widgets",
+      "commands": [
+        {
+          "name": "list",
+          "description": "List widgets",
+          "options": [
+            {
+              "name": "api-version",
+              "group": "header",
+              "description": "Pin the API version for this call",
+              "arguments": [{ "name": "string" }]
+            }
+          ],
+          "x-openapi": {
+            "method": "get",
+            "path": "/widgets",
+            "operationId": "listWidgets",
+            "params": [{ "in": "header", "name": "X-Api-Version", "from": "option:api-version" }]
+          }
+        },
+        {
+          "name": "create",
+          "description": "Create a widget",
+          "options": [
+            {
+              "name": "body",
+              "required": true,
+              "group": "body",
+              "description": "Request body as a JSON string",
+              "arguments": [{ "name": "json" }]
+            }
+          ],
+          "x-openapi": {
+            "method": "post",
+            "path": "/widgets",
+            "operationId": "createWidget",
+            "contentType": "application/json",
+            "body": { "style": "json", "contentType": "application/json", "from": "option:body", "properties": [] }
+          }
+        },
+        {
+          "name": "import",
+          "description": "Import widgets from CSV",
+          "options": [
+            {
+              "name": "body",
+              "required": true,
+              "group": "body",
+              "description": "The CSV document",
+              "arguments": [{ "name": "json" }]
+            }
+          ],
+          "x-openapi": {
+            "method": "post",
+            "path": "/widgets/import",
+            "operationId": "importWidgets",
+            "contentType": "text/csv",
+            "body": { "style": "json", "contentType": "text/csv", "from": "option:body", "properties": [] }
+          }
+        },
+        {
+          "name": "update",
+          "description": "Patch a widget",
+          "arguments": [{ "name": "widget-id", "required": true }],
+          "options": [
+            {
+              "name": "if-match",
+              "group": "header",
+              "arguments": [{ "name": "string" }]
+            },
+            {
+              "name": "body",
+              "required": true,
+              "group": "body",
+              "description": "A JSON merge patch",
+              "arguments": [{ "name": "json" }]
+            }
+          ],
+          "x-openapi": {
+            "method": "patch",
+            "path": "/widgets/{widgetId}",
+            "operationId": "updateWidget",
+            "contentType": "application/merge-patch+json",
+            "params": [
+              { "in": "path", "name": "widgetId", "from": "argument:widget-id", "required": true },
+              { "in": "header", "name": "If-Match", "from": "option:if-match" }
+            ],
+            "body": {
+              "style": "json",
+              "contentType": "application/merge-patch+json",
+              "from": "option:body",
+              "properties": []
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

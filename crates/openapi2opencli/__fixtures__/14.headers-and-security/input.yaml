@@ -1,0 +1,40 @@
+# 3.1 lets a requirement list roles for any scheme type, not only OAuth
+# scopes, which keeps this fixture about requirements rather than flows.
+openapi: 3.1.0
+info:
+  title: widgets
+  version: 1.0.0
+  x-release: "2024-10-01"
+  x-meta: { channel: stable }
+servers:
+  - url: https://api.widgets.test
+security:
+  - token: [widgets:read]
+components:
+  securitySchemes:
+    token:
+      type: http
+      scheme: bearer
+    key:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+paths:
+  # Inherits the document's requirement.
+  /widgets:
+    get:
+      operationId: listWidgets
+      responses: { "200": { description: ok } }
+    # Its own: either credential, the token with a write scope.
+    post:
+      operationId: createWidget
+      security:
+        - token: [widgets:write]
+        - key: []
+      responses: { "201": { description: created } }
+  # Public: an empty list does not inherit.
+  /status:
+    get:
+      operationId: getStatus
+      security: []
+      responses: { "200": { description: ok } }

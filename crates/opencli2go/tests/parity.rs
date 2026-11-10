@@ -113,3 +113,30 @@ c!(merged_read, "9.merged-read");
 // Nested merged read (shared path param) with differing query params — the
 // shape whose duplicated `orgID :=` made the generated project not compile.
 c!(merged_read_nested, "10.merged-read-nested");
+
+/// `baseURL` (the spelling the sdk.json CLI sections use) and `baseUrl` both
+/// reach the generated config; before the alias, `baseURL` passed the option
+/// split and was then silently dropped.
+#[test]
+fn the_base_url_option_takes_both_spellings() {
+    let spec: Value = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "x-openapi": { "servers": ["https://api.widgets.test"] }
+    });
+    for key in ["baseURL", "baseUrl"] {
+        let options =
+            serde_json::from_value(serde_json::json!({ key: "https://override.test" })).unwrap();
+        let files = opencli2go(&spec, Some(options));
+        assert!(
+            files.values().any(|c| c.contains("https://override.test")),
+            "{key} did not reach the generated config"
+        );
+        assert!(
+            !files
+                .values()
+                .any(|c| c.contains("https://api.widgets.test")),
+            "{key}: the spec's server is still the base URL"
+        );
+    }
+}

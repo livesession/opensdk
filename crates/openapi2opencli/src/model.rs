@@ -35,6 +35,33 @@ pub struct XOpenApiRoot {
     pub servers: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security: Option<Vec<Security>>,
+    /// Headers every request carries unless it sets them itself: the
+    /// `defaultHeaders` option with the `headersFromExtension` values resolved
+    /// over it. Absent when neither option produced a header.
+    #[serde(rename = "defaultHeaders", skip_serializing_if = "Option::is_none")]
+    pub default_headers: Option<std::collections::BTreeMap<String, String>>,
+}
+
+/// One security requirement of a command, in the OpenCLI `XOpenApiSecurity`
+/// shape: the scheme's descriptor exactly as the root `x-openapi.security`
+/// entry for it reads (`type`, `kind`, `envVar`, and `scheme` / `in` / `name`
+/// / `bearerFormat` where they apply), plus the two things a requirement adds —
+/// `ref`, the scheme's key in `components.securitySchemes`, and `scopes`, as
+/// the document writes them.
+#[derive(Serialize, Clone)]
+pub struct CommandSecurity {
+    #[serde(flatten)]
+    pub scheme: Security,
+    #[serde(rename = "ref")]
+    pub reference: String,
+    pub scopes: Vec<String>,
+}
+
+/// An OpenCLI `metadata` entry.
+#[derive(Serialize, Clone, Debug, PartialEq)]
+pub struct Metadata {
+    pub name: String,
+    pub value: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -158,6 +185,10 @@ pub struct XOpenApiCommand {
     pub body: Option<XOpenApiBody>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub responses: Option<Vec<XOpenApiResponse>>,
+    /// The security requirements of the operation (else of the document), one
+    /// entry per scheme. Only emitted under `includeSecurity`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub security: Option<Vec<CommandSecurity>>,
     /// The request to make INSTEAD when the command's optional positional is
     /// supplied.
     ///
@@ -188,6 +219,10 @@ pub struct Command {
     /// converter to set it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hidden: Option<bool>,
+    /// OpenCLI `metadata`. The converter writes `docsPath` (the `namesFrom`
+    /// value) on a command it named from the document.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Vec<Metadata>>,
     #[serde(rename = "x-openapi", skip_serializing_if = "Option::is_none")]
     pub x_openapi: Option<XOpenApiCommand>,
 }

@@ -1,0 +1,27 @@
+{
+  "opencli": "1.0.0",
+  "info": { "title": "widgets", "description": "Manage widgets from the terminal." },
+  "options": [
+    {
+      "name": "output",
+      "aliases": ["o"],
+      "description": "Output format",
+      "recursive": true,
+      "arguments": [{ "name": "format", "acceptedValues": ["json", "table"] }]
+    },
+    {
+      "name": "token",
+      "description": "Access token (overrides the environment)",
+      "recursive": true,
+      "arguments": [{ "name": "token" }]
+    }
+  ],
+  "exitCodes": [
+    { "code": 0, "description": "Success" },
+    { "code": 2, "description": "Usage error" },
+    { "code": 4, "description": "Not authenticated" }
+  ],
+  "commands": [
+    { "name": "api", "description": "Call the API directly", "aliases": ["raw"] }
+  ]
+}

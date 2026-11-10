@@ -1,0 +1,1 @@
+{ "lang": "rust-cli", "declare": ["fragments/root.json", "fragments/auth.json"] }

@@ -8,7 +8,7 @@
   "x-openapi": {
     "servers": ["https://api.example.com"],
     "security": [
-      { "kind": "bearer", "scheme": "bearer", "in": "header", "name": "Authorization", "envVar": "API_KEY" }
+      { "type": "http", "kind": "bearer", "scheme": "bearer", "in": "header", "name": "Authorization", "envVar": "API_KEY" }
     ]
   },
   "commands": [

@@ -90,6 +90,12 @@ pub fn render_flag_arg(f: &FlagModel) -> RsVal {
     if f.hidden {
         calls.push(("hide".into(), vec![lit("true")]));
     }
+    if f.global {
+        calls.push(("global".into(), vec![lit("true")]));
+        // A global option is listed in every subcommand's `--help`; a heading
+        // keeps it apart from that command's own flags.
+        calls.push(("help_heading".into(), vec![rs_str("Global options")]));
+    }
 
     chain(format!("Arg::new({})", json_str(&f.flag_name)), calls)
 }

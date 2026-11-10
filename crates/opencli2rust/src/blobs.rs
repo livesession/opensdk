@@ -446,3 +446,132 @@ impl Actions {
     }
 }
 "#;
+
+// ── The root seam ────────────────────────────────────────────────────────────
+//
+// Patches over the base blobs, applied only when a document opts into the root
+// seam (`cli::has_root_seam`: root `options`, root `exitCodes`, or
+// `x-openapi.defaultHeaders`). Every other document gets the base blobs byte
+// for byte. Each `*_FROM` / `*_ANCHOR` must occur exactly once in its blob
+// (`runtime::patch` asserts it).
+
+/// `runtime/mod.rs`: the context gains the headers every request carries.
+pub const SEAM_CONTEXT_FROM: &str = r#"/// Everything a handler (generated or custom) needs to reach the API: the
+/// configured base URL and an HTTP client with the spec's auth applied.
+#[derive(Clone)]
+pub struct Context {
+    pub base_url: String,
+    http: reqwest::Client,
+}
+
+impl Context {
+    pub fn from_env() -> Self {
+        Self {
+            base_url: config::base_url(),
+            http: reqwest::Client::new(),
+        }
+    }
+"#;
+
+pub const SEAM_CONTEXT_TO: &str = r#"/// Everything a handler (generated or custom) needs to reach the API: the
+/// configured base URL, the headers every request carries, and an HTTP client
+/// with the spec's auth applied.
+#[derive(Clone)]
+pub struct Context {
+    pub base_url: String,
+    /// Sent on every request that does not set the header itself; starts as the
+    /// spec's default headers (`config::DEFAULT_HEADERS`). An `Authorization`
+    /// entry here or on the request REPLACES the environment credential rather
+    /// than adding a second one — set it from `CliOverrides::before_dispatch`
+    /// to authenticate from a root option.
+    pub headers: Vec<(String, String)>,
+    http: reqwest::Client,
+}
+
+impl Context {
+    pub fn from_env() -> Self {
+        Self {
+            base_url: config::base_url(),
+            headers: config::DEFAULT_HEADERS.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+            http: reqwest::Client::new(),
+        }
+    }
+"#;
+
+/// `runtime/mod.rs` `send()`: context headers under the request's own, and at
+/// most one `Authorization`.
+pub const SEAM_SEND_FROM: &str = r#"        let has_content_type = req.headers.iter().any(|(k, _)| k.eq_ignore_ascii_case("content-type"));
+        for (key, value) in &req.headers {
+            rb = rb.header(*key, value.as_str());
+        }
+        if let Some(body) = req.body {
+            if !has_content_type {
+                rb = rb.header("Content-Type", "application/json");
+            }
+            rb = rb.body(body);
+        }
+        rb = config::apply_auth(rb);
+"#;
+
+pub const SEAM_SEND_TO: &str = r#"        // The request's own headers, then every context header it does not set.
+        let mut headers: Vec<(&str, &str)> = req.headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
+        for (key, value) in &self.headers {
+            if !headers.iter().any(|(k, _)| k.eq_ignore_ascii_case(key)) {
+                headers.push((key.as_str(), value.as_str()));
+            }
+        }
+        let has = |name: &str| headers.iter().any(|(k, _)| k.eq_ignore_ascii_case(name));
+        let has_content_type = has("content-type");
+        let has_authorization = has("authorization");
+        for (key, value) in &headers {
+            rb = rb.header(*key, *value);
+        }
+        if let Some(body) = req.body {
+            if !has_content_type {
+                rb = rb.header("Content-Type", "application/json");
+            }
+            rb = rb.body(body);
+        }
+        // An explicit `Authorization` is the credential; the environment's would
+        // be a second one, which servers reject or resolve unpredictably.
+        if !has_authorization {
+            rb = config::apply_auth(rb);
+        }
+"#;
+
+/// `overrides.rs`: `before_dispatch`, first in the trait (it runs first).
+pub const SEAM_HOOKS_BEFORE_ANCHOR: &str = r#"    /// Mutate the assembled request before it is sent (extra headers, alternate
+"#;
+
+pub const SEAM_HOOKS_BEFORE: &str = r#"    /// Runs once, after parsing and before any command: read the root options
+    /// (`root` is the top-level matches, global options included) into the
+    /// context every handler of this invocation receives — a base URL, a
+    /// credential (`ctx.headers.push(("Authorization".into(), ...))`), headers.
+    fn before_dispatch(&self, ctx: &mut Context, root: &ArgMatches) {
+        let _ = (ctx, root);
+    }
+
+    /// Mutate the assembled request before it is sent (extra headers, alternate
+"#;
+
+/// `overrides.rs`: `print_usage_error`, after `print_error`.
+pub const SEAM_HOOKS_AFTER_ANCHOR: &str = r#"        eprintln!("error: {err}");
+        ExitCode::FAILURE
+    }
+}
+"#;
+
+pub const SEAM_HOOKS_AFTER: &str = r#"        eprintln!("error: {err}");
+        ExitCode::FAILURE
+    }
+
+    /// Print a usage error — an unknown flag, a missing argument, and also
+    /// `--help` / `--version`, which clap reports the same way — and choose the
+    /// exit code. Default: clap's own (the message on stderr, help and version
+    /// on stdout; exit 2, or 0 for help and version).
+    fn print_usage_error(&self, err: &clap::Error) -> ExitCode {
+        let _ = err.print();
+        ExitCode::from(u8::try_from(err.exit_code()).unwrap_or(2))
+    }
+}
+"#;

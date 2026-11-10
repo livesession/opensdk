@@ -15,6 +15,7 @@
 //! | `src/cli/config/**`         | [`config`]                                  |
 //! | `registerBuiltinEmitters`   | [`registry`]                                |
 //! | `src/cli/write-report.ts`   | [`write_report`]                            |
+//! | (Rust only)                 | [`opencli`] (the `opencli` subcommand)      |
 //! | `@xyd-js/opensdk-framework` `src/exec.ts` | [`exec`]                      |
 //!
 //! Everything else is DEPENDED ON, not re-implemented: the write lifecycle
@@ -38,6 +39,7 @@ mod format;
 pub mod generate;
 pub mod grouping;
 pub mod init;
+pub mod opencli;
 pub mod parse;
 pub mod paths;
 pub mod publish;

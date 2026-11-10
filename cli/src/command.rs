@@ -20,6 +20,7 @@ use crate::generate::{
 };
 use crate::grouping::ConverterInputs;
 use crate::init::{init_command, InitOptions};
+use crate::opencli::{opencli_command, OpenCliCommandOptions};
 use crate::parse::{parse_command, ParseCommandOptions};
 use crate::publish::{publish_command, PublishCommandOptions};
 use crate::registry::resolve_lang;
@@ -128,10 +129,10 @@ pub fn command() -> Command {
                      the go-cli/rust-cli targets. With no --lang, every language declared in \
                      sdk.json is generated.",
                 )
-                .arg(
-                    spec_arg(false)
-                        .help("Path to the OpenAPI spec (yaml/json) or OpenSDK IR (.json)"),
-                )
+                .arg(spec_arg(false).help(
+                    "Path to the OpenAPI spec (yaml/json) or OpenSDK IR (.json); for the \
+                     go-cli/rust-cli targets also an OpenCLI document (see `opencli`)",
+                ))
                 .arg(
                     Arg::new("lang")
                         .long("lang")
@@ -188,6 +189,47 @@ pub fn command() -> Command {
                              regeneration stays a byte-stable no-op",
                         ),
                 ),
+        )
+        .subcommand(
+            Command::new("opencli")
+                .about(
+                    "Write the OpenCLI document a CLI target generates from (the converter step \
+                     of `generate --lang go-cli|rust-cli`), merging hand-written OpenCLI \
+                     fragments into it. `generate --spec <that file>` then builds the CLI from it.",
+                )
+                .arg(spec_arg(false).help(
+                    "Path to the OpenAPI spec (yaml/json); an OpenCLI document is taken as is. \
+                     Default: the config's api",
+                ))
+                .arg(
+                    Arg::new("lang")
+                        .long("lang")
+                        .value_name("target")
+                        .value_parser(["rust-cli", "go-cli"])
+                        .help(
+                            "The CLI target whose sdk.json section supplies the converter options \
+                             (default: the first CLI section in the config)",
+                        ),
+                )
+                .arg(
+                    Arg::new("declare")
+                        .long("declare")
+                        .value_name("fragment.json")
+                        .action(ArgAction::Append)
+                        .help(
+                            "Merge a hand-written OpenCLI fragment (repeatable, applied in order): \
+                             root options/exitCodes/info.description replace, commands append, a \
+                             command named like an existing top-level one updates its \
+                             description/aliases/hidden",
+                        ),
+                )
+                .arg(
+                    Arg::new("output")
+                        .long("output")
+                        .value_name("file")
+                        .help("Write the OpenCLI JSON to a file instead of stdout"),
+                )
+                .arg(sdk_name_arg().help("Defaults the CLI name (the section's cliName wins)")),
         )
         .subcommand(
             Command::new("diff")
@@ -560,6 +602,28 @@ pub fn dispatch(matches: &ArgMatches, cwd: &Path) -> Result<i32> {
             Ok(0)
         }
         "generate" => run_generate(m, config, cwd),
+        "opencli" => {
+            let Some(spec) = opt(m, "spec").or_else(|| config.and_then(|c| c.spec.clone())) else {
+                return Err(Error::msg(
+                    "No spec — pass --spec, or add an \"api\" field to your sdk.json.",
+                ));
+            };
+            opencli_command(
+                &OpenCliCommandOptions {
+                    spec,
+                    lang: opt(m, "lang"),
+                    declare: m
+                        .get_many::<String>("declare")
+                        .map(|v| v.cloned().collect())
+                        .unwrap_or_default(),
+                    output: opt(m, "output"),
+                    sdk_name: opt(m, "sdk-name"),
+                },
+                config,
+                cwd,
+            )?;
+            Ok(0)
+        }
         "diff" => diff_command(
             &DiffCommandOptions {
                 inputs: shared_inputs(m, config),
@@ -678,7 +742,7 @@ mod tests {
         let cmd = command();
         let names: Vec<&str> = cmd.get_subcommands().map(|s| s.get_name()).collect();
         for want in [
-            "parse", "xsdk", "generate", "diff", "publish", "run", "init",
+            "parse", "xsdk", "generate", "opencli", "diff", "publish", "run", "init",
         ] {
             assert!(
                 names.contains(&want),

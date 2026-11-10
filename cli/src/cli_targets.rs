@@ -65,7 +65,8 @@ impl CliBackend {
             CliBackend::Rust => {
                 let opts = serde_json::from_value(options)
                     .map_err(|e| Error::msg(format!("bad rust-cli options: {e}")))?;
-                Ok(opencli2rust::opencli2rust(spec, Some(opts))
+                Ok(opencli2rust::try_opencli2rust(spec, Some(opts))
+                    .map_err(|e| Error::msg(e.to_string()))?
                     .into_iter()
                     .map(|(path, entry)| {
                         let write_mode = match entry.write_mode {
@@ -113,6 +114,12 @@ pub const CLI_CONVERTER_KEYS: &[&str] = &[
     "rootCommand",
     "grammar",
     "singularOverrides",
+    "namesFrom",
+    "namesFromRequired",
+    "pathPrefixStrip",
+    "headersFromExtension",
+    "defaultHeaders",
+    "includeSecurity",
 ];
 
 /// The backend option keys for a CLI target id (empty for a non-CLI id).
@@ -199,27 +206,98 @@ pub struct CliTargetOptions {
 /// `console.warn` is fired at most once per process, matching the TS module-level flag.
 static WARNED_SDK_GROUPING: AtomicBool = AtomicBool::new(false);
 
+/// What a CLI target's `--spec` turned out to be.
+#[derive(Debug, Clone)]
+pub enum CliSource {
+    /// An OpenAPI document: the converter runs first.
+    OpenApi(Value),
+    /// An OpenCLI document (a root `opencli` key) — typically one `opensdk
+    /// opencli` emitted and merged hand-written fragments into. The converter
+    /// already ran, so it is handed to the backend as is.
+    OpenCli(Value),
+}
+
+/// Is this parsed document an OpenCLI document (a string `opencli` root key)?
+pub fn is_opencli_doc(doc: &Value) -> bool {
+    doc.get("opencli").and_then(Value::as_str).is_some()
+}
+
+fn ir_rejection(lang: &str) -> Error {
+    Error::msg(format!(
+        "CLI targets (\"{lang}\") generate from the OpenAPI document, not a \
+         pre-parsed OpenSDK IR. Pass the OpenAPI spec (yaml/json) as --spec."
+    ))
+}
+
+/// Read a CLI target's `--spec` (yaml/json) and sniff its kind. A pre-parsed
+/// OpenSDK IR is rejected — it has lost the HTTP shape the CLI binds to.
+pub fn load_cli_source(spec: &str, lang: &str) -> Result<CliSource> {
+    // The converter's own error text for an unreadable document, so a bad path
+    // reads the same whichever kind of document it was meant to be.
+    let doc = oas_doc::read_spec(spec)
+        .map_err(|e| Error::msg(openapi2opencli::Error::Io(e.to_string()).to_string()))?;
+    if doc.get("opensdk").and_then(Value::as_str).is_some() {
+        return Err(ir_rejection(lang));
+    }
+    if is_opencli_doc(&doc) {
+        return Ok(CliSource::OpenCli(doc));
+    }
+    Ok(CliSource::OpenApi(doc))
+}
+
+/// The converter half of a split bag with the two defaults a CLI target takes
+/// from the rest of the config: `cliName` from the SDK name and `version` from
+/// the publish target, each only when the bag does not set it.
+pub fn converter_bag_with_defaults(
+    mut converter: Map<String, Value>,
+    sdk_name: Option<&str>,
+    publish: Option<&PublishTarget>,
+) -> Map<String, Value> {
+    if !converter.contains_key("cliName") {
+        if let Some(name) = sdk_name.filter(|s| !s.is_empty()) {
+            converter.insert("cliName".into(), Value::String(name.to_string()));
+        }
+    }
+    if !converter.contains_key("version") {
+        if let Some(v) = publish
+            .and_then(|p| p.version.as_ref())
+            .filter(|s| !s.is_empty())
+        {
+            converter.insert("version".into(), Value::String(v.clone()));
+        }
+    }
+    converter
+}
+
+/// Run the OpenAPI → OpenCLI converter over a parsed document with a converter
+/// option bag, returning the OpenCLI document as JSON.
+pub fn convert_to_opencli(doc: &Value, converter: Map<String, Value>, lang: &str) -> Result<Value> {
+    let converter_options = serde_json::from_value(Value::Object(converter))
+        .map_err(|e| Error::msg(format!("bad {lang} converter options: {e}")))?;
+    let cli_spec = openapi2opencli::openapi2opencli(doc, Some(converter_options))
+        .map_err(|e| Error::msg(e.to_string()))?;
+    serde_json::to_value(&cli_spec).map_err(|e| Error::msg(format!("serialize opencli spec: {e}")))
+}
+
 /// Generate one CLI output target: openapi2opencli → backend → `write_project`.
+///
+/// `--spec` may also be an OpenCLI document (see [`CliSource::OpenCli`]); the
+/// converter step and its option keys are then skipped, and only the
+/// backend's keys apply.
 pub fn generate_cli_target(opts: &CliTargetOptions, cwd: &Path) -> Result<()> {
     let lang = opts.lang.to_lowercase();
     let Some(backend) = cli_backend(&lang) else {
         return Err(Error::msg(format!("Not a CLI target: {}", opts.lang)));
     };
 
-    // Mirror load_ir's sniff: a pre-parsed OpenSDK IR cannot feed the OpenCLI
-    // pipeline. An unreadable/unparseable .json falls through to the converter,
-    // which reports it — exactly like the TS (whose JSON.parse would throw, so
-    // this stays inside the same failure surface).
-    if opts.spec.ends_with(".json") {
-        if let Ok(raw) = std::fs::read_to_string(&opts.spec) {
-            if let Ok(doc) = serde_json::from_str::<Value>(&raw) {
-                if doc.get("opensdk").and_then(Value::as_str).is_some() {
-                    return Err(Error::msg(format!(
-                        "CLI targets (\"{lang}\") generate from the OpenAPI document, not a \
-                         pre-parsed OpenSDK IR. Pass the OpenAPI spec (yaml/json) as --spec."
-                    )));
-                }
-            }
+    // Sniff what `--spec` is. A pre-parsed OpenSDK IR cannot feed the OpenCLI
+    // pipeline; an OpenCLI document skips the converter. An unreadable or
+    // unparseable file falls through to the converter, which reports it —
+    // after the option bag is validated, as it always has been.
+    let sniffed = oas_doc::read_spec(&opts.spec).ok();
+    if let Some(doc) = sniffed.as_ref() {
+        if doc.get("opensdk").and_then(Value::as_str).is_some() {
+            return Err(ir_rejection(&lang));
         }
     }
 
@@ -235,33 +313,31 @@ pub fn generate_cli_target(opts: &CliTargetOptions, cwd: &Path) -> Result<()> {
     }
 
     let empty = Map::new();
-    let mut split = split_cli_options(&lang, opts.options.as_ref().unwrap_or(&empty))?;
-    if !split.converter.contains_key("cliName") {
-        if let Some(name) = opts.sdk_name.as_ref().filter(|s| !s.is_empty()) {
-            split
-                .converter
-                .insert("cliName".into(), Value::String(name.clone()));
+    let split = split_cli_options(&lang, opts.options.as_ref().unwrap_or(&empty))?;
+    let cli_spec = match sniffed {
+        Some(doc) if is_opencli_doc(&doc) => doc,
+        sniffed => {
+            let converter = converter_bag_with_defaults(
+                split.converter,
+                opts.sdk_name.as_deref(),
+                opts.publish.as_ref(),
+            );
+            match sniffed {
+                Some(doc) => convert_to_opencli(&doc, converter, &lang)?,
+                None => {
+                    let converter_options = serde_json::from_value(Value::Object(converter))
+                        .map_err(|e| Error::msg(format!("bad {lang} converter options: {e}")))?;
+                    let cli_spec = openapi2opencli::openapi2opencli_from_file(
+                        &opts.spec,
+                        Some(converter_options),
+                    )
+                    .map_err(|e| Error::msg(e.to_string()))?;
+                    serde_json::to_value(&cli_spec)
+                        .map_err(|e| Error::msg(format!("serialize opencli spec: {e}")))?
+                }
+            }
         }
-    }
-    if !split.converter.contains_key("version") {
-        if let Some(v) = opts
-            .publish
-            .as_ref()
-            .and_then(|p| p.version.as_ref())
-            .filter(|s| !s.is_empty())
-        {
-            split
-                .converter
-                .insert("version".into(), Value::String(v.clone()));
-        }
-    }
-
-    let converter_options = serde_json::from_value(Value::Object(split.converter))
-        .map_err(|e| Error::msg(format!("bad {lang} converter options: {e}")))?;
-    let cli_spec = openapi2opencli::openapi2opencli_from_file(&opts.spec, Some(converter_options))
-        .map_err(|e| Error::msg(e.to_string()))?;
-    let cli_spec = serde_json::to_value(&cli_spec)
-        .map_err(|e| Error::msg(format!("serialize opencli spec: {e}")))?;
+    };
 
     let files = backend.generate(&cli_spec, &split.backend)?;
 

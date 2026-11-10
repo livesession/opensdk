@@ -14,6 +14,7 @@ mod flags;
 mod handler;
 mod model;
 mod naming;
+mod root_options;
 mod rslit;
 mod runtime;
 
@@ -35,6 +36,10 @@ pub struct Options {
     pub crate_name: Option<String>,
     pub bin_name: Option<String>,
     pub edition: Option<String>,
+    /// The base URL baked into the generated config (default: the document's
+    /// first server). `baseURL` — the spelling the sdk.json CLI sections
+    /// document — is accepted beside the camelCase `baseUrl`.
+    #[serde(alias = "baseURL")]
     pub base_url: Option<String>,
     /// Top-level generated module (`src/<moduleName>/**`). Default: `"gen"`.
     pub module_name: Option<String>,
@@ -95,8 +100,31 @@ fn str_at(spec: &Value, path: &[&str]) -> Option<String> {
     cur.as_str().map(|s| s.to_string())
 }
 
+/// A document the generator refuses: what it emits would not run.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error(pub String);
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "opencli2rust: {}", self.0)
+    }
+}
+
+impl std::error::Error for Error {}
+
 /// Generate the Rust CLI project file map from an OpenCLI document.
+///
+/// Panics where [`try_opencli2rust`] returns an error — a document whose root
+/// options collide with clap's built-ins, each other or a command's flags,
+/// which the generated CLI would otherwise panic on (debug) or misparse
+/// (release). Prefer [`try_opencli2rust`].
 pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
+    try_opencli2rust(spec, options).unwrap_or_else(|e| panic!("{e}"))
+}
+
+/// Generate the Rust CLI project file map from an OpenCLI document, refusing
+/// one the generated CLI could not parse its arguments with.
+pub fn try_opencli2rust(spec: &Value, options: Option<Options>) -> Result<FileMap, Error> {
     let options = options.unwrap_or_default();
     let title = str_at(spec, &["info", "title"]).unwrap_or_default();
     let bin_name = options.bin_name.clone().unwrap_or_else(|| {
@@ -155,6 +183,14 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
         .flat_map(|r| r.action_paths.clone())
         .collect();
     let has_actions = !action_paths.is_empty();
+    // Root options / exit codes / default headers switch on the root seam;
+    // without them every file is what it always was.
+    let root_seam = cli::has_root_seam(spec);
+    if root_seam {
+        let has_version =
+            version_from == cli::VersionFrom::Crate || str_at(spec, &["info", "version"]).is_some();
+        root_options::check(spec, has_version).map_err(Error)?;
+    }
 
     files.push((
         "Cargo.toml".into(),
@@ -182,12 +218,13 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
             &resources,
             &action_paths,
             version_from,
+            root_seam,
         )),
     ));
     files.push((format!("src/{module_name}/mod.rs"), owned(gen_mod_rs())));
     files.push((
         format!("src/{module_name}/runtime/mod.rs"),
-        owned(runtime_mod_rs(has_actions)),
+        owned(runtime_mod_rs(has_actions, root_seam)),
     ));
     files.push((
         format!("src/{module_name}/runtime/http.rs"),
@@ -195,11 +232,11 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
     ));
     files.push((
         format!("src/{module_name}/runtime/config.rs"),
-        owned(config_rs(spec, &bin_name, &base_url)),
+        owned(config_rs(spec, &bin_name, &base_url, root_seam)),
     ));
     files.push((
         format!("src/{module_name}/runtime/overrides.rs"),
-        owned(overrides_rs()),
+        owned(overrides_rs(root_seam)),
     ));
     files.push((
         format!("src/{module_name}/runtime/custom.rs"),
@@ -221,7 +258,7 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
         scaffold(custom_scaffold_rs(has_actions, &module_name, &action_paths)),
     ));
 
-    files
+    Ok(files)
 }
 
 fn cmd_mod_rs(resources: &[ResourceFile]) -> String {
