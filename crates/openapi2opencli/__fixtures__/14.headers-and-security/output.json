@@ -1,0 +1,88 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "widgets",
+    "version": "1.0.0"
+  },
+  "x-openapi": {
+    "servers": [
+      "https://api.widgets.test"
+    ],
+    "security": [
+      {
+        "type": "http",
+        "kind": "bearer",
+        "envVar": "WIDGETS_API_KEY",
+        "scheme": "bearer"
+      },
+      {
+        "type": "apiKey",
+        "kind": "apiKey-header",
+        "envVar": "WIDGETS_API_KEY",
+        "in": "header",
+        "name": "X-Api-Key"
+      }
+    ],
+    "defaultHeaders": {
+      "X-Api-Version": "2024-10-01",
+      "X-Channel": "stable",
+      "X-Client": "widgets-cli"
+    }
+  },
+  "commands": [
+    {
+      "name": "status",
+      "commands": [
+        {
+          "name": "list",
+          "x-openapi": {
+            "method": "get",
+            "path": "/status",
+            "operationId": "getStatus"
+          }
+        }
+      ]
+    },
+    {
+      "name": "widgets",
+      "commands": [
+        {
+          "name": "list",
+          "x-openapi": {
+            "method": "get",
+            "path": "/widgets",
+            "operationId": "listWidgets",
+            "security": [
+              {
+                "scheme": "token",
+                "scopes": [
+                  "widgets:read"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "create",
+          "x-openapi": {
+            "method": "post",
+            "path": "/widgets",
+            "operationId": "createWidget",
+            "security": [
+              {
+                "scheme": "token",
+                "scopes": [
+                  "widgets:write"
+                ]
+              },
+              {
+                "scheme": "key",
+                "scopes": []
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

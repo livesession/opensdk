@@ -10,10 +10,12 @@
 mod action;
 mod body;
 mod command;
+mod ext;
 mod jsrt;
 mod model;
 mod options;
 mod parameters;
+mod requirements;
 mod response;
 mod schema;
 mod security;
@@ -40,6 +42,9 @@ pub enum Error {
     /// fighting over one name.
     #[error("openapi2opencli: {0}")]
     Collision(String),
+    /// `namesFromRequired` is set and operations lack the `namesFrom` value.
+    #[error("openapi2opencli: {0}")]
+    MissingName(String),
 }
 
 const DEFAULT_HTTP_METHODS: [&str; 5] = ["get", "put", "patch", "post", "delete"];
@@ -102,6 +107,8 @@ fn build_x_root(doc: &Value, cli_name: &str, options: &Options) -> Option<XOpenA
         .unwrap_or_default();
     let security = security_schemes_to_x_openapi(doc, cli_name, options.auth_env_var.as_deref());
 
+    let default_headers = default_headers(doc, options);
+
     let root = XOpenApiRoot {
         servers: if servers.is_empty() {
             None
@@ -113,12 +120,36 @@ fn build_x_root(doc: &Value, cli_name: &str, options: &Options) -> Option<XOpenA
         } else {
             Some(security)
         },
+        default_headers: if default_headers.is_empty() {
+            None
+        } else {
+            Some(default_headers)
+        },
     };
-    if root.servers.is_none() && root.security.is_none() {
+    if root.servers.is_none() && root.security.is_none() && root.default_headers.is_none() {
         None
     } else {
         Some(root)
     }
+}
+
+/// `defaultHeaders` with every `headersFromExtension` entry resolved over it.
+///
+/// An entry's dotted path is read under `info` first, then from the document
+/// root; a string, number or boolean value becomes the header's value and wins
+/// over a literal entry of the same name, while an absent or non-scalar one
+/// leaves the literal (or nothing) in place — the rule the SDK side's
+/// `behavior.headersFromExtension` follows.
+fn default_headers(doc: &Value, options: &Options) -> std::collections::BTreeMap<String, String> {
+    let mut headers = options.default_headers.clone().unwrap_or_default();
+    let info = doc.get("info").unwrap_or(&Value::Null);
+    for (header, path) in options.headers_from_extension.iter().flatten() {
+        let found = ext::lookup(info, path).or_else(|| ext::lookup(doc, path));
+        if let Some(text) = found.and_then(ext::scalar_text) {
+            headers.insert(header.clone(), text);
+        }
+    }
+    headers
 }
 
 /// Convert an (already-dereferenced or ref-carrying) OpenAPI doc. `ctx`
@@ -170,6 +201,10 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
         .get("paths")
         .and_then(|p| p.as_object())
         .unwrap_or(&empty);
+    let include_security = options.include_security == Some(true);
+    let names_required = options.names_from_required == Some(true)
+        && options.names_from.as_deref().is_some_and(|p| !p.is_empty());
+    let mut unnamed: Vec<String> = Vec::new();
 
     for path in js_object_keys(paths) {
         let path_item = &paths[path];
@@ -199,7 +234,11 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
             if xcli.ignore == Some(true) {
                 continue;
             }
-            let built = build_leaf_command(
+            if names_required && action::names_from_value(operation, options).is_none() {
+                unnamed.push(format!("{} {path}", method.to_uppercase()));
+                continue;
+            }
+            let mut built = build_leaf_command(
                 ctx,
                 method,
                 path,
@@ -208,8 +247,22 @@ fn convert(ctx: &DocCtx, doc: &Value, options: &Options) -> Result<Spec, Error> 
                 options,
                 &xcli,
             );
+            if include_security {
+                let reqs = requirements::operation_requirements(doc, operation);
+                if let Some(x) = built.command.x_openapi.as_mut() {
+                    x.security = (!reqs.is_empty()).then_some(reqs);
+                }
+            }
             built_leaves.push((method.clone(), path.to_string(), built));
         }
+    }
+    if !unnamed.is_empty() {
+        return Err(Error::MissingName(format!(
+            "namesFromRequired is set and {} operation(s) have no `{}` value: {}",
+            unnamed.len(),
+            options.names_from.as_deref().unwrap_or_default(),
+            unnamed.join(", ")
+        )));
     }
 
     // Under verb-noun, a collection GET and its item GET are ONE command: the
@@ -447,5 +500,89 @@ fn pair_reads(leaves: &mut Vec<(String, String, command::BuiltLeaf)>) {
     drop_idx.sort_unstable();
     for i in drop_idx.into_iter().rev() {
         leaves.remove(i);
+    }
+}
+
+#[cfg(test)]
+mod names_from_conversion_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn convert_with(doc: Value, options: Value) -> Result<Value, Error> {
+        let spec = openapi2opencli(&doc, Some(serde_json::from_value(options).unwrap()))?;
+        Ok(serde_json::to_value(spec).unwrap())
+    }
+
+    fn doc(paths: Value) -> Value {
+        json!({ "openapi": "3.0.0", "info": { "title": "t", "version": "1" }, "paths": paths })
+    }
+
+    #[test]
+    fn names_from_required_lists_every_operation_without_a_name() {
+        let d = doc(json!({
+            "/a": { "get": { "x-docs": { "path": "a/list" }, "responses": {} } },
+            "/b": { "get": { "responses": {} }, "delete": { "responses": {} } },
+            "/c": { "get": { "x-cli": { "ignore": true }, "responses": {} } }
+        }));
+        let err = convert_with(
+            d.clone(),
+            json!({ "namesFrom": "x-docs.path", "namesFromRequired": true }),
+        )
+        .unwrap_err();
+        assert!(matches!(err, Error::MissingName(_)));
+        assert_eq!(
+            err.to_string(),
+            "openapi2opencli: namesFromRequired is set and 2 operation(s) have no \
+             `x-docs.path` value: GET /b, DELETE /b"
+        );
+        // Without the flag the same document converts, `/b` by derivation.
+        assert!(convert_with(d, json!({ "namesFrom": "x-docs.path" })).is_ok());
+    }
+
+    #[test]
+    fn two_operations_stating_one_name_collide() {
+        let d = doc(json!({
+            "/a": { "get": { "x-docs": { "path": "things/list" }, "responses": {} } },
+            "/b": { "get": { "x-docs": { "path": "things/list" }, "responses": {} } }
+        }));
+        let err = convert_with(d, json!({ "namesFrom": "x-docs.path" })).unwrap_err();
+        assert!(matches!(err, Error::Collision(_)), "{err}");
+        assert!(err.to_string().contains("`things list`"), "{err}");
+    }
+
+    #[test]
+    fn named_reads_never_pair_under_verb_noun() {
+        // The stated name is resource-first, so a collection/item pair stays
+        // two commands instead of merging into a verb-first read.
+        let d = doc(json!({
+            "/w": { "get": { "x-docs": { "path": "w/list" }, "responses": {} } },
+            "/w/{id}": { "get": {
+                "x-docs": { "path": "w/retrieve" },
+                "parameters": [{ "name": "id", "in": "path", "required": true }],
+                "responses": {}
+            } }
+        }));
+        let out = convert_with(
+            d,
+            json!({ "namesFrom": "x-docs.path", "grammar": "verb-noun" }),
+        )
+        .unwrap();
+        let names: Vec<&str> = out["commands"][0]["commands"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, ["list", "retrieve"]);
+    }
+
+    #[test]
+    fn the_root_x_cli_block_carries_the_new_options() {
+        let mut d =
+            doc(json!({ "/a": { "get": { "x-docs": { "path": "a/list" }, "responses": {} } } }));
+        d["x-cli"] = json!({ "namesFrom": "x-docs.path", "defaultHeaders": { "X-A": "1" } });
+        let out = serde_json::to_value(openapi2opencli(&d, None).unwrap()).unwrap();
+        assert_eq!(out["commands"][0]["name"], json!("a"));
+        assert_eq!(out["x-openapi"]["defaultHeaders"], json!({ "X-A": "1" }));
     }
 }

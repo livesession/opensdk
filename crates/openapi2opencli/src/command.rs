@@ -9,7 +9,7 @@ use oas_doc::DocCtx;
 
 use crate::action::{derive_target, effective_grammar};
 use crate::body::map_request_body;
-use crate::model::{Command, XOpenApiCommand};
+use crate::model::{Command, Metadata, XOpenApiCommand};
 use crate::options::Options;
 use crate::parameters::map_parameters;
 use crate::response::map_responses;
@@ -116,6 +116,14 @@ pub fn build_leaf_command(
     if xcli.hidden == Some(true) {
         command.hidden = Some(true);
     }
+    // The name the document stated, kept on the command so a consumer can link
+    // it back (a docs page, a help footer) without re-reading the OpenAPI.
+    if let Some(value) = target.names_from.as_ref() {
+        command.metadata = Some(vec![Metadata {
+            name: "docsPath".to_string(),
+            value: value.clone(),
+        }]);
+    }
     if !params.arguments.is_empty() {
         command.arguments = Some(params.arguments);
     }
@@ -160,10 +168,11 @@ pub fn build_leaf_command(
 
     command.x_openapi = Some(x);
 
+    let grammar = effective_grammar(options, xcli, &target);
     BuiltLeaf {
         resource_path: target.resource_path,
         command,
-        grammar: effective_grammar(options, xcli),
+        grammar,
     }
 }
 

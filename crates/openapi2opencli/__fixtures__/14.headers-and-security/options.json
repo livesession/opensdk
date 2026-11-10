@@ -1,0 +1,9 @@
+{
+  "includeSecurity": true,
+  "defaultHeaders": { "X-Client": "widgets-cli", "X-Api-Version": "fallback" },
+  "headersFromExtension": {
+    "X-Api-Version": "x-release",
+    "X-Channel": "x-meta.channel",
+    "X-Missing": "x-not-there"
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "widgets",
+    "version": "1.0.0"
+  },
+  "x-openapi": {
+    "servers": [
+      "https://api.widgets.test"
+    ]
+  },
+  "commands": [
+    {
+      "name": "api",
+      "commands": [
+        {
+          "name": "gadgets",
+          "commands": [
+            {
+              "name": "list",
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/gadgets",
+                "operationId": "listGadgets"
+              }
+            }
+          ]
+        },
+        {
+          "name": "reports",
+          "commands": [
+            {
+              "name": "ls",
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "reports/list"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/reports",
+                "operationId": "listReports"
+              }
+            }
+          ]
+        },
+        {
+          "name": "widgets",
+          "commands": [
+            {
+              "name": "lifecycle",
+              "commands": [
+                {
+                  "name": "archive",
+                  "arguments": [
+                    {
+                      "name": "widget-id",
+                      "required": true
+                    }
+                  ],
+                  "metadata": [
+                    {
+                      "name": "docsPath",
+                      "value": "widgets/lifecycle/archive"
+                    }
+                  ],
+                  "x-openapi": {
+                    "method": "post",
+                    "path": "/v3/widgets/{widgetId}",
+                    "operationId": "archiveWidget",
+                    "params": [
+                      {
+                        "in": "path",
+                        "name": "widgetId",
+                        "from": "argument:widget-id",
+                        "required": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/list"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/widgets",
+                "operationId": "listWidgets"
+              }
+            },
+            {
+              "name": "create",
+              "options": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "group": "body",
+                  "arguments": [
+                    {
+                      "name": "string"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/create"
+                }
+              ],
+              "x-openapi": {
+                "method": "post",
+                "path": "/v3/widgets",
+                "operationId": "createWidget",
+                "contentType": "application/json",
+                "body": {
+                  "style": "flatten",
+                  "contentType": "application/json",
+                  "properties": [
+                    {
+                      "name": "name",
+                      "from": "option:name",
+                      "jsonPath": "name",
+                      "encoding": "string",
+                      "required": true
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "retrieve",
+              "aliases": [
+                "get"
+              ],
+              "arguments": [
+                {
+                  "name": "widget-id",
+                  "required": true
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/retrieve"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v3/widgets/{widgetId}",
+                "operationId": "getWidget",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "widgetId",
+                    "from": "argument:widget-id",
+                    "required": true
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info: { title: widgets, version: 1.0.0 }
+servers:
+  - url: https://api.widgets.test
+paths:
+  # Named by the document: `<group>/.../<verb>`. The version segment never
+  # reaches the tree because the name, not the path, places the command.
+  /v3/widgets:
+    get:
+      operationId: listWidgets
+      x-docs: { path: widgets/list }
+      responses: { "200": { description: ok } }
+    post:
+      operationId: createWidget
+      x-docs: { path: widgets/create }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses: { "201": { description: created } }
+  /v3/widgets/{widgetId}:
+    parameters:
+      - { name: widgetId, in: path, required: true, schema: { type: string } }
+    # `retrieve` keeps the automatic `get` alias.
+    get:
+      operationId: getWidget
+      x-docs: { path: widgets/retrieve }
+      responses: { "200": { description: ok } }
+    # A nested group, and a verb the path would never produce.
+    post:
+      operationId: archiveWidget
+      x-docs: { path: widgets/lifecycle/archive }
+      responses: { "200": { description: ok } }
+  # No extension: the derived name, with `/v3` stripped first so the version
+  # does not become a group (`gadgets list`, not `v3 gadgets list`).
+  /v3/gadgets:
+    get:
+      operationId: listGadgets
+      responses: { "200": { description: ok } }
+  # A per-operation `x-cli` still wins over the stated name.
+  /v3/reports:
+    get:
+      operationId: listReports
+      x-docs: { path: reports/list }
+      x-cli: { verb: ls }
+      responses: { "200": { description: ok } }

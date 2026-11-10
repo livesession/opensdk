@@ -124,3 +124,18 @@ c!(merged_read_nested, "11.merged-read-nested");
 // spec produced a single `--body '<json>'` where four flags belonged. It was
 // invisible because the converter used to be handed pre-dereferenced input.
 c!(ref_body_flattens, "10.ref-body-flattens");
+
+// `namesFrom`: commands named by an operation extension (`x-docs.path`,
+// `<group>/.../<verb>`) instead of the method and path — a nested group, the
+// `retrieve` → `get` alias, the `docsPath` metadata, and `rootCommand`
+// wrapping the result. An operation without the extension falls back to the
+// derived name with `pathPrefixStrip` taking the version segment off first,
+// and a per-operation `x-cli` still overrides a stated name.
+c!(names_from, "13.names-from");
+
+// `defaultHeaders` + `headersFromExtension` resolved into the root
+// `x-openapi.defaultHeaders` (an `info` extension winning over a literal, a
+// dotted path, an absent extension changing nothing), and `includeSecurity`:
+// the document's requirement inherited, an operation's own (two schemes,
+// scopes as written) replacing it, and an empty list meaning none.
+c!(headers_and_security, "14.headers-and-security");
