@@ -66,10 +66,87 @@ pub fn security_schemes_to_x_openapi(
                 }
                 .to_string();
             }
+            // RFC 6750: an OAuth 2.0 access token is sent as `Authorization:
+            // Bearer <token>`, so the generated CLI reads it from the same
+            // variable and attaches it the way it attaches an `http`/`bearer`
+            // credential. The CLI does not run the flow.
+            Some("oauth2") => {
+                entry.scheme = Some(Value::String("bearer".to_string()));
+                entry.kind = "bearer".to_string();
+            }
             _ => {}
         }
 
         out.push(entry);
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn map_one(scheme: Value) -> Value {
+        let doc = json!({ "components": { "securitySchemes": { "auth": scheme } } });
+        let out = security_schemes_to_x_openapi(&doc, "acme", None);
+        assert_eq!(out.len(), 1);
+        serde_json::to_value(&out[0]).unwrap()
+    }
+
+    #[test]
+    fn oauth2_with_an_authorization_code_flow_is_a_bearer_scheme() {
+        assert_eq!(
+            map_one(json!({
+                "type": "oauth2",
+                "flows": { "authorizationCode": {
+                    "authorizationUrl": "https://auth.example.com/authorize",
+                    "tokenUrl": "https://auth.example.com/token",
+                    "scopes": { "widgets:read": "Read widgets" }
+                } }
+            })),
+            json!({
+                "type": "oauth2",
+                "kind": "bearer",
+                "envVar": "ACME_API_KEY",
+                "scheme": "bearer"
+            })
+        );
+    }
+
+    #[test]
+    fn http_bearer_is_unchanged() {
+        assert_eq!(
+            map_one(json!({ "type": "http", "scheme": "bearer", "bearerFormat": "JWT" })),
+            json!({
+                "type": "http",
+                "kind": "bearer",
+                "envVar": "ACME_API_KEY",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            })
+        );
+    }
+
+    #[test]
+    fn api_key_is_unchanged() {
+        assert_eq!(
+            map_one(json!({ "type": "apiKey", "in": "header", "name": "X-Api-Key" })),
+            json!({
+                "type": "apiKey",
+                "kind": "apiKey-header",
+                "envVar": "ACME_API_KEY",
+                "in": "header",
+                "name": "X-Api-Key"
+            })
+        );
+    }
+
+    #[test]
+    fn an_unrecognized_type_stays_other() {
+        assert_eq!(
+            map_one(json!({ "type": "openIdConnect" }))["kind"],
+            json!("other")
+        );
+    }
 }
