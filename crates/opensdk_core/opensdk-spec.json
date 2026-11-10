@@ -367,13 +367,15 @@
       "description": "A single security scheme mapped from the OpenAPI securitySchemes.",
       "properties": {
         "schemeName": { "type": "string", "description": "The source securityScheme key (e.g. AdminApiKeyAuth) — distinguishes per-operation overrides whose scheme shape equals the default" },
-        "kind": { "type": "string", "description": "Normalized scheme a generator branches on: bearer | apiKey-header | apiKey-query | apiKey-cookie | basic | other" },
+        "kind": { "type": "string", "description": "Normalized scheme a generator branches on: bearer | apiKey-header | apiKey-query | apiKey-cookie | basic | other. An oauth2 scheme is bearer (RFC 6750: the access token is sent as Authorization: Bearer)" },
         "type": { "type": "string", "description": "The OpenAPI security scheme type (e.g. http, apiKey, oauth2)" },
-        "scheme": { "type": "string", "description": "The HTTP auth scheme (e.g. bearer, basic) when type is http" },
+        "scheme": { "type": "string", "description": "The HTTP auth scheme (e.g. bearer, basic) when type is http; bearer when type is oauth2" },
         "in": { "type": "string", "description": "Location for an apiKey scheme (header, query or cookie)" },
         "name": { "type": "string", "description": "Header/query/cookie name for an apiKey scheme" },
         "bearerFormat": { "type": "string", "description": "The bearer token format hint (e.g. JWT)" },
-        "envVar": { "type": "string", "description": "Environment variable a generated SDK reads the credential from (e.g. OPENAI_API_KEY)" }
+        "envVar": { "type": "string", "description": "Environment variable a generated SDK reads the credential from (e.g. OPENAI_API_KEY)" },
+        "flows": { "type": "array", "items": { "type": "string" }, "description": "The OAuth 2.0 flow types an oauth2 scheme declares (e.g. authorizationCode, clientCredentials), in document order" },
+        "scopes": { "type": "object", "additionalProperties": { "type": "string" }, "description": "The scope catalogue of an oauth2 scheme, merged across its flows (scope name to description; the first declaration wins)" }
       },
       "required": ["type"]
     },

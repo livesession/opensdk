@@ -886,6 +886,138 @@ fn diff_rejects_an_invalid_fail_on_value() {
     }
 }
 
+/// The petstore document with its only security scheme swapped for `scheme`
+/// (under a new key, as a real migration would rename it).
+fn petstore_with_scheme(key: &str, scheme: Value) -> Value {
+    let raw = std::fs::read_to_string(spec()).unwrap();
+    let mut doc: Value = serde_json::from_str(&raw).unwrap();
+    doc["components"]["securitySchemes"] = json!({ key: scheme });
+    doc
+}
+
+fn oauth2_authorization_code() -> Value {
+    json!({
+        "type": "oauth2",
+        "flows": { "authorizationCode": {
+            "authorizationUrl": "https://auth.example.com/authorize",
+            "tokenUrl": "https://auth.example.com/token",
+            "scopes": { "pets:read": "Read pets", "pets:write": "Write pets" }
+        } }
+    })
+}
+
+#[test]
+fn every_target_generates_the_same_client_for_oauth2_as_for_http_bearer() {
+    // An oauth2 scheme maps to the bearer kind, so every SDK runtime and CLI
+    // reads its token from the same variable and sends `Authorization: Bearer`
+    // — the generated trees are byte-identical to the `http`/`bearer` ones.
+    let dir = tmp("gen-oauth2");
+    let oauth2 = write(
+        &dir,
+        "oauth2.json",
+        &petstore_with_scheme("oauth", oauth2_authorization_code()),
+    );
+    for lang in [
+        "go", "node", "python", "ruby", "java", "dotnet", "rust", "go-cli", "rust-cli",
+    ] {
+        let bearer_out = dir.join(format!("{lang}-bearer"));
+        let oauth2_out = dir.join(format!("{lang}-oauth2"));
+        let with_name = |opts: GenerateCommandOptions| GenerateCommandOptions {
+            inputs: ConverterInputs {
+                sdk_name: Some("petstore".into()),
+                ..Default::default()
+            },
+            ..opts
+        };
+        generate_command(&with_name(gen(lang, &bearer_out)), &dir).unwrap();
+        generate_command(
+            &with_name(GenerateCommandOptions {
+                spec: oauth2.clone(),
+                ..gen(lang, &oauth2_out)
+            }),
+            &dir,
+        )
+        .unwrap();
+
+        let (mut bearer_files, mut oauth2_files) = (Vec::new(), Vec::new());
+        walk_files(&bearer_out, "", &mut bearer_files);
+        walk_files(&oauth2_out, "", &mut oauth2_files);
+        bearer_files.sort();
+        oauth2_files.sort();
+        assert!(!bearer_files.is_empty(), "{lang}: nothing generated");
+        assert_eq!(bearer_files, oauth2_files, "{lang}");
+        for rel in &bearer_files {
+            assert_eq!(
+                read(&bearer_out, rel),
+                read(&oauth2_out, rel),
+                "{lang}: {rel} differs"
+            );
+        }
+    }
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn diff_an_http_bearer_document_moving_to_oauth2_is_not_a_security_change() {
+    // RFC 6750: an oauth2 access token is sent as `Authorization: Bearer`, so the
+    // generated clients send the same header from the same variable on both
+    // sides — nothing an SDK consumer sees has changed.
+    use opensdk::generate::load_ir;
+    use opensdk::grouping::converter_options;
+
+    let dir = tmp("diff-oauth2");
+    let options = converter_options(&ConverterInputs::default(), &dir).unwrap();
+    let base_path = spec();
+    let head_path = write(
+        &dir,
+        "oauth2.json",
+        &petstore_with_scheme("oauth", oauth2_authorization_code()),
+    );
+
+    let base = load_ir(&base_path, &options).unwrap();
+    let head = load_ir(&head_path, &options).unwrap();
+    assert_eq!(base["security"][0]["type"], json!("http"));
+    assert_eq!(head["security"][0]["type"], json!("oauth2"));
+    assert_eq!(head["security"][0]["kind"], json!("bearer"));
+    assert_eq!(head["security"][0]["envVar"], base["security"][0]["envVar"]);
+
+    let diff = serde_json::to_value(opensdk_diff::diff_ir(&base, &head)).unwrap();
+    assert_eq!(diff["changes"], json!([]), "{diff:#}");
+
+    let code = diff_command(
+        &DiffCommandOptions {
+            base: base_path.clone(),
+            head: head_path,
+            fail_on: DiffFailOn::Any,
+            ..Default::default()
+        },
+        &dir,
+    )
+    .unwrap();
+    assert_eq!(code, 0);
+
+    // The gate bites: a scheme the generators cannot send is still a change.
+    let other_path = write(
+        &dir,
+        "oidc.json",
+        &petstore_with_scheme(
+            "oidc",
+            json!({
+                "type": "openIdConnect",
+                "openIdConnectUrl": "https://auth.example.com/.well-known/openid-configuration"
+            }),
+        ),
+    );
+    let other = load_ir(&other_path, &options).unwrap();
+    let diff = serde_json::to_value(opensdk_diff::diff_ir(&base, &other)).unwrap();
+    assert_eq!(
+        diff["changes"][0]["kind"],
+        json!("security-changed"),
+        "{diff:#}"
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 // ── init ─────────────────────────────────────────────────────────────────────
 
 #[test]

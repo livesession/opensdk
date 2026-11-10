@@ -263,4 +263,34 @@ non-negative integer or a string holding one; `0` leaves `nested` out; any
 other value falls back to the default). The IR records the origin as
 `types[].schemaRef`, which the IR schema declares on `NamedType`.
 
+## Authentication
+
+Every `components.securitySchemes` entry becomes an IR `security` entry whose
+`kind` is what the generators branch on:
+
+| OpenAPI scheme | `kind` |
+|---|---|
+| `http` with `scheme: bearer` | `bearer` |
+| `oauth2` (any flow) | `bearer` |
+| `http` with `scheme: basic` | `basic` |
+| `apiKey` with `in: header` / `query` / `cookie` | `apiKey-header` / `apiKey-query` / `apiKey-cookie` |
+| anything else | `other` |
+
+A `bearer` client sends `Authorization: Bearer <token>`; an `apiKey-*` client
+sends the key under the scheme's `name`. The credential is read from one
+environment variable, `<SDKNAME>_API_KEY` by default. An SDK applies its
+document's first scheme; a generated CLI applies each one it recognizes.
+
+An `oauth2` scheme is a bearer scheme at runtime (RFC 6750: an OAuth 2.0 access
+token is sent as `Authorization: Bearer <token>`). The generated client does
+not run the flow; it sends the access token it is given, from the same variable
+an `http`/`bearer` scheme uses, so the generated code is the same for both. The
+IR entry carries `scheme: "bearer"` plus what the document declares about the
+flows, for docs and tooling: `flows` (the flow types, in document order) and
+`scopes` (the scope catalogue merged across the flows, the first description
+of a scope winning). `opensdk diff` identifies the document's schemes by their
+`kind`, `name`, `in` and `scheme`, so a document that moves from an
+`http`/`bearer` scheme to an `oauth2` one is not a `security-changed` (an
+operation-level `security` override is still compared as a whole).
+
 MIT licensed.

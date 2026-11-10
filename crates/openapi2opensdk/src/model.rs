@@ -53,6 +53,14 @@ pub struct Security {
     pub location: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<Value>,
+    /// The flow types an `oauth2` scheme declares (`authorizationCode`,
+    /// `clientCredentials`, ...), in document order. Absent for other schemes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flows: Option<Vec<String>>,
+    /// The scope catalogue of an `oauth2` scheme, merged across its flows
+    /// (scope -> description; the first declaration wins). Absent when empty.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scopes: Option<Map<String, Value>>,
 }
 
 #[derive(Serialize, Clone)]
