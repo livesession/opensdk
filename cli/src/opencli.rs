@@ -201,9 +201,11 @@ const COMMAND_ORDER: &[&str] = &[
     "x-openapi",
 ];
 
-/// Set `key` on `map`, in place when present, else at the position `order`
-/// gives it among the keys already there (after the last earlier one; at the
-/// end when it is not in `order`).
+/// Set `key` on `map`, in place when present. A new key in `order` goes right
+/// after the last key already there that `order` puts before it, else right
+/// before the first one it puts after it, else at the end; a new key not in
+/// `order` goes at the end. Keys `order` does not know keep their positions —
+/// a leading `$schema` stays first.
 fn set_ordered(map: &mut Map<String, Value>, key: &str, value: Value, order: &[&str]) {
     if let Some(slot) = map.get_mut(key) {
         *slot = value;
@@ -214,19 +216,62 @@ fn set_ordered(map: &mut Map<String, Value>, key: &str, value: Value, order: &[&
         map.insert(key.to_string(), value);
         return;
     };
+    let keys: Vec<&String> = map.keys().collect();
+    let after_predecessor = keys
+        .iter()
+        .rposition(|k| rank(k).is_some_and(|r| r < own))
+        .map(|i| i + 1);
+    let before_successor = || keys.iter().position(|k| rank(k).is_some_and(|r| r > own));
+    let at = after_predecessor
+        .or_else(before_successor)
+        .unwrap_or(keys.len());
     let mut out = Map::new();
-    let mut placed = false;
-    for (k, v) in std::mem::take(map) {
-        if !placed && rank(&k).is_none_or(|r| r > own) {
+    for (i, (k, v)) in std::mem::take(map).into_iter().enumerate() {
+        if i == at {
             out.insert(key.to_string(), value.clone());
-            placed = true;
         }
         out.insert(k, v);
     }
-    if !placed {
+    if !out.contains_key(key) {
         out.insert(key.to_string(), value);
     }
     *map = out;
+}
+
+/// The spellings a top-level command answers to: its name, then its aliases.
+fn spellings(command: &Value) -> Vec<&str> {
+    command
+        .get("name")
+        .and_then(Value::as_str)
+        .into_iter()
+        .chain(
+            command
+                .get("aliases")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(Value::as_str),
+        )
+        .collect()
+}
+
+/// The first of `wanted` some top-level command OTHER than `own` answers to,
+/// with that command's name.
+fn spelling_taken<'a>(
+    commands: &'a [Value],
+    own: &str,
+    wanted: &[&str],
+) -> Option<(String, &'a str)> {
+    commands
+        .iter()
+        .filter(|c| c.get("name").and_then(Value::as_str) != Some(own))
+        .find_map(|c| {
+            let other = c.get("name").and_then(Value::as_str).unwrap_or_default();
+            spellings(c)
+                .into_iter()
+                .find(|s| wanted.contains(s))
+                .map(|s| (s.to_string(), other))
+        })
 }
 
 /// Merge one `--declare` fragment into the document. `origin` names the
@@ -316,6 +361,15 @@ pub fn merge_fragment(doc: &mut Value, fragment: &Value, origin: &str) -> Result
             }
             None => existing.push(command.clone()),
         }
+        // Names and aliases share one namespace at the top level: clap
+        // rejects two commands answering to one spelling.
+        let wanted = spellings(command);
+        if let Some((spelling, other)) = spelling_taken(&existing, name, &wanted) {
+            return Err(fail(format!(
+                "command `{name}` and command `{other}` both answer to `{spelling}` (a name or \
+                 an alias)"
+            )));
+        }
     }
     set_ordered(root, "commands", Value::Array(existing), ROOT_ORDER);
     Ok(())
@@ -392,6 +446,95 @@ mod tests {
         );
         assert_eq!(commands[0]["commands"][0]["name"], json!("widgets"));
         assert_eq!(commands[1]["name"], json!("login"));
+    }
+
+    #[test]
+    fn unknown_keys_keep_their_place_and_known_ones_follow_their_predecessor() {
+        let mut doc = json!({
+            "$schema": "https://example.test/opencli.json",
+            "opencli": "1.0.0",
+            "info": { "title": "t", "version": "1" },
+            "commands": []
+        });
+        merge_fragment(
+            &mut doc,
+            &json!({ "exitCodes": [], "options": [] }),
+            "a.json",
+        )
+        .unwrap();
+        assert_eq!(
+            keys(&doc),
+            [
+                "$schema",
+                "opencli",
+                "info",
+                "options",
+                "commands",
+                "exitCodes"
+            ]
+        );
+        // No known predecessor: before the first known successor.
+        let mut map = json!({ "x-a": 1, "info": {}, "x-b": 2 });
+        set_ordered(
+            map.as_object_mut().unwrap(),
+            "opencli",
+            json!("1"),
+            ROOT_ORDER,
+        );
+        assert_eq!(keys(&map), ["x-a", "opencli", "info", "x-b"]);
+        // No known key at all: at the end.
+        let mut map = json!({ "x-a": 1 });
+        set_ordered(
+            map.as_object_mut().unwrap(),
+            "options",
+            json!([]),
+            ROOT_ORDER,
+        );
+        assert_eq!(keys(&map), ["x-a", "options"]);
+    }
+
+    #[test]
+    fn a_name_or_alias_another_top_level_command_answers_to_is_an_error() {
+        let mut doc = generated();
+        merge_fragment(
+            &mut doc,
+            &json!({ "commands": [{ "name": "login", "aliases": ["signin"] }] }),
+            "a.json",
+        )
+        .unwrap();
+        // A new command named like an existing alias.
+        let err = merge_fragment(
+            &mut doc,
+            &json!({ "commands": [{ "name": "signin" }] }),
+            "b.json",
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.0,
+            "--declare b.json: command `signin` and command `login` both answer to `signin` (a \
+             name or an alias)"
+        );
+        // A new command whose alias is an existing name.
+        assert!(merge_fragment(
+            &mut doc,
+            &json!({ "commands": [{ "name": "auth", "aliases": ["api"] }] }),
+            "c.json"
+        )
+        .is_err());
+        // A merged alias equal to another command's name.
+        assert!(merge_fragment(
+            &mut doc,
+            &json!({ "commands": [{ "name": "api", "aliases": ["login"] }] }),
+            "d.json"
+        )
+        .is_err());
+        // A command's own name among its aliases is not a clash.
+        merge_fragment(
+            &mut doc,
+            &json!({ "commands": [{ "name": "api", "aliases": ["api", "raw"] }] }),
+            "e.json",
+        )
+        .unwrap();
     }
 
     #[test]

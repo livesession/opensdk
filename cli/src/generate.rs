@@ -262,6 +262,14 @@ pub fn generate_targets(
     // only run the converter when SDK languages remain (a CLI-only config must
     // not pay for — or fail on — the IR conversion).
     let sdk_langs: Vec<&String> = langs.iter().filter(|l| !is_cli_target(Some(l))).collect();
+    // An OpenCLI document drives the CLI targets only. Refuse it for a config
+    // that also declares SDK languages BEFORE anything is written, rather than
+    // after the CLI targets already were.
+    if !sdk_langs.is_empty() {
+        if let Ok(doc) = oas_doc::read_spec(&opts.spec) {
+            reject_opencli(&opts.spec, &doc)?;
+        }
+    }
     for lang in langs.iter().filter(|l| is_cli_target(Some(l))) {
         let target = config.target_for(lang);
         generate_cli_target(

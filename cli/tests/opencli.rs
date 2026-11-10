@@ -215,6 +215,32 @@ fn an_opencli_document_is_refused_for_an_sdk_language() {
 }
 
 #[test]
+fn a_mixed_config_refuses_an_opencli_document_before_writing_anything() {
+    let case = fixtures().join("1.converter-options");
+    let dir = tmp("mixed-refused");
+    let doc = dir.join("opencli.json");
+    emit(&case, &doc);
+    let mut config = resolve_config(&case, None).unwrap().expect("sdk.json");
+    config
+        .emitter_options
+        .push(("go".to_string(), serde_json::Map::new()));
+    let out = dir.join("out");
+    let err = opensdk::generate::generate_targets(
+        &opensdk::generate::GenerateTargetsOptions {
+            spec: doc.to_string_lossy().to_string(),
+            output: out.to_string_lossy().to_string(),
+            ..Default::default()
+        },
+        &config,
+        &dir,
+    )
+    .unwrap_err();
+    assert!(err.0.contains("is an OpenCLI document"), "{}", err.0);
+    assert!(!out.exists(), "a CLI target was written before the refusal");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn the_argv_layer_writes_the_same_bytes_and_repeats_declare_in_order() {
     let case = fixtures().join("2.declare");
     let dir = tmp("argv");
