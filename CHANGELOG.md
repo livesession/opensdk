@@ -7,40 +7,68 @@ on their GitHub release pages.
 ## 0.3.0
 
 - Converter options (`openapi2opencli`, and the `go-cli`/`rust-cli` sdk.json
-  sections): `namesFrom` names each command from an operation extension (a
-  dotted path such as `x-docs.path` whose value `<group>/.../<verb>` places the
-  command; a `retrieve` verb keeps its `get` alias) and records the value as the
-  command's `docsPath` metadata, falling back to the derived name unless
-  `namesFromRequired` is set; `pathPrefixStrip` takes a leading path prefix
-  (`/v3`) off before the default derivation; `defaultHeaders` and
-  `headersFromExtension` (header → a dotted path under `info`, then the
-  document root) resolve into the root `x-openapi.defaultHeaders`;
-  `includeSecurity` records each command's security requirements as
-  `x-openapi.security` (`[{ scheme, scopes }]`). All additive: a document
-  converted without them is unchanged. Converter fixtures `13.names-from` and
-  `14.headers-and-security`.
-- `opensdk opencli --spec <openapi> [--config sdk.json] [--lang rust-cli|go-cli]
-  [--declare <fragment.json>]... [--output <file>]` writes the OpenCLI document
-  a CLI target generates from and merges hand-written OpenCLI fragments into it
-  (root `options`/`exitCodes`/`info.description` replace, `commands` append, a
+  sections):
+  - `namesFrom` names each command from an operation extension (a dotted path
+    such as `x-docs.path` whose value `<group>/.../<verb>` places the command;
+    a `retrieve` verb keeps its `get` alias) and records the value as the
+    command's `docsPath` metadata; a group it creates is described by the
+    matching tag's description, else as `<name> commands`. An operation
+    without the value falls back to the derived name unless
+    `namesFromRequired` is set (which requires `namesFrom`).
+  - `pathPrefixStrip` takes a leading path prefix (`/v3`; a `{param}` segment
+    matches any parameter) off before the default derivation; the full path
+    still decides the command's shape and stays the request path.
+  - `defaultHeaders` and `headersFromExtension` (header → a dotted path under
+    `info`, then the document root) resolve into the root
+    `x-openapi.defaultHeaders` (an extension property).
+  - `includeSecurity` records each command's security requirements as
+    `x-openapi.security`: OpenCLI `XOpenApiSecurity` entries — the scheme's
+    descriptor as its root entry has it, plus `ref` (the scheme's key) and
+    `scopes`.
+  All additive: a document converted without them is unchanged. Converter
+  fixtures `13.names-from`, `14.headers-and-security`, `15.path-prefix-params`.
+- The converter rejects two commands answering to one spelling at one level —
+  names AND aliases (a stated `get` beside `retrieve`, whose alias is `get`) —
+  which clap rejected at runtime.
+- The OpenCLI JSON Schema is vendored under `crates/openapi2opencli/tests`, and
+  every committed OpenCLI document (converter outputs, backend fixture inputs,
+  the `opensdk opencli` goldens) is validated against it.
+- `opensdk opencli [--spec <openapi>] [--config sdk.json] [--lang
+  rust-cli|go-cli] [--declare <fragment.json>]... [--output <file>]
+  [--sdk-name <name>]` writes the OpenCLI document a CLI target generates from
+  and merges hand-written OpenCLI fragments into it (root
+  `options`/`exitCodes`/`info.description` replace, `commands` append, a
   command named like an existing top-level one updates its description,
-  aliases and hidden flag). `generate --spec <opencli.json>` drives a CLI
-  target from such a document, skipping the converter; an SDK language refuses
-  it. Fixtures under `cli/__fixtures__/opencli`.
+  aliases and hidden flag; a name or alias another top-level command answers
+  to is an error). `generate --spec <opencli.json>` drives a CLI target from
+  such a document, skipping the converter; an SDK language — or a config
+  declaring one beside the CLI targets — refuses it before anything is
+  written. Fixtures under `cli/__fixtures__/opencli`.
 - `opencli2rust`: a document with root `options`, root `exitCodes` or
-  `x-openapi.defaultHeaders` gets the root seam — the root options as clap
-  arguments (`recursive` → global), `CliOverrides::before_dispatch` (read them
-  into the `Context` before any command runs), `CliOverrides::print_usage_error`
-  (choose a usage error's exit code; default clap's), and `Context::headers`
-  seeded from `config::DEFAULT_HEADERS`, sent when a request lacks them, with at
-  most one `Authorization` (an explicit one replaces the environment
-  credential). Other documents generate byte-identically. Fixtures
-  `11.root-options` and `12.default-headers`, and `tests/runtime_smoke.rs`
-  (`XYD_SMOKE_RUST=1`), which builds both and checks the requests on the wire.
-- `opencli2rust`: a JSON `--body` reads `@file` and `@-` (stdin) as well as an
-  inline value, a declared body media type other than `application/json` is
-  sent as the `Content-Type`, and the `--body` value is no longer also sent as
-  a `?body=` query parameter.
+  `x-openapi.defaultHeaders` gets the root seam:
+  - the root options as clap arguments; `recursive` → global, listed under a
+    "Global options" help heading; a recursive option cannot also be required
+    in clap, so a required one is emitted optional with a warning;
+  - `CliOverrides::before_dispatch` (read them into the `Context` before any
+    command runs) and `CliOverrides::print_usage_error` (choose a usage
+    error's exit code; default clap's);
+  - `Context::headers` seeded from `config::DEFAULT_HEADERS`, sent when a
+    request lacks them, with at most one `Authorization` (an explicit one
+    replaces the environment credential).
+  A root option sharing an id, long or short with clap's `-h/--help` or
+  `-V/--version`, another root option, or (when global) any command's option
+  or positional is a generation error naming both: `try_opencli2rust` returns
+  it, `opencli2rust` panics on it. Other documents generate byte-identically.
+  Fixtures `11.root-options` and `12.default-headers`, and
+  `tests/runtime_smoke.rs` (`XYD_SMOKE_RUST=1`, failing on any build error),
+  which builds both and checks the requests and the help on the wire.
+- `opencli2rust`: a `json`-style `--body` reads `@file`, `@-` (stdin) and
+  `@@...` (a literal value starting with `@`) as well as an inline value, and
+  sends the declared media type as the `Content-Type` when it is not
+  `application/json` (a `flatten` or `multipart` body is JSON-assembled and
+  stays `application/json`); the `--body` value is no longer also sent as a
+  `?body=` query parameter; a resource with no API leaf no longer emits a
+  one-arm `match` (`clippy::match_single_binding` in the generated crate).
 - `baseURL` in a CLI section reaches the generated config in both backends (it
   passed the option split and was then dropped; `baseUrl` is accepted too), and
   the `regen` binary reads `version_from` and `base_url` from `regen.toml`.
