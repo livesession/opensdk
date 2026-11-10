@@ -4,7 +4,32 @@
 use serde_json::Value;
 
 use crate::command::ResourceFile;
+use crate::flags::render_flag_args;
+use crate::model::build_root_flags;
 use crate::rslit::{chain, indent, json_str, lit, rs_file, rs_str, RsVal, Uses};
+
+/// Does the document opt into the ROOT SEAM — root `options`, root
+/// `exitCodes`, or `x-openapi.defaultHeaders`?
+///
+/// The seam is the part of the runtime a CLI with a hand-written surface needs:
+/// the root options as clap args, `CliOverrides::before_dispatch` (read them
+/// into the context before any command runs), `print_usage_error` (choose the
+/// exit code of a usage error), and the context-level headers with the
+/// one-`Authorization` rule. A document with none of the three gets the runtime
+/// it always got, byte for byte.
+pub fn has_root_seam(spec: &Value) -> bool {
+    let non_empty = |key: &str| {
+        spec.get(key)
+            .and_then(|v| v.as_array())
+            .is_some_and(|a| !a.is_empty())
+    };
+    let headers = spec
+        .get("x-openapi")
+        .and_then(|x| x.get("defaultHeaders"))
+        .and_then(|h| h.as_object())
+        .is_some_and(|h| !h.is_empty());
+    non_empty("options") || non_empty("exitCodes") || headers
+}
 
 /// Which version string `--version` reports. See `Options::version_from`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -41,6 +66,7 @@ pub fn render_cli(
     resources: &[ResourceFile],
     action_paths: &[Vec<String>],
     version_from: VersionFrom,
+    root_seam: bool,
 ) -> String {
     let has_actions = !action_paths.is_empty();
     let info = spec.get("info");
@@ -62,6 +88,16 @@ pub fn render_cli(
                 calls.push(("version".into(), vec![rs_str(version)]));
             }
         }
+    }
+    // The document's root options, ahead of the subcommands. Only under the
+    // root seam, which `before_dispatch` (the code that reads them) ships with.
+    let root_flags = if root_seam {
+        build_root_flags(spec)
+    } else {
+        Vec::new()
+    };
+    for flag in render_flag_args(&root_flags) {
+        calls.push(("arg".into(), vec![flag]));
     }
     calls.push(("subcommand_required".into(), vec![lit("true")]));
     calls.push(("arg_required_else_help".into(), vec![lit("true")]));
@@ -114,8 +150,16 @@ pub fn render_cli(
         ""
     };
 
+    // Under the root seam a usage error goes through `print_usage_error` (so a
+    // consumer picks the exit code) and `before_dispatch` sees the root matches
+    // before anything runs; otherwise clap exits on its own, as it always has.
+    let parse = if root_seam {
+        "    let matches = match customs.graft(root_command()).try_get_matches() {\n        Ok(matches) => matches,\n        Err(err) => return o.print_usage_error(&err),\n    };\n    let mut ctx = Context::from_env();\n    o.before_dispatch(&mut ctx, &matches);\n"
+    } else {
+        "    let matches = customs.graft(root_command()).get_matches();\n    let ctx = Context::from_env();\n"
+    };
     let run_fn = format!(
-        "/// Parse args, resolve the invoked command path, and dispatch — custom commands\n{dispatch_note}\npub async fn run<O: CliOverrides>(o: O, customs: CustomCommands{actions_param}) -> ExitCode {{\n    let matches = customs.graft(root_command()).get_matches();\n    let ctx = Context::from_env();\n    let (cmd_path, leaf) = descend(&matches);\n\n    if let Some(handler) = customs.find(&cmd_path) {{\n        return match handler(ctx.clone(), leaf.clone()).await {{\n            Ok(()) => ExitCode::SUCCESS,\n            Err(err) => o.print_error(&cmd_path, &err),\n        }};\n    }}\n{actions_dispatch}\n    match cmd_path.first().map(String::as_str) {{\n{}\n    }}\n}}",
+        "/// Parse args, resolve the invoked command path, and dispatch — custom commands\n{dispatch_note}\npub async fn run<O: CliOverrides>(o: O, customs: CustomCommands{actions_param}) -> ExitCode {{\n{parse}    let (cmd_path, leaf) = descend(&matches);\n\n    if let Some(handler) = customs.find(&cmd_path) {{\n        return match handler(ctx.clone(), leaf.clone()).await {{\n            Ok(()) => ExitCode::SUCCESS,\n            Err(err) => o.print_error(&cmd_path, &err),\n        }};\n    }}\n{actions_dispatch}\n    match cmd_path.first().map(String::as_str) {{\n{}\n    }}\n}}",
         indent(&match_body, 2)
     );
 
@@ -129,7 +173,11 @@ pub fn render_cli(
     let mut uses = Uses::new();
     uses.add(&[
         "std::process::ExitCode",
-        "clap::ArgMatches",
+        if root_flags.is_empty() {
+            "clap::ArgMatches"
+        } else {
+            "clap::{Arg, ArgMatches}"
+        },
         "super::cmd",
         if has_actions {
             "super::runtime::{Actions, CliOverrides, Context, CustomCommands}"

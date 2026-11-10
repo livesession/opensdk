@@ -20,3 +20,7 @@ toml = "0.8"
 [[bin]]
 name = "regen"
 path = "src/bin/regen.rs"
+
+# tests/runtime_smoke.rs: the recording server the built fixture CLIs talk to.
+[dev-dependencies]
+tiny_http = { workspace = true }

@@ -306,6 +306,7 @@ dependencies = [
  "opensdk_framework",
  "serde",
  "serde_json",
+ "tiny_http",
  "toml",
 ]
 

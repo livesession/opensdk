@@ -147,3 +147,94 @@ fn merged_read() {
 fn merged_read_nested() {
     run_case("10.merged-read-nested");
 }
+
+/// Root `options` + `exitCodes`: the root seam. The options are clap args on
+/// the root command (`recursive` → `.global(true)`), parsing goes through
+/// `try_get_matches` + `CliOverrides::print_usage_error`, and
+/// `CliOverrides::before_dispatch` sees the root matches before any command
+/// runs. Documents without root options keep the base output (fixtures 1-10).
+#[test]
+fn root_options() {
+    run_case("11.root-options");
+}
+
+/// `x-openapi.defaultHeaders`: `config::DEFAULT_HEADERS`, the context headers
+/// they seed (sent when a request lacks them), the one-`Authorization` rule in
+/// `send()`, and the request bodies — `--body @file` / `@-` / inline, and the
+/// declared `Content-Type` when it is not `application/json`.
+#[test]
+fn default_headers() {
+    run_case("12.default-headers");
+}
+
+/// `baseURL` (the spelling the sdk.json CLI sections use) and `baseUrl` both
+/// reach `config.rs`; before the alias, `baseURL` passed the option split and
+/// was then silently dropped.
+#[test]
+fn the_base_url_option_takes_both_spellings() {
+    let spec: Value = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "x-openapi": { "servers": ["https://api.widgets.test"] }
+    });
+    for key in ["baseURL", "baseUrl"] {
+        let options =
+            serde_json::from_value(serde_json::json!({ key: "https://override.test" })).unwrap();
+        let files = flatten(&opencli2rust(&spec, Some(options)));
+        assert!(
+            files["src/gen/runtime/config.rs"]
+                .contains(r#"const DEFAULT_BASE_URL: &str = "https://override.test";"#),
+            "{key} did not reach config.rs"
+        );
+    }
+}
+
+/// The root seam is switched on by any one of its three triggers and by
+/// nothing else; a document without them keeps the base runtime.
+#[test]
+fn the_root_seam_has_three_triggers() {
+    let base = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "commands": [{ "name": "ping", "x-openapi": { "method": "get", "path": "/ping" } }]
+    });
+    let seam = |spec: &Value| {
+        flatten(&opencli2rust(spec, None))["src/gen/runtime/overrides.rs"]
+            .contains("fn before_dispatch(")
+    };
+    assert!(!seam(&base));
+    let mut empty = base.clone();
+    empty["options"] = serde_json::json!([]);
+    empty["exitCodes"] = serde_json::json!([]);
+    empty["x-openapi"] = serde_json::json!({ "defaultHeaders": {} });
+    assert!(!seam(&empty), "empty triggers are no trigger");
+    for (key, value) in [
+        ("options", serde_json::json!([{ "name": "verbose" }])),
+        ("exitCodes", serde_json::json!([{ "code": 3 }])),
+        (
+            "x-openapi",
+            serde_json::json!({ "defaultHeaders": { "X-A": "1" } }),
+        ),
+    ] {
+        let mut spec = base.clone();
+        spec[key] = value;
+        assert!(seam(&spec), "{key} should switch the seam on");
+    }
+}
+
+/// A recursive root option cannot also be required (clap rejects a required
+/// global argument): it is emitted global and optional.
+#[test]
+fn a_required_recursive_root_option_is_emitted_optional() {
+    let spec = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "options": [{ "name": "profile", "required": true, "recursive": true, "arguments": [{ "name": "name" }] }],
+        "commands": [{ "name": "ping", "x-openapi": { "method": "get", "path": "/ping" } }]
+    });
+    let cli = flatten(&opencli2rust(&spec, None))["src/gen/cli.rs"].clone();
+    let arg = &cli[cli.find(r#"Arg::new("profile")"#).unwrap()..];
+    let arg = &arg[..arg.find(".subcommand_required").unwrap()];
+    assert!(arg.contains(".global(true)"), "{arg}");
+    assert!(!arg.contains(".required(true)"), "{arg}");
+}

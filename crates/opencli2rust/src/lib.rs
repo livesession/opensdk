@@ -35,6 +35,10 @@ pub struct Options {
     pub crate_name: Option<String>,
     pub bin_name: Option<String>,
     pub edition: Option<String>,
+    /// The base URL baked into the generated config (default: the document's
+    /// first server). `baseURL` — the spelling the sdk.json CLI sections
+    /// document — is accepted beside the camelCase `baseUrl`.
+    #[serde(alias = "baseURL")]
     pub base_url: Option<String>,
     /// Top-level generated module (`src/<moduleName>/**`). Default: `"gen"`.
     pub module_name: Option<String>,
@@ -155,6 +159,9 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
         .flat_map(|r| r.action_paths.clone())
         .collect();
     let has_actions = !action_paths.is_empty();
+    // Root options / exit codes / default headers switch on the root seam;
+    // without them every file is what it always was.
+    let root_seam = cli::has_root_seam(spec);
 
     files.push((
         "Cargo.toml".into(),
@@ -182,12 +189,13 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
             &resources,
             &action_paths,
             version_from,
+            root_seam,
         )),
     ));
     files.push((format!("src/{module_name}/mod.rs"), owned(gen_mod_rs())));
     files.push((
         format!("src/{module_name}/runtime/mod.rs"),
-        owned(runtime_mod_rs(has_actions)),
+        owned(runtime_mod_rs(has_actions, root_seam)),
     ));
     files.push((
         format!("src/{module_name}/runtime/http.rs"),
@@ -195,11 +203,11 @@ pub fn opencli2rust(spec: &Value, options: Option<Options>) -> FileMap {
     ));
     files.push((
         format!("src/{module_name}/runtime/config.rs"),
-        owned(config_rs(spec, &bin_name, &base_url)),
+        owned(config_rs(spec, &bin_name, &base_url, root_seam)),
     ));
     files.push((
         format!("src/{module_name}/runtime/overrides.rs"),
-        owned(overrides_rs()),
+        owned(overrides_rs(root_seam)),
     ));
     files.push((
         format!("src/{module_name}/runtime/custom.rs"),

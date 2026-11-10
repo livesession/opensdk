@@ -27,6 +27,10 @@ pub struct Options {
     pub module_path: Option<String>,
     pub bin_name: Option<String>,
     pub go_version: Option<String>,
+    /// The base URL baked into the generated config (default: the document's
+    /// first server). `baseURL` — the spelling the sdk.json CLI sections
+    /// document — is accepted beside the camelCase `baseUrl`.
+    #[serde(alias = "baseURL")]
     pub base_url: Option<String>,
 }
 

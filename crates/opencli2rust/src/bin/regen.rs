@@ -49,6 +49,12 @@ struct RegenConfig {
     impl_module: Option<String>,
     /// Skip the `cargo fmt` step when false. Default: true.
     fmt: Option<bool>,
+    /// Where `--version` reads from: `"spec"` (default) or `"crate"` — the
+    /// generator's `versionFrom`.
+    version_from: Option<String>,
+    /// The base URL baked into `config.rs` (default: the spec's first server) —
+    /// the generator's `baseURL`.
+    base_url: Option<String>,
 }
 
 fn die(msg: impl AsRef<str>) -> ! {
@@ -126,6 +132,8 @@ fn main() {
             impl_module: cfg.impl_module.clone(),
             bin_name: cfg.bin.clone(),
             crate_name: cfg.crate_name.clone(),
+            version_from: cfg.version_from.clone(),
+            base_url: cfg.base_url.clone(),
             ..Default::default()
         }),
     );

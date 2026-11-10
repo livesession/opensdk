@@ -1,0 +1,49 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "widgets",
+    "version": "1.0.0",
+    "description": "Manage widgets from the terminal."
+  },
+  "x-openapi": {
+    "servers": ["https://api.widgets.test"],
+    "security": [
+      { "type": "http", "kind": "bearer", "envVar": "WIDGETS_API_KEY", "scheme": "bearer" }
+    ]
+  },
+  "options": [
+    {
+      "name": "token",
+      "description": "Access token (overrides WIDGETS_API_KEY)",
+      "recursive": true,
+      "arguments": [{ "name": "token" }]
+    },
+    {
+      "name": "output",
+      "aliases": ["o"],
+      "description": "Output format",
+      "recursive": true,
+      "arguments": [{ "name": "format", "acceptedValues": ["json", "table"] }]
+    },
+    {
+      "name": "verbose",
+      "description": "Print request details"
+    }
+  ],
+  "exitCodes": [
+    { "code": 0, "description": "Success" },
+    { "code": 64, "description": "Usage error" }
+  ],
+  "commands": [
+    {
+      "name": "widgets",
+      "commands": [
+        {
+          "name": "list",
+          "description": "List widgets",
+          "x-openapi": { "method": "get", "path": "/widgets", "operationId": "listWidgets" }
+        }
+      ]
+    }
+  ]
+}

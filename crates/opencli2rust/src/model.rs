@@ -37,6 +37,9 @@ pub struct FlagModel {
     pub accepted_values: Option<Vec<String>>,
     /// Non-API only: value arity (`.num_args(...)`). NEVER set by `build_leaf_model`.
     pub arity: Option<ArityModel>,
+    /// Root options only: an OpenCLI `recursive` option, rendered `.global(true)`
+    /// so it is accepted after any subcommand. Only `build_root_flags` sets it.
+    pub global: bool,
 }
 
 pub struct ArityModel {
@@ -191,6 +194,17 @@ pub fn build_leaf_model(command: &Value) -> LeafModel {
         .get("options")
         .and_then(|o| o.as_array())
         .unwrap_or(&empty);
+    // The option a JSON-style body is read from. It is the body, not a query
+    // parameter — without this it fell through to the query default and the
+    // whole body was ALSO sent as `?body=...`.
+    let json_body_from = if body.and_then(|b| str_field(b, "style")).as_deref() == Some("json") {
+        from_token(
+            body.and_then(|b| b.get("from")).and_then(|f| f.as_str()),
+            "option",
+        )
+    } else {
+        None
+    };
     let mut flags: Vec<FlagModel> = Vec::new();
     for opt in cmd_opts {
         let opt_name = opt
@@ -215,6 +229,9 @@ pub fn build_leaf_model(command: &Value) -> LeafModel {
             location = "body".to_string();
             wire_name = get_wire(&opt_name).unwrap_or_else(|| opt_name.clone());
             encoding = get_enc(&opt_name);
+        } else if json_body_from.as_deref() == Some(opt_name.as_str()) {
+            location = "body".to_string();
+            wire_name = opt_name.clone();
         } else {
             location = "query".to_string();
             wire_name = opt_name.clone();
@@ -239,6 +256,7 @@ pub fn build_leaf_model(command: &Value) -> LeafModel {
             description: str_field(opt, "description"),
             accepted_values: None,
             arity: None,
+            global: false,
         });
     }
 
@@ -343,7 +361,34 @@ pub fn build_local_flags(command: &Value) -> Vec<FlagModel> {
                 description: str_field(opt, "description"),
                 accepted_values: arg.and_then(accepted_values_of),
                 arity: arg.and_then(arity_of),
+                global: false,
             }
         })
         .collect()
+}
+
+/// Flags for the document's ROOT `options`: the non-API flag mapping, plus
+/// `recursive` → global. clap refuses an argument that is both global and
+/// required, so a recursive option keeps its globality and loses `required`,
+/// with a warning — the option still exists everywhere, it just cannot be
+/// demanded by the parser.
+pub fn build_root_flags(spec: &Value) -> Vec<FlagModel> {
+    let empty: Vec<Value> = Vec::new();
+    let opts = spec
+        .get("options")
+        .and_then(|o| o.as_array())
+        .unwrap_or(&empty);
+    let mut flags = build_local_flags(spec);
+    for (flag, opt) in flags.iter_mut().zip(opts) {
+        flag.global = opt.get("recursive").and_then(|r| r.as_bool()) == Some(true);
+        if flag.global && flag.required {
+            eprintln!(
+                "warning: root option --{} is recursive and required; clap cannot require a \
+                 global argument, so it is emitted as optional",
+                flag.flag_name
+            );
+            flag.required = false;
+        }
+    }
+    flags
 }
