@@ -4,6 +4,18 @@ Releases are tagged `vX.Y.Z` on the `opensdk` binary (`cli/Cargo.toml`); the
 library crates are not versioned independently. Earlier releases are described
 on their GitHub release pages.
 
+## Unreleased
+
+- An `oauth2` security scheme maps to the `bearer` kind (RFC 6750: the access
+  token is sent as `Authorization: Bearer <token>`) in both converters, instead
+  of `other`. Every generated SDK and CLI now reads the token from the same
+  variable and sends the same header as for an `http`/`bearer` scheme; the Go
+  and Java SDKs and both CLIs previously sent no credential for an `oauth2`
+  scheme. The IR entry carries `scheme: "bearer"`, `flows` (the flow types) and
+  `scopes` (the scope catalogue merged across the flows), both declared on
+  `SdkSecurity` in the IR schema, so `opensdk diff` does not report a document
+  moving from `http`/`bearer` to `oauth2` as `security-changed`.
+
 ## 0.2.2
 
 - Nested type groups on the docs type reference: `typeReference.nested`
