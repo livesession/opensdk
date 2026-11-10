@@ -107,15 +107,23 @@ fn derive_target_from_name(value: &str, options: &Options) -> DerivedTarget {
 }
 
 /// `path` without the `pathPrefixStrip` prefix, compared segment by segment
-/// (`/v3` strips `/v3/x`, never `/v30/x`). Unchanged when the option is unset
-/// or the path does not start with the prefix.
+/// (`/v3` strips `/v3/x`, never `/v30/x`). A `{param}` segment of the prefix
+/// matches any parameter segment (`/orgs/{org}` strips `/orgs/{orgId}/x`).
+/// Unchanged when the option is unset or the path does not start with the
+/// prefix.
 fn strip_path_prefix(path: &str, prefix: Option<&str>) -> String {
     let Some(prefix) = prefix else {
         return path.to_string();
     };
+    let is_param = |s: &str| s.len() >= 2 && s.starts_with('{') && s.ends_with('}');
     let want: Vec<&str> = prefix.split('/').filter(|s| !s.is_empty()).collect();
     let segs: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
-    if want.is_empty() || segs.len() < want.len() || segs[..want.len()] != want[..] {
+    let matches = want.len() <= segs.len()
+        && want
+            .iter()
+            .zip(&segs)
+            .all(|(w, s)| w == s || (is_param(w) && is_param(s)));
+    if want.is_empty() || !matches {
         return path.to_string();
     }
     format!("/{}", segs[want.len()..].join("/"))
@@ -139,13 +147,17 @@ pub fn derive_target(
         // A name the document states outright beats any derivation.
         Some(value) => derive_target_from_name(&value, options),
         None => {
-            let derive_path = strip_path_prefix(path, options.path_prefix_strip.as_deref());
+            // The NAME comes from the stripped path; whether the operation
+            // addresses an item (and so may promote a trailing verb) is a fact
+            // about the full path, including any parameter inside the prefix.
+            let name_path = strip_path_prefix(path, options.path_prefix_strip.as_deref());
+            let shape = PathShape::of(path);
             match grammar {
                 Grammar::NounVerb => {
-                    derive_target_noun_verb(method, &derive_path, operation, options)
+                    derive_target_noun_verb(method, &name_path, shape, operation, options)
                 }
                 Grammar::VerbNoun => {
-                    derive_target_verb_noun(method, &derive_path, operation, options)
+                    derive_target_verb_noun(method, &name_path, shape, operation, options)
                 }
             }
         }
@@ -187,9 +199,30 @@ pub fn effective_grammar(options: &Options, x: &OperationXCli, target: &DerivedT
     x.grammar.or(options.grammar).unwrap_or_default()
 }
 
+/// What the derivation needs to know about the FULL path when it names from
+/// a stripped one (`pathPrefixStrip`). Without a strip the two agree.
+#[derive(Clone, Copy)]
+struct PathShape {
+    /// The path has a parameter anywhere — the custom-verb promotion test.
+    has_params: bool,
+    /// The last segment is a parameter — item rather than collection.
+    ends_in_param: bool,
+}
+
+impl PathShape {
+    fn of(path: &str) -> Self {
+        let segments = parse_path(path);
+        PathShape {
+            has_params: segments.iter().any(|s| s.is_param),
+            ends_in_param: segments.last().is_some_and(|s| s.is_param),
+        }
+    }
+}
+
 fn derive_target_noun_verb(
     method: &str,
     path: &str,
+    shape: PathShape,
     operation: &Value,
     options: &Options,
 ) -> DerivedTarget {
@@ -219,8 +252,7 @@ fn derive_target_noun_verb(
         .filter(|s| s.is_param)
         .map(|s| s.value.clone())
         .collect();
-    let has_params = !path_param_names.is_empty();
-    let last = segments.last();
+    let has_params = shape.has_params;
     let m = method.to_lowercase();
     let operation_id = operation.get("operationId").and_then(|v| v.as_str());
 
@@ -228,7 +260,7 @@ fn derive_target_noun_verb(
     let action: String;
     let mut aliases: Vec<String> = Vec::new();
 
-    if last.map(|l| l.is_param).unwrap_or(false) {
+    if shape.ends_in_param {
         resource_segs = static_segs.clone();
         action = if m == "get" {
             let a = v.get_item;
@@ -302,6 +334,7 @@ fn derive_target_noun_verb(
 fn derive_target_verb_noun(
     method: &str,
     path: &str,
+    shape: PathShape,
     operation: &Value,
     options: &Options,
 ) -> DerivedTarget {
@@ -326,7 +359,7 @@ fn derive_target_verb_noun(
         .filter(|s| s.is_param)
         .map(|s| s.value.clone())
         .collect();
-    let has_params = !path_param_names.is_empty();
+    let has_params = shape.has_params;
     let m = method.to_lowercase();
     let operation_id = operation.get("operationId").and_then(|v| v.as_str());
 
@@ -485,6 +518,32 @@ mod names_from_tests {
         assert_eq!(strip_path_prefix("/widgets", Some("/v3")), "/widgets");
         assert_eq!(strip_path_prefix("/widgets", None), "/widgets");
         assert_eq!(strip_path_prefix("/widgets", Some("/")), "/widgets");
+        // A `{param}` prefix segment matches any parameter, and only one.
+        assert_eq!(
+            strip_path_prefix("/orgs/{orgId}/x", Some("/orgs/{org}")),
+            "/x"
+        );
+        assert_eq!(
+            strip_path_prefix("/orgs/acme/x", Some("/orgs/{org}")),
+            "/orgs/acme/x"
+        );
+        assert_eq!(
+            strip_path_prefix("/orgs/{orgId}/x", Some("/orgs/acme")),
+            "/orgs/{orgId}/x"
+        );
+    }
+
+    #[test]
+    fn a_parameter_inside_the_stripped_prefix_still_shapes_the_command() {
+        let o = opts(json!({ "pathPrefixStrip": "/a/{id}" }));
+        let none = OperationXCli::default();
+        // An item path, so the trailing custom verb is promoted.
+        let t = derive_target("post", "/a/{id}/cancel", &json!({}), &o, &none);
+        assert_eq!((t.resource_path.len(), t.action.as_str()), (0, "cancel"));
+        assert_eq!(t.path_param_names, ["id"]);
+        // All prefix: an item read, not a collection list.
+        let t = derive_target("get", "/a/{id}", &json!({}), &o, &none);
+        assert_eq!(t.action, "retrieve");
     }
 
     #[test]

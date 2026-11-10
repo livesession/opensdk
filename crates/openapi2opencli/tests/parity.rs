@@ -139,3 +139,10 @@ c!(names_from, "13.names-from");
 // the document's requirement inherited, an operation's own (two schemes,
 // scopes as written) replacing it, and an empty list meaning none.
 c!(headers_and_security, "14.headers-and-security");
+
+// `pathPrefixStrip` with a parameter inside the prefix: `{account}` matches
+// any parameter segment, the stripped path names the command, and the FULL
+// path decides its shape — a trailing custom verb on an item path is promoted,
+// a path that is all prefix reads as an item, and the prefix parameter stays a
+// positional.
+c!(path_prefix_params, "15.path-prefix-params");

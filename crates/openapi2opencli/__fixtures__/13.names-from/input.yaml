@@ -2,6 +2,12 @@ openapi: 3.0.0
 info: { title: widgets, version: 1.0.0 }
 servers:
   - url: https://api.widgets.test
+# A group the stated names create takes its tag's description (matched by the
+# kebab-cased tag name); `lifecycle` and `reports` have none and get a
+# generated one.
+tags:
+  - name: Widgets
+    description: Create, list and archive widgets.
 paths:
   # Named by the document: `<group>/.../<verb>`. The version segment never
   # reaches the tree because the name, not the path, places the command.

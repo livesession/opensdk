@@ -41,6 +41,7 @@
         },
         {
           "name": "widgets",
+          "description": "widgets commands",
           "commands": [
             {
               "name": "list",
@@ -75,7 +76,11 @@
                 ],
                 "security": [
                   {
-                    "scheme": "token",
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
                     "scopes": [
                       "widgets:read"
                     ]
@@ -124,7 +129,11 @@
                 },
                 "security": [
                   {
-                    "scheme": "token",
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
                     "scopes": [
                       "widgets:write"
                     ]
@@ -164,7 +173,11 @@
                 ],
                 "security": [
                   {
-                    "scheme": "token",
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
                     "scopes": [
                       "widgets:read"
                     ]
@@ -221,7 +234,11 @@
                 },
                 "security": [
                   {
-                    "scheme": "token",
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
                     "scopes": [
                       "widgets:write"
                     ]

@@ -28,6 +28,7 @@
         },
         {
           "name": "reports",
+          "description": "reports commands",
           "commands": [
             {
               "name": "ls",
@@ -47,9 +48,11 @@
         },
         {
           "name": "widgets",
+          "description": "Create, list and archive widgets.",
           "commands": [
             {
               "name": "lifecycle",
+              "description": "lifecycle commands",
               "commands": [
                 {
                   "name": "archive",

@@ -42,12 +42,18 @@ pub struct XOpenApiRoot {
     pub default_headers: Option<std::collections::BTreeMap<String, String>>,
 }
 
-/// One security requirement of a command: a scheme name (a key of
-/// `components.securitySchemes`) and the scopes it asks for, as the document
-/// writes them.
-#[derive(Serialize, Clone, Debug, PartialEq)]
-pub struct SecurityRequirement {
-    pub scheme: String,
+/// One security requirement of a command, in the OpenCLI `XOpenApiSecurity`
+/// shape: the scheme's descriptor exactly as the root `x-openapi.security`
+/// entry for it reads (`type`, `kind`, `envVar`, and `scheme` / `in` / `name`
+/// / `bearerFormat` where they apply), plus the two things a requirement adds —
+/// `ref`, the scheme's key in `components.securitySchemes`, and `scopes`, as
+/// the document writes them.
+#[derive(Serialize, Clone)]
+pub struct CommandSecurity {
+    #[serde(flatten)]
+    pub scheme: Security,
+    #[serde(rename = "ref")]
+    pub reference: String,
     pub scopes: Vec<String>,
 }
 
@@ -182,7 +188,7 @@ pub struct XOpenApiCommand {
     /// The security requirements of the operation (else of the document), one
     /// entry per scheme. Only emitted under `includeSecurity`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub security: Option<Vec<SecurityRequirement>>,
+    pub security: Option<Vec<CommandSecurity>>,
     /// The request to make INSTEAD when the command's optional positional is
     /// supplied.
     ///

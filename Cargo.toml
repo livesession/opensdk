@@ -49,6 +49,10 @@ sha2 = "0.10"
 # The e2e recording server (crates/opensdk_e2e): a small, blocking,
 # dependency-light HTTP server that captures the requests a generated SDK makes.
 tiny_http = "0.12"
+# Test-only: validates emitted OpenCLI documents against the vendored OpenCLI
+# JSON Schema (crates/openapi2opencli/tests). No network resolution — the
+# schema is local and self-contained.
+jsonschema = { version = "0.61", default-features = false }
 
 [profile.release]
 lto = true

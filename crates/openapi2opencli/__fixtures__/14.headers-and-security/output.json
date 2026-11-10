@@ -54,7 +54,11 @@
             "operationId": "listWidgets",
             "security": [
               {
-                "scheme": "token",
+                "type": "http",
+                "kind": "bearer",
+                "envVar": "WIDGETS_API_KEY",
+                "scheme": "bearer",
+                "ref": "token",
                 "scopes": [
                   "widgets:read"
                 ]
@@ -70,13 +74,22 @@
             "operationId": "createWidget",
             "security": [
               {
-                "scheme": "token",
+                "type": "http",
+                "kind": "bearer",
+                "envVar": "WIDGETS_API_KEY",
+                "scheme": "bearer",
+                "ref": "token",
                 "scopes": [
                   "widgets:write"
                 ]
               },
               {
-                "scheme": "key",
+                "type": "apiKey",
+                "kind": "apiKey-header",
+                "envVar": "WIDGETS_API_KEY",
+                "in": "header",
+                "name": "X-Api-Key",
+                "ref": "key",
                 "scopes": []
               }
             ]

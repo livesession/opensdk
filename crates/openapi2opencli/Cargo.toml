@@ -13,3 +13,4 @@ oas_doc = { path = "../oas_doc" }
 
 [dev-dependencies]
 parity_kit = { path = "../parity_kit" }
+jsonschema = { workspace = true }

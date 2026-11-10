@@ -21,6 +21,8 @@ pub struct BuiltLeaf {
     /// the converter-wide one, since `x-cli.grammar` is per operation. The
     /// read-pairing pass reads it so mixing does not merge a noun-verb command.
     pub grammar: crate::options::Grammar,
+    /// Placed by a `namesFrom` value (its groups get help text).
+    pub named: bool,
 }
 
 /// Merge path-item + operation parameters (operation wins on `in:name`),
@@ -170,6 +172,7 @@ pub fn build_leaf_command(
 
     let grammar = effective_grammar(options, xcli, &target);
     BuiltLeaf {
+        named: target.names_from.is_some(),
         resource_path: target.resource_path,
         command,
         grammar,
