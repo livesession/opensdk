@@ -4,6 +4,47 @@ Releases are tagged `vX.Y.Z` on the `opensdk` binary (`cli/Cargo.toml`); the
 library crates are not versioned independently. Earlier releases are described
 on their GitHub release pages.
 
+## 0.3.0
+
+- Converter options (`openapi2opencli`, and the `go-cli`/`rust-cli` sdk.json
+  sections): `namesFrom` names each command from an operation extension (a
+  dotted path such as `x-docs.path` whose value `<group>/.../<verb>` places the
+  command; a `retrieve` verb keeps its `get` alias) and records the value as the
+  command's `docsPath` metadata, falling back to the derived name unless
+  `namesFromRequired` is set; `pathPrefixStrip` takes a leading path prefix
+  (`/v3`) off before the default derivation; `defaultHeaders` and
+  `headersFromExtension` (header → a dotted path under `info`, then the
+  document root) resolve into the root `x-openapi.defaultHeaders`;
+  `includeSecurity` records each command's security requirements as
+  `x-openapi.security` (`[{ scheme, scopes }]`). All additive: a document
+  converted without them is unchanged. Converter fixtures `13.names-from` and
+  `14.headers-and-security`.
+- `opensdk opencli --spec <openapi> [--config sdk.json] [--lang rust-cli|go-cli]
+  [--declare <fragment.json>]... [--output <file>]` writes the OpenCLI document
+  a CLI target generates from and merges hand-written OpenCLI fragments into it
+  (root `options`/`exitCodes`/`info.description` replace, `commands` append, a
+  command named like an existing top-level one updates its description,
+  aliases and hidden flag). `generate --spec <opencli.json>` drives a CLI
+  target from such a document, skipping the converter; an SDK language refuses
+  it. Fixtures under `cli/__fixtures__/opencli`.
+- `opencli2rust`: a document with root `options`, root `exitCodes` or
+  `x-openapi.defaultHeaders` gets the root seam — the root options as clap
+  arguments (`recursive` → global), `CliOverrides::before_dispatch` (read them
+  into the `Context` before any command runs), `CliOverrides::print_usage_error`
+  (choose a usage error's exit code; default clap's), and `Context::headers`
+  seeded from `config::DEFAULT_HEADERS`, sent when a request lacks them, with at
+  most one `Authorization` (an explicit one replaces the environment
+  credential). Other documents generate byte-identically. Fixtures
+  `11.root-options` and `12.default-headers`, and `tests/runtime_smoke.rs`
+  (`XYD_SMOKE_RUST=1`), which builds both and checks the requests on the wire.
+- `opencli2rust`: a JSON `--body` reads `@file` and `@-` (stdin) as well as an
+  inline value, a declared body media type other than `application/json` is
+  sent as the `Content-Type`, and the `--body` value is no longer also sent as
+  a `?body=` query parameter.
+- `baseURL` in a CLI section reaches the generated config in both backends (it
+  passed the option split and was then dropped; `baseUrl` is accepted too), and
+  the `regen` binary reads `version_from` and `base_url` from `regen.toml`.
+
 ## 0.2.2
 
 - Nested type groups on the docs type reference: `typeReference.nested`
