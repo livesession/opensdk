@@ -23,7 +23,9 @@
 //!
 //! Validated: the converter's fixture outputs, the OpenCLI inputs of both CLI
 //! backends' fixtures, the documents `opensdk opencli` writes
-//! (`cli/__fixtures__/opencli`) and the component documents it mounts.
+//! (`cli/__fixtures__/opencli`), the component documents it mounts, and the
+//! binary's own reference document (`cli/opencli.json`). `clap_opencli`
+//! validates its goldens in its own tests.
 
 use std::path::{Path, PathBuf};
 
@@ -139,6 +141,13 @@ fn the_mounted_component_documents_are_valid_opencli() {
     assert_valid(docs, 2);
 }
 
+/// The `opensdk` binary's own reference document, which `clap_opencli` builds
+/// from its clap tree (`cli/tests/reference.rs` keeps it current).
+#[test]
+fn the_binarys_reference_document_is_valid_opencli() {
+    assert_valid(vec![crate_dir().join("../../cli/opencli.json")], 1);
+}
+
 /// Every committed document, parsed into the typed model and written back,
 /// is the same JSON (serde_json's map equality ignores key order: the model
 /// writes canonical order, the converter its own). A field the model dropped
@@ -159,7 +168,8 @@ fn every_committed_document_round_trips_through_the_typed_model() {
         &crate_dir().join("../../cli/__fixtures__/opencli"),
         "output.json",
     ));
-    assert!(docs.len() >= 31, "found only {} documents", docs.len());
+    docs.push(crate_dir().join("../../cli/opencli.json"));
+    assert!(docs.len() >= 32, "found only {} documents", docs.len());
     for path in &docs {
         let doc = read_json(path);
         let typed = opencli_model::Document::from_value(doc.clone())
