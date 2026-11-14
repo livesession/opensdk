@@ -11,13 +11,20 @@
 //! Each `--declare` file is an OpenCLI-shaped JSON (or YAML) object, merged in
 //! the order given by [`opencli_model::merge_fragment`], whose docs state the
 //! merge rules.
+//!
+//! Each `--mount NAME=DOC` then places a component CLI's OpenCLI document at
+//! the command NAME (`parent/name` mounts under `parent`), by
+//! [`opencli_model::mount`], whose docs state the mount rules; `--mount-drop
+//! NAME:OPTION` drops one of the component's options from that mount. A
+//! document with mounts is written in the model's canonical key order, and
+//! each mount reports one line on stderr.
 
 use std::io::Write;
 use std::path::Path;
 
 use serde_json::{Map, Value};
 
-use opencli_model::merge_fragment;
+use opencli_model::{merge_fragment, mount, Document, MountOptions, MountReport};
 
 use opensdk_config::merge_publish_targets;
 
@@ -44,6 +51,67 @@ pub struct OpenCliCommandOptions {
     pub output: Option<String>,
     /// Defaults the converter's `cliName` (overridden by the section's own).
     pub sdk_name: Option<String>,
+    /// Component documents mounted after the fragments, in order:
+    /// `NAME=DOCUMENT`, where NAME is the command (`parent/name` mounts under
+    /// `parent`).
+    pub mount: Vec<String>,
+    /// `NAME:OPTION`: drop the component's OPTION from the NAME mount.
+    pub mount_drop: Vec<String>,
+}
+
+/// One `--mount`, with the `--mount-drop`s that name it.
+struct MountSpec<'a> {
+    /// As given (`tools/sync`): how errors and drops name it.
+    flag: &'a str,
+    under: Vec<String>,
+    name: String,
+    document: &'a str,
+    drops: Vec<String>,
+}
+
+/// Pair each `--mount NAME=DOCUMENT` with its `--mount-drop NAME:OPTION`s.
+fn mount_specs<'a>(mounts: &'a [String], drops: &'a [String]) -> Result<Vec<MountSpec<'a>>> {
+    let mut specs: Vec<MountSpec> = Vec::new();
+    for entry in mounts {
+        let parsed = entry.split_once('=').and_then(|(flag, document)| {
+            let segments: Vec<String> = flag.split('/').map(str::to_string).collect();
+            (!document.is_empty() && segments.iter().all(|s| !s.is_empty()))
+                .then_some((flag, segments, document))
+        });
+        let Some((flag, mut segments, document)) = parsed else {
+            return Err(Error::msg(format!(
+                "--mount {entry}: expected NAME=DOCUMENT (NAME may be parent/name)"
+            )));
+        };
+        if specs.iter().any(|s| s.flag == flag) {
+            return Err(Error::msg(format!("--mount {flag} is given twice")));
+        }
+        let name = segments.pop().expect("split yields one segment at least");
+        specs.push(MountSpec {
+            flag,
+            under: segments,
+            name,
+            document,
+            drops: Vec::new(),
+        });
+    }
+    for entry in drops {
+        let Some((flag, option)) = entry
+            .split_once(':')
+            .filter(|(f, o)| !f.is_empty() && !o.is_empty())
+        else {
+            return Err(Error::msg(format!(
+                "--mount-drop {entry}: expected NAME:OPTION"
+            )));
+        };
+        let Some(spec) = specs.iter_mut().find(|s| s.flag == flag) else {
+            return Err(Error::msg(format!(
+                "--mount-drop {entry}: there is no --mount {flag}=..."
+            )));
+        };
+        spec.drops.push(option.to_string());
+    }
+    Ok(specs)
 }
 
 /// The CLI target `opencli` reads its converter options from.
@@ -73,6 +141,17 @@ pub fn build_opencli(
     config: Option<&ResolvedConfig>,
     cwd: &Path,
 ) -> Result<Value> {
+    build_opencli_reported(opts, config, cwd).map(|(doc, _)| doc)
+}
+
+/// [`build_opencli`], with what each `--mount` did.
+pub fn build_opencli_reported(
+    opts: &OpenCliCommandOptions,
+    config: Option<&ResolvedConfig>,
+    cwd: &Path,
+) -> Result<(Value, Vec<MountReport>)> {
+    // Parsed first: a malformed flag fails before any document is read.
+    let mounts = mount_specs(&opts.mount, &opts.mount_drop)?;
     let lang = target_lang(opts, config)?;
     let lang_label = lang
         .clone()
@@ -114,7 +193,29 @@ pub fn build_opencli(
             .map_err(|e| Error::msg(format!("--declare {path}: {e}")))?;
         merge_fragment(&mut doc, &fragment, path).map_err(|e| Error::msg(e.0))?;
     }
-    Ok(doc)
+    if mounts.is_empty() {
+        return Ok((doc, Vec::new()));
+    }
+
+    let mut host = Document::from_value(doc)
+        .map_err(|e| Error::msg(format!("--mount: the host document is {e}")))?;
+    let mut reports = Vec::new();
+    for spec in mounts {
+        let resolved = paths::resolve_str(cwd, spec.document);
+        let raw = oas_doc::read_spec(&resolved)
+            .map_err(|e| Error::msg(format!("--mount {}: {e}", spec.flag)))?;
+        let component = Document::from_value(raw)
+            .map_err(|e| Error::msg(format!("--mount {}: {}: {e}", spec.flag, spec.document)))?;
+        let options = MountOptions {
+            under: spec.under,
+            drop_options: spec.drops,
+            ..Default::default()
+        };
+        let report =
+            mount(&mut host, &spec.name, &component, &options).map_err(|e| Error::msg(e.0))?;
+        reports.push(report);
+    }
+    Ok((host.to_value(), reports))
 }
 
 /// `opensdk opencli`: build the document and write it (stdout or `--output`).
@@ -123,7 +224,10 @@ pub fn opencli_command(
     config: Option<&ResolvedConfig>,
     cwd: &Path,
 ) -> Result<()> {
-    let doc = build_opencli(opts, config, cwd)?;
+    let (doc, reports) = build_opencli_reported(opts, config, cwd)?;
+    for report in &reports {
+        eprintln!("{report}");
+    }
     let json = format!(
         "{}\n",
         serde_json::to_string_pretty(&doc).map_err(|e| Error::msg(e.to_string()))?

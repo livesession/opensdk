@@ -2,7 +2,8 @@
 //!
 //! Each `__fixtures__/opencli/<case>/` holds an OpenAPI document, the sdk.json
 //! whose CLI section supplies the converter options, an `args.json` (`lang`,
-//! `declare`) and `output.json` — the BYTES `opencli --output` writes.
+//! `declare`, and optionally `mount` and `mountDrop`) and `output.json` — the
+//! BYTES `opencli --output` writes.
 //! `XYD_BLESS=1` rewrites the goldens instead of checking them.
 
 use std::path::{Path, PathBuf};
@@ -31,30 +32,45 @@ fn tmp(tag: &str) -> PathBuf {
     dir
 }
 
-fn args_of(case: &Path) -> (String, Vec<String>) {
+/// A case's `args.json`: `lang`, `declare`, and the optional `mount` /
+/// `mountDrop` lists.
+struct CaseArgs {
+    lang: String,
+    declare: Vec<String>,
+    mount: Vec<String>,
+    mount_drop: Vec<String>,
+}
+
+fn args_of(case: &Path) -> CaseArgs {
     let args: Value =
         serde_json::from_str(&std::fs::read_to_string(case.join("args.json")).unwrap()).unwrap();
-    let lang = args["lang"].as_str().unwrap().to_string();
-    let declare = args["declare"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|v| v.as_str().unwrap().to_string())
-        .collect();
-    (lang, declare)
+    let list = |key: &str| -> Vec<String> {
+        args.get(key)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().map(|v| v.as_str().unwrap().to_string()).collect())
+            .unwrap_or_default()
+    };
+    CaseArgs {
+        lang: args["lang"].as_str().unwrap().to_string(),
+        declare: list("declare"),
+        mount: list("mount"),
+        mount_drop: list("mountDrop"),
+    }
 }
 
 /// Run `opencli` for a case through the library entry point, into `out`.
 fn emit(case: &Path, out: &Path) {
-    let (lang, declare) = args_of(case);
+    let args = args_of(case);
     let config = resolve_config(case, None).unwrap().expect("sdk.json");
     opencli_command(
         &OpenCliCommandOptions {
             spec: config.spec.clone().expect("api"),
-            lang: Some(lang),
-            declare,
+            lang: Some(args.lang),
+            declare: args.declare,
             output: Some(out.to_string_lossy().to_string()),
             sdk_name: None,
+            mount: args.mount,
+            mount_drop: args.mount_drop,
         },
         Some(&config),
         case,
@@ -91,6 +107,193 @@ fn the_cli_sections_converter_options_reach_the_document() {
 #[test]
 fn fragments_merge_into_the_generated_document() {
     check_case("2.declare");
+}
+
+/// Converter, then the fragments, then the mounts: a passthrough stub filled
+/// with `--profile` dropped, and a component in the root-`command` shape
+/// appended under `api`.
+#[test]
+fn components_mount_into_the_merged_document() {
+    check_case("3.mount");
+}
+
+/// The options `mount_case` passes: 3.mount's, with `mount` and `mount_drop`
+/// replaced.
+fn mount_options(case: &Path, mount: &[&str], mount_drop: &[&str]) -> OpenCliCommandOptions {
+    let args = args_of(case);
+    let config = resolve_config(case, None).unwrap().expect("sdk.json");
+    OpenCliCommandOptions {
+        spec: config.spec.clone().expect("api"),
+        lang: Some(args.lang),
+        declare: args.declare,
+        mount: mount.iter().map(|s| s.to_string()).collect(),
+        mount_drop: mount_drop.iter().map(|s| s.to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+/// `build_opencli` on 3.mount with other mounts: the error, if any.
+fn mount_error(dir: &Path, mount: &[&str], mount_drop: &[&str]) -> String {
+    let case = fixtures().join("3.mount");
+    let config = resolve_config(&case, None).unwrap().expect("sdk.json");
+    // Component paths are relative to `dir`, where the broken ones are written.
+    let mount: Vec<String> = mount
+        .iter()
+        .map(|m| match m.split_once('=') {
+            Some((name, doc)) if !doc.is_empty() => {
+                let doc = if dir.join(doc).exists() {
+                    dir.join(doc)
+                } else {
+                    case.join(doc)
+                };
+                format!("{name}={}", doc.display())
+            }
+            _ => m.to_string(),
+        })
+        .collect();
+    let mount: Vec<&str> = mount.iter().map(String::as_str).collect();
+    opensdk::opencli::build_opencli(
+        &mount_options(&case, &mount, mount_drop),
+        Some(&config),
+        &case,
+    )
+    .err()
+    .map(|e| e.0)
+    .unwrap_or_else(|| "no error".into())
+}
+
+#[test]
+fn every_mount_rule_has_its_error() {
+    let dir = tmp("mount-errors");
+    let agent = "components/agent.opencli.json";
+    let agent_doc: Value = serde_json::from_str(
+        &std::fs::read_to_string(fixtures().join("3.mount").join(agent)).unwrap(),
+    )
+    .unwrap();
+    let write = |name: &str, change: &dyn Fn(&mut Value)| {
+        let mut doc = agent_doc.clone();
+        change(&mut doc);
+        std::fs::write(dir.join(name), serde_json::to_string(&doc).unwrap()).unwrap();
+        format!("agent={name}")
+    };
+    let drop = ["agent:profile"];
+
+    // The flags themselves.
+    assert_eq!(
+        mount_error(&dir, &["agent"], &[]),
+        "--mount agent: expected NAME=DOCUMENT (NAME may be parent/name)"
+    );
+    assert_eq!(
+        mount_error(&dir, &["agent=a.json", "agent=b.json"], &[]),
+        "--mount agent is given twice"
+    );
+    assert_eq!(
+        mount_error(&dir, &["agent=x.json"], &["agent"]),
+        "--mount-drop agent: expected NAME:OPTION"
+    );
+    assert_eq!(
+        mount_error(&dir, &["agent=x.json"], &["other:profile"]),
+        "--mount-drop other:profile: there is no --mount other=..."
+    );
+    // M1: not an OpenCLI document; other conventions.
+    let not_opencli = write("not-opencli.json", &|d| {
+        d.as_object_mut().unwrap().remove("info");
+    });
+    let e = mount_error(&dir, &[&not_opencli], &drop);
+    assert!(
+        e.starts_with("--mount agent: ") && e.contains("not-opencli.json: not an OpenCLI document"),
+        "{e}"
+    );
+    let conventions = write("conventions.json", &|d| {
+        d["conventions"] = serde_json::json!({ "groupOptions": false });
+    });
+    assert!(mount_error(&dir, &[&conventions], &drop).contains(
+        "mount agent: the component's conventions (groupOptions false, optionSeparator \" \") \
+         differ from the host's (groupOptions true, optionSeparator \" \")"
+    ));
+    // M2: a host command that is not a stub, a missing parent, twice.
+    assert!(
+        mount_error(&dir, &[&format!("api={agent}")], &["api:profile"]).contains(
+            "mount api: the host already has a command `api`, and only a passthrough stub"
+        )
+    );
+    assert_eq!(
+        mount_error(&dir, &[&format!("nope/agent={agent}")], &[]),
+        "mount nope agent: the host has no command `nope`"
+    );
+    assert_eq!(
+        mount_error(&dir, &[&format!("ag={agent}")], &["ag:profile"]),
+        "mount ag: command `ag` and command `agent` both answer to `ag` (a name or an alias)"
+    );
+    // M3: an HTTP binding.
+    let bound = write("bound.json", &|d| {
+        d["commands"][0]["x-openapi"] = serde_json::json!({ "method": "get", "path": "/" });
+    });
+    assert!(mount_error(&dir, &[&bound], &drop)
+        .contains("the component's command `resume` carries an `x-openapi` binding"));
+    // M4: a collision without the drop, by the long name and by an alias; a
+    // drop that matches nothing.
+    assert_eq!(
+        mount_error(&dir, &[&format!("agent={agent}")], &[]),
+        "mount agent: the host's root recursive option `--profile` and the component's option \
+         `--profile` of `agent` both answer to `--profile`; drop the component's with \
+         --mount-drop agent:profile"
+    );
+    let short = write("short.json", &|d| {
+        d["commands"][0]["options"][0]["aliases"] = serde_json::json!(["P"]);
+    });
+    assert!(mount_error(&dir, &[&short], &drop).contains(
+        "recursive option `--profile` and the component's option `--last` of `agent resume` \
+         both answer to `-P`"
+    ));
+    assert_eq!(
+        mount_error(
+            &dir,
+            &[&format!("agent={agent}")],
+            &["agent:profile", "agent:nope"]
+        ),
+        "mount agent: --mount-drop agent:nope matches no option of the component"
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+/// The binary itself: the same bytes as the golden, and one report line per
+/// mount on stderr (M7).
+#[test]
+fn the_argv_layer_mounts_and_reports_each_mount_on_stderr() {
+    let case = fixtures().join("3.mount");
+    let dir = tmp("mount-argv");
+    let out = dir.join("opencli.json");
+    let run = std::process::Command::new(env!("CARGO_BIN_EXE_opensdk"))
+        .current_dir(&case)
+        .args([
+            "opencli",
+            "--config",
+            "sdk.json",
+            "--declare",
+            "fragments/root.json",
+            "--mount",
+            "agent=components/agent.opencli.json",
+            "--mount-drop",
+            "agent:profile",
+            "--mount",
+            "api/sync=components/sync.opencli.json",
+            "--output",
+        ])
+        .arg(&out)
+        .output()
+        .expect("run opensdk");
+    let stderr = String::from_utf8_lossy(&run.stderr);
+    assert!(run.status.success(), "{stderr}");
+    assert_eq!(
+        stderr,
+        "mounted agent 0.4.0: dropped --profile\nmounted api sync 1.2.0\n"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&out).unwrap(),
+        std::fs::read_to_string(case.join("output.json")).unwrap()
+    );
+    std::fs::remove_dir_all(&dir).ok();
 }
 
 /// Every generated file, relative to `root`, with its bytes.

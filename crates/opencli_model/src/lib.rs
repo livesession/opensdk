@@ -14,7 +14,8 @@
 //!   [`SCHEMA_JSON`] the base OpenCLI schema; validate a document against
 //!   both with the validator of your choice.
 //! * [`merge_fragment`] merges a hand-written OpenCLI fragment into a
-//!   document (the `opensdk opencli --declare` step).
+//!   document (the `opensdk opencli --declare` step), and [`mount`] places a
+//!   component CLI's document at one command of a host CLI's (`--mount`).
 //!
 //! ```
 //! use opencli_model::{Command, Document, EnvVar};
@@ -28,9 +29,11 @@
 
 mod merge;
 mod model;
+mod mount;
 mod shape;
 
 pub use merge::merge_fragment;
+pub use mount::{mount, MountOptions, MountReport};
 
 pub use model::{
     Argument, Arity, CliOption, Command, Contact, Conventions, Document, EnvVar, ExitCode,

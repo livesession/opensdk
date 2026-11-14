@@ -1,0 +1,423 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "widgets",
+    "version": "2.4.0",
+    "description": "Manage widgets from the terminal."
+  },
+  "x-openapi": {
+    "servers": [
+      "https://api.widgets.test"
+    ],
+    "security": [
+      {
+        "type": "http",
+        "kind": "bearer",
+        "envVar": "WIDGETS_API_KEY",
+        "scheme": "bearer"
+      }
+    ],
+    "defaultHeaders": {
+      "X-Api-Version": "2024-10-01",
+      "X-Client": "widgets-cli"
+    }
+  },
+  "options": [
+    {
+      "name": "profile",
+      "aliases": [
+        "P"
+      ],
+      "description": "The configuration profile to use",
+      "recursive": true,
+      "arguments": [
+        {
+          "name": "name"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "api",
+      "description": "Call the API directly",
+      "commands": [
+        {
+          "name": "status",
+          "commands": [
+            {
+              "name": "list",
+              "description": "Service status",
+              "x-openapi": {
+                "method": "get",
+                "path": "/v1/status",
+                "operationId": "getStatus"
+              }
+            }
+          ]
+        },
+        {
+          "name": "widgets",
+          "description": "widgets commands",
+          "commands": [
+            {
+              "name": "list",
+              "description": "List widgets",
+              "options": [
+                {
+                  "name": "limit",
+                  "group": "query",
+                  "arguments": [
+                    {
+                      "name": "integer"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/list"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v1/widgets",
+                "operationId": "listWidgets",
+                "params": [
+                  {
+                    "in": "query",
+                    "name": "limit",
+                    "from": "option:limit"
+                  }
+                ],
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:read"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "create",
+              "description": "Create a widget",
+              "options": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "group": "body",
+                  "arguments": [
+                    {
+                      "name": "string"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/create"
+                }
+              ],
+              "x-openapi": {
+                "method": "post",
+                "path": "/v1/widgets",
+                "operationId": "createWidget",
+                "contentType": "application/json",
+                "body": {
+                  "style": "flatten",
+                  "contentType": "application/json",
+                  "properties": [
+                    {
+                      "name": "name",
+                      "from": "option:name",
+                      "jsonPath": "name",
+                      "encoding": "string",
+                      "required": true
+                    }
+                  ]
+                },
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:write"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "retrieve",
+              "aliases": [
+                "get"
+              ],
+              "description": "Retrieve a widget",
+              "arguments": [
+                {
+                  "name": "widget-id",
+                  "required": true
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/retrieve"
+                }
+              ],
+              "x-openapi": {
+                "method": "get",
+                "path": "/v1/widgets/{widgetId}",
+                "operationId": "getWidget",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "widgetId",
+                    "from": "argument:widget-id",
+                    "required": true
+                  }
+                ],
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:read"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "replace",
+              "description": "Replace a widget",
+              "arguments": [
+                {
+                  "name": "widget-id",
+                  "required": true
+                }
+              ],
+              "options": [
+                {
+                  "name": "body",
+                  "required": false,
+                  "description": "Request body as a JSON string",
+                  "group": "body",
+                  "arguments": [
+                    {
+                      "name": "json"
+                    }
+                  ]
+                }
+              ],
+              "metadata": [
+                {
+                  "name": "docsPath",
+                  "value": "widgets/replace"
+                }
+              ],
+              "x-openapi": {
+                "method": "put",
+                "path": "/v1/widgets/{widgetId}",
+                "operationId": "replaceWidget",
+                "contentType": "application/json",
+                "params": [
+                  {
+                    "in": "path",
+                    "name": "widgetId",
+                    "from": "argument:widget-id",
+                    "required": true
+                  }
+                ],
+                "body": {
+                  "style": "json",
+                  "contentType": "application/json",
+                  "from": "option:body",
+                  "properties": []
+                },
+                "security": [
+                  {
+                    "type": "http",
+                    "kind": "bearer",
+                    "envVar": "WIDGETS_API_KEY",
+                    "scheme": "bearer",
+                    "ref": "token",
+                    "scopes": [
+                      "widgets:write"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "sync",
+          "description": "Sync widgets across two accounts.",
+          "options": [
+            {
+              "name": "dry-run",
+              "description": "Show what would change"
+            }
+          ],
+          "commands": [
+            {
+              "name": "status",
+              "description": "Show the last sync"
+            }
+          ],
+          "metadata": [
+            {
+              "name": "componentVersion",
+              "value": "1.2.0"
+            }
+          ],
+          "x-environment": [
+            {
+              "name": "ACME_SYNC_DIR",
+              "description": "Where the sync state is kept"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "agent",
+      "aliases": [
+        "ag"
+      ],
+      "description": "Run the agent CLI: every argument after `agent` is its own.",
+      "arguments": [
+        {
+          "name": "prompt",
+          "description": "What to ask; without it, the interactive session opens"
+        }
+      ],
+      "options": [
+        {
+          "name": "print",
+          "aliases": [
+            "p"
+          ],
+          "description": "Answer once and exit, without a terminal"
+        }
+      ],
+      "commands": [
+        {
+          "name": "resume",
+          "description": "Resume a previous session",
+          "arguments": [
+            {
+              "name": "session",
+              "description": "The session to resume"
+            }
+          ],
+          "options": [
+            {
+              "name": "last",
+              "description": "Resume the most recent session"
+            }
+          ]
+        }
+      ],
+      "exitCodes": [
+        {
+          "code": 0,
+          "description": "Success"
+        },
+        {
+          "code": 1,
+          "description": "The agent failed"
+        },
+        {
+          "code": 3,
+          "description": "Not signed in"
+        }
+      ],
+      "examples": [
+        "acme-agent -p 'summarize the last run'"
+      ],
+      "interactive": true,
+      "metadata": [
+        {
+          "name": "componentVersion",
+          "value": "0.4.0"
+        }
+      ],
+      "x-passthrough": {
+        "program": "acme-agent"
+      },
+      "x-interactive": {
+        "commands": [
+          {
+            "name": "model",
+            "description": "Switch the model",
+            "arguments": [
+              {
+                "name": "name"
+              }
+            ]
+          },
+          {
+            "name": "clear",
+            "aliases": [
+              "new"
+            ],
+            "description": "Start a new conversation"
+          }
+        ],
+        "keys": [
+          {
+            "keys": [
+              "ctrl+c"
+            ],
+            "description": "Interrupt, then quit",
+            "context": "always"
+          },
+          {
+            "keys": [
+              "esc"
+            ],
+            "description": "Close the picker",
+            "context": "picker"
+          }
+        ]
+      },
+      "x-environment": [
+        {
+          "name": "ACME_AGENT_COLOR",
+          "description": "When to color output",
+          "values": [
+            "always",
+            "never",
+            "auto"
+          ]
+        }
+      ]
+    }
+  ],
+  "exitCodes": [
+    {
+      "code": 0,
+      "description": "Success"
+    },
+    {
+      "code": 2,
+      "description": "Usage error"
+    }
+  ]
+}

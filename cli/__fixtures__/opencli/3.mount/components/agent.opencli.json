@@ -1,0 +1,48 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme-agent",
+    "version": "0.4.0",
+    "summary": "An agent CLI",
+    "description": "An agent CLI for the terminal.",
+    "license": { "name": "MIT" }
+  },
+  "arguments": [
+    { "name": "prompt", "description": "What to ask; without it, the interactive session opens" }
+  ],
+  "options": [
+    { "name": "print", "aliases": ["p"], "description": "Answer once and exit, without a terminal" },
+    { "name": "profile", "description": "The configuration profile to use", "arguments": [{ "name": "name" }] }
+  ],
+  "commands": [
+    {
+      "name": "resume",
+      "description": "Resume a previous session",
+      "arguments": [{ "name": "session", "description": "The session to resume" }],
+      "options": [
+        { "name": "last", "description": "Resume the most recent session" },
+        { "name": "profile", "hidden": true, "arguments": [{ "name": "name" }] }
+      ]
+    }
+  ],
+  "exitCodes": [
+    { "code": 0, "description": "Success" },
+    { "code": 1, "description": "The agent failed" },
+    { "code": 3, "description": "Not signed in" }
+  ],
+  "examples": ["acme-agent -p 'summarize the last run'"],
+  "interactive": true,
+  "x-interactive": {
+    "commands": [
+      { "name": "model", "description": "Switch the model", "arguments": [{ "name": "name" }] },
+      { "name": "clear", "aliases": ["new"], "description": "Start a new conversation" }
+    ],
+    "keys": [
+      { "keys": ["ctrl+c"], "description": "Interrupt, then quit", "context": "always" },
+      { "keys": ["esc"], "description": "Close the picker", "context": "picker" }
+    ]
+  },
+  "x-environment": [
+    { "name": "ACME_AGENT_COLOR", "description": "When to color output", "values": ["always", "never", "auto"] }
+  ]
+}
