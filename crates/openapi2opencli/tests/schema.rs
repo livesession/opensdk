@@ -1,5 +1,5 @@
 //! Every OpenCLI document the repo commits validates against the OpenCLI JSON
-//! Schema.
+//! Schema, and survives a trip through the typed model.
 //!
 //! The canonical/byte goldens prove the converter is deterministic, not that
 //! its output is a valid OpenCLI document: a field emitted in the wrong shape
@@ -7,14 +7,15 @@
 //! validates (as `x-openapi.security` once showed — the schema requires each
 //! entry's `type`, and a `{ scheme, scopes }` pair has none).
 //!
-//! `opencli-spec.json` beside this file is vendored VERBATIM from the
+//! The schema is `opencli_model::SCHEMA_JSON`:
+//! `crates/opencli_model/schema/opencli-spec.json`, vendored VERBATIM from the
 //! apitoolchain repository, `packages/apitoolchain-opencli/opencli-spec.json`
 //! at commit 1e4714b459f30570220886dee0955d33a32c9784 (MIT). It is the OpenCLI
 //! schema with the `x-openapi` binding declared; its objects are open (no
 //! `additionalProperties: false`), so extensions such as the root
 //! `x-openapi.defaultHeaders` or a command's `whenArgsPresent` validate as
 //! additional properties. Refresh it by copying the file again, never by
-//! editing it here.
+//! editing it there.
 //!
 //! Validated: the converter's fixture outputs, the OpenCLI inputs of both CLI
 //! backends' fixtures, and the documents `opensdk opencli` writes
@@ -47,7 +48,7 @@ fn case_files(dir: &Path, file: &str) -> Vec<PathBuf> {
 }
 
 fn validator() -> jsonschema::Validator {
-    let schema = read_json(&crate_dir().join("tests/opencli-spec.json"));
+    let schema: Value = serde_json::from_str(opencli_model::SCHEMA_JSON).expect("schema JSON");
     jsonschema::draft202012::new(&schema).expect("the vendored schema compiles")
 }
 
@@ -107,6 +108,35 @@ fn the_cli_backends_fixture_inputs_are_valid_opencli() {
 fn the_documents_opensdk_opencli_writes_are_valid_opencli() {
     let dir = crate_dir().join("../../cli/__fixtures__/opencli");
     assert_valid(case_files(&dir, "output.json"), 2);
+}
+
+/// Every committed document, parsed into the typed model and written back,
+/// is the same JSON (serde_json's map equality ignores key order: the model
+/// writes canonical order, the converter its own). A field the model dropped
+/// or retyped fails here.
+#[test]
+fn every_committed_document_round_trips_through_the_typed_model() {
+    let crates = crate_dir().join("..");
+    let mut docs = case_files(&crate_dir().join("__fixtures__"), "output.json");
+    docs.extend(case_files(
+        &crates.join("opencli2rust/__fixtures__"),
+        "input.json",
+    ));
+    docs.extend(case_files(
+        &crates.join("opencli2go/__fixtures__"),
+        "input.json",
+    ));
+    docs.extend(case_files(
+        &crate_dir().join("../../cli/__fixtures__/opencli"),
+        "output.json",
+    ));
+    assert!(docs.len() >= 31, "found only {} documents", docs.len());
+    for path in &docs {
+        let doc = read_json(path);
+        let typed = opencli_model::Document::from_value(doc.clone())
+            .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        assert_eq!(typed.to_value(), doc, "{}", path.display());
+    }
 }
 
 /// The guard bites: the per-command security shape this test was written for.

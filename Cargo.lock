@@ -570,6 +570,7 @@ version = "0.0.0"
 dependencies = [
  "jsonschema",
  "oas_doc",
+ "opencli_model",
  "parity_kit",
  "serde",
  "serde_json",
@@ -615,6 +616,15 @@ dependencies = [
  "serde_json",
  "tiny_http",
  "toml",
+]
+
+[[package]]
+name = "opencli_model"
+version = "0.1.0"
+dependencies = [
+ "jsonschema",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
