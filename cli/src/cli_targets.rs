@@ -49,7 +49,8 @@ impl CliBackend {
             CliBackend::Go => {
                 let opts = serde_json::from_value(options)
                     .map_err(|e| Error::msg(format!("bad go-cli options: {e}")))?;
-                Ok(opencli2go::opencli2go(spec, Some(opts))
+                Ok(opencli2go::try_opencli2go(spec, Some(opts))
+                    .map_err(|e| Error::msg(e.to_string()))?
                     .into_iter()
                     .map(|(path, content)| {
                         (

@@ -34,8 +34,40 @@ pub struct Options {
     pub base_url: Option<String>,
 }
 
+/// A document the generator refuses.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error(pub String);
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "opencli2go: {}", self.0)
+    }
+}
+
+impl std::error::Error for Error {}
+
 /// Generate the Go CLI project file map from an OpenCLI document.
+///
+/// Panics where [`try_opencli2go`] returns an error. Prefer
+/// [`try_opencli2go`].
 pub fn opencli2go(spec: &Value, options: Option<Options>) -> BTreeMap<String, String> {
+    try_opencli2go(spec, options).unwrap_or_else(|e| panic!("{e}"))
+}
+
+/// Generate the Go CLI project file map from an OpenCLI document, refusing
+/// one this backend cannot generate yet: a command marked `x-passthrough`
+/// (one that hands every argument after it, unparsed, to another program).
+pub fn try_opencli2go(
+    spec: &Value,
+    options: Option<Options>,
+) -> Result<BTreeMap<String, String>, Error> {
+    if let Some(path) = find_passthrough(spec) {
+        return Err(Error(format!(
+            "{path} is marked `x-passthrough` (it hands every argument after it, unparsed, to \
+             another program), which the Go backend does not generate yet; generate this \
+             document with the rust-cli target, or drop the marker"
+        )));
+    }
     let options = options.unwrap_or_default();
 
     let title = spec
@@ -94,5 +126,32 @@ pub fn opencli2go(spec: &Value, options: Option<Options>) -> BTreeMap<String, St
         config_go(spec, &bin_name, &base_url),
     );
 
-    files
+    Ok(files)
+}
+
+/// Where the document carries `x-passthrough`, first found: `the document
+/// root`, or `command \`a b\``.
+fn find_passthrough(spec: &Value) -> Option<String> {
+    if spec.get("x-passthrough").is_some() {
+        return Some("the document root".to_string());
+    }
+    fn walk(commands: &[Value], path: &[&str]) -> Option<String> {
+        for command in commands {
+            let name = command.get("name").and_then(Value::as_str).unwrap_or("");
+            let mut here = path.to_vec();
+            here.push(name);
+            if command.get("x-passthrough").is_some() {
+                return Some(format!("command `{}`", here.join(" ")));
+            }
+            if let Some(found) = command
+                .get("commands")
+                .and_then(Value::as_array)
+                .and_then(|subs| walk(subs, &here))
+            {
+                return Some(found);
+            }
+        }
+        None
+    }
+    walk(spec.get("commands")?.as_array()?, &[])
 }
