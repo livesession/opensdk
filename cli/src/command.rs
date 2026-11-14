@@ -218,9 +218,9 @@ pub fn command() -> Command {
                         .action(ArgAction::Append)
                         .help(
                             "Merge a hand-written OpenCLI fragment (repeatable, applied in order): \
-                             root options/exitCodes/info.description replace, commands append, a \
-                             command named like an existing top-level one updates its \
-                             description/aliases/hidden",
+                             root options/exitCodes/examples/interactive/info.description and x-* \
+                             keys replace, commands append, a command named like an existing \
+                             top-level one updates its description/aliases/hidden",
                         ),
                 )
                 .arg(

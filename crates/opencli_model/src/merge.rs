@@ -1,14 +1,18 @@
 //! Merging hand-written OpenCLI fragments into a document (`--declare`).
 //!
 //! Moved verbatim from the `opensdk` binary, so documents it merged before
-//! merge byte-identically now.
+//! merge byte-identically now, then widened to the root `examples`,
+//! `interactive` and `x-*` keys.
 //!
 //! # Fragment merge rules
 //!
 //! Each fragment is an OpenCLI-shaped JSON object, applied in the order given:
 //!
-//! * root `options`, root `exitCodes` and `info.description` REPLACE what the
-//!   document has;
+//! * root `options`, `exitCodes`, `examples`, `interactive`,
+//!   `info.description` and `x-*` keys REPLACE what the document has — except
+//!   `x-openapi`, the converter's HTTP binding, which a fragment cannot set,
+//!   and `x-passthrough`, which marks a command and never the root. The typed
+//!   extensions (`x-interactive`, `x-environment`) must have their typed shape;
 //! * `commands` APPEND in fragment order — except a fragment command whose
 //!   `name` equals a top-level command already in the document (the
 //!   `rootCommand` wrapper, or a command an earlier fragment added). That one is
@@ -19,6 +23,9 @@
 //! Any other root key (besides `opencli` and `$schema`, which are ignored, and
 //! `info`, of which only `description` is read) is an error — a misspelt
 //! `exitcodes` would otherwise vanish.
+//!
+//! A new key goes where the converter would put it; a key the document
+//! already has keeps its place.
 
 use serde_json::{Map, Value};
 
@@ -33,6 +40,8 @@ const FRAGMENT_KEYS: &[&str] = &[
     "info",
     "options",
     "exitCodes",
+    "examples",
+    "interactive",
     "commands",
 ];
 
@@ -47,6 +56,8 @@ const ROOT_ORDER: &[&str] = &[
     "options",
     "commands",
     "exitCodes",
+    "examples",
+    "interactive",
 ];
 const INFO_ORDER: &[&str] = &[
     "title",
@@ -151,13 +162,24 @@ pub fn merge_fragment(doc: &mut Value, fragment: &Value, origin: &str) -> Result
     let unknown: Vec<&str> = frag
         .keys()
         .map(String::as_str)
-        .filter(|k| !FRAGMENT_KEYS.contains(k))
+        .filter(|k| !FRAGMENT_KEYS.contains(k) && !k.starts_with("x-"))
         .collect();
     if !unknown.is_empty() {
         return Err(fail(format!(
-            "unknown key(s) {}; a fragment sets info.description, options, exitCodes and commands",
+            "unknown key(s) {}; a fragment sets info.description, options, exitCodes, \
+             examples, interactive, x-* extensions and commands",
             unknown.join(", ")
         )));
+    }
+    if frag.contains_key("x-openapi") {
+        return Err(fail(
+            "`x-openapi` is the converter's HTTP binding; a fragment cannot set it".into(),
+        ));
+    }
+    if frag.contains_key("x-passthrough") {
+        return Err(fail(
+            "`x-passthrough` marks a command, not the document root".into(),
+        ));
     }
     let Some(root) = doc.as_object_mut() else {
         return Err(fail("the document is not a JSON object".into()));
@@ -175,13 +197,34 @@ pub fn merge_fragment(doc: &mut Value, fragment: &Value, origin: &str) -> Result
         set_ordered(&mut info, "description", description.clone(), INFO_ORDER);
         set_ordered(root, "info", Value::Object(info), ROOT_ORDER);
     }
-    for key in ["options", "exitCodes"] {
+    for key in ["options", "exitCodes", "examples"] {
         if let Some(value) = frag.get(key) {
             if !value.is_array() {
                 return Err(fail(format!("`{key}` must be an array")));
             }
             set_ordered(root, key, value.clone(), ROOT_ORDER);
         }
+    }
+    if let Some(value) = frag.get("interactive") {
+        if !value.is_boolean() {
+            return Err(fail("`interactive` must be a boolean".into()));
+        }
+        set_ordered(root, "interactive", value.clone(), ROOT_ORDER);
+    }
+    for (key, value) in frag.iter().filter(|(k, _)| k.starts_with("x-")) {
+        let typed = match key.as_str() {
+            "x-interactive" => serde_json::from_value::<crate::XInteractive>(value.clone())
+                .err()
+                .map(|e| e.to_string()),
+            "x-environment" => serde_json::from_value::<Vec<crate::EnvVar>>(value.clone())
+                .err()
+                .map(|e| e.to_string()),
+            _ => None,
+        };
+        if let Some(problem) = typed {
+            return Err(fail(format!("`{key}` is malformed: {problem}")));
+        }
+        set_ordered(root, key, value.clone(), ROOT_ORDER);
     }
 
     let Some(commands) = frag.get("commands") else {
@@ -431,6 +474,69 @@ mod tests {
             merge_fragment(&mut doc, &json!({ "commands": [{ "x": 1 }] }), "a.json").unwrap_err();
         assert!(err.0.contains("string `name`"), "{}", err.0);
         assert!(merge_fragment(&mut doc, &json!([]), "a.json").is_err());
+    }
+
+    #[test]
+    fn examples_interactive_and_extensions_replace_and_x_openapi_is_refused() {
+        let mut doc = generated();
+        merge_fragment(
+            &mut doc,
+            &json!({
+                "x-environment": [{ "name": "ACME_COLOR", "description": "When to color" }],
+                "interactive": true,
+                "examples": ["acme api widgets list"],
+                "x-foo": { "a": 1 }
+            }),
+            "a.json",
+        )
+        .unwrap();
+        assert_eq!(
+            keys(&doc),
+            [
+                "opencli",
+                "info",
+                "x-openapi",
+                "commands",
+                "examples",
+                "interactive",
+                "x-environment",
+                "x-foo"
+            ]
+        );
+        // Present keys are replaced in place.
+        merge_fragment(
+            &mut doc,
+            &json!({ "x-foo": 2, "examples": [], "interactive": false }),
+            "b.json",
+        )
+        .unwrap();
+        assert_eq!(doc["x-foo"], json!(2));
+        assert_eq!(doc["examples"], json!([]));
+        assert_eq!(doc["interactive"], json!(false));
+        assert_eq!(
+            keys(&doc)[4..],
+            ["examples", "interactive", "x-environment", "x-foo"]
+        );
+
+        let err = |fragment: Value| {
+            merge_fragment(&mut generated(), &fragment, "c.json")
+                .unwrap_err()
+                .0
+        };
+        assert_eq!(
+            err(json!({ "x-openapi": {} })),
+            "--declare c.json: `x-openapi` is the converter's HTTP binding; a fragment cannot \
+             set it"
+        );
+        assert!(err(json!({ "x-passthrough": {} })).contains("marks a command"));
+        assert!(err(json!({ "interactive": "yes" })).contains("must be a boolean"));
+        assert!(err(json!({ "examples": "acme" })).contains("`examples` must be an array"));
+        assert!(err(json!({ "x-environment": [{ "name": "A" }] }))
+            .contains("`x-environment` is malformed"));
+        assert!(
+            err(json!({ "x-interactive": { "keys": [{ "keys": "esc" }] } }))
+                .contains("`x-interactive` is malformed")
+        );
     }
 
     #[test]
