@@ -1,0 +1,31 @@
+[package]
+name = "clap_opencli"
+edition.workspace = true
+# Versioned on its own, like opencli_model: a library other projects depend
+# on, not a part of the `opensdk` binary.
+version = "0.1.0"
+license.workspace = true
+repository.workspace = true
+description = "Describe a clap CLI as an OpenCLI document: commands, arguments and options from the clap tree, exit codes, examples, environment variables and interactive sessions declared beside it"
+readme = "README.md"
+keywords = ["clap", "opencli", "cli", "documentation"]
+categories = ["command-line-interface"]
+
+[features]
+# Map `Arg::env` (clap's own `env` feature) to the `env` metadata and the root
+# `x-environment` list. Off by default, so a consumer's clap build is unchanged.
+env = ["clap/env"]
+
+[dependencies]
+# No proc-macro and no default features: this crate only reads a built
+# `clap::Command`, so a consumer's clap keeps exactly the features it chose.
+# The floor is 4.5 (CI holds a job there); everything up to 5 is supported.
+clap = { version = "4.5", default-features = false, features = ["std"] }
+opencli_model = { path = "../opencli_model", version = "0.1.0" }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+# The tests build CLIs both ways, builder and derive, with clap's usual
+# features (help and version flags, the help subcommand) switched on.
+clap = { version = "4.5", features = ["derive"] }
+jsonschema = { workspace = true }

@@ -1,0 +1,115 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "arguments": [
+    {
+      "name": "file",
+      "description": "The input; `-` reads stdin",
+      "metadata": [
+        {
+          "name": "default",
+          "value": "-"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": "format",
+      "description": "The output format",
+      "arguments": [
+        {
+          "name": "format",
+          "acceptedValues": [
+            "text",
+            "json"
+          ]
+        }
+      ],
+      "metadata": [
+        {
+          "name": "default",
+          "value": "text"
+        }
+      ]
+    },
+    {
+      "name": "retries",
+      "description": "How often to retry; the default is not shown",
+      "arguments": [
+        {
+          "name": "retries"
+        }
+      ]
+    },
+    {
+      "name": "header",
+      "description": "A request header",
+      "arguments": [
+        {
+          "name": "header"
+        }
+      ],
+      "metadata": [
+        {
+          "name": "default",
+          "value": [
+            "accept: text/plain",
+            "x-trace: off"
+          ]
+        },
+        {
+          "name": "repeatable",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "json",
+      "description": "Shorthand for --format json",
+      "metadata": [
+        {
+          "name": "conflictsWith",
+          "value": [
+            "--format"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "csv",
+      "description": "Write CSV"
+    },
+    {
+      "name": "tsv",
+      "description": "Write TSV"
+    },
+    {
+      "name": "raw",
+      "description": "Write the raw bytes",
+      "metadata": [
+        {
+          "name": "conflictsWith",
+          "value": [
+            "--csv",
+            "--tsv",
+            "<file>"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "schema",
+      "description": "Print the input schema and exit",
+      "metadata": [
+        {
+          "name": "exclusive",
+          "value": true
+        }
+      ]
+    }
+  ]
+}

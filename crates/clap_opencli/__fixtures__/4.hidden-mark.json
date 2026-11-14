@@ -1,0 +1,71 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "arguments": [
+    {
+      "name": "token",
+      "description": "A hidden positional",
+      "hidden": true
+    }
+  ],
+  "options": [
+    {
+      "name": "debug",
+      "description": "Print internal state",
+      "hidden": true
+    },
+    {
+      "name": "color",
+      "description": "When to color output",
+      "arguments": [
+        {
+          "name": "color",
+          "acceptedValues": [
+            "always",
+            "never"
+          ]
+        }
+      ],
+      "metadata": [
+        {
+          "name": "conflictsWith",
+          "value": [
+            "--debug"
+          ]
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "run",
+      "description": "Run the task",
+      "arguments": [
+        {
+          "name": "target",
+          "description": "What to run"
+        }
+      ],
+      "options": [
+        {
+          "name": "trace",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "name": "internal",
+      "description": "Maintenance commands",
+      "commands": [
+        {
+          "name": "dump",
+          "description": "Dump the state"
+        }
+      ],
+      "hidden": true
+    }
+  ]
+}

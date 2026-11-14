@@ -1,0 +1,115 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.2.3",
+    "summary": "An example CLI"
+  },
+  "options": [
+    {
+      "name": "verbose",
+      "aliases": [
+        "v"
+      ],
+      "description": "More output; repeat for more",
+      "metadata": [
+        {
+          "name": "repeatable",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "quiet",
+      "aliases": [
+        "q"
+      ],
+      "description": "Less output"
+    },
+    {
+      "name": "no-color",
+      "description": "Never color the output"
+    },
+    {
+      "name": "output",
+      "aliases": [
+        "o"
+      ],
+      "description": "Where to write the result",
+      "arguments": [
+        {
+          "name": "file"
+        }
+      ]
+    },
+    {
+      "name": "tag",
+      "description": "A tag; repeat the option for more",
+      "arguments": [
+        {
+          "name": "tag"
+        }
+      ],
+      "metadata": [
+        {
+          "name": "repeatable",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "format",
+      "description": "The output format",
+      "arguments": [
+        {
+          "name": "format",
+          "acceptedValues": [
+            "json",
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "size",
+      "description": "The width and the height",
+      "arguments": [
+        {
+          "name": "width"
+        },
+        {
+          "name": "height"
+        }
+      ]
+    },
+    {
+      "name": "level",
+      "description": "The level; the value is optional",
+      "arguments": [
+        {
+          "name": "level",
+          "arity": {
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "include",
+      "description": "Paths to include",
+      "arguments": [
+        {
+          "name": "path",
+          "arity": {
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "x",
+      "description": "A short-only flag"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "arguments": [
+    {
+      "name": "mode",
+      "required": true,
+      "description": "How to copy",
+      "acceptedValues": [
+        "fast",
+        "safe"
+      ]
+    },
+    {
+      "name": "file",
+      "required": true,
+      "description": "The files to copy",
+      "arity": {
+        "minimum": 1
+      }
+    },
+    {
+      "name": "rest",
+      "description": "Passed on after `--`",
+      "arity": {
+        "minimum": 0
+      },
+      "metadata": [
+        {
+          "name": "last",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "pair",
+      "description": "Store a pair",
+      "arguments": [
+        {
+          "name": "key",
+          "required": true,
+          "description": "The key and its value",
+          "arity": {
+            "minimum": 2,
+            "maximum": 2
+          }
+        }
+      ]
+    }
+  ]
+}
