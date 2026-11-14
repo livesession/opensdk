@@ -397,6 +397,33 @@ fn the_merged_document_drives_the_rust_backend() {
     std::fs::remove_dir_all(&dir).ok();
 }
 
+/// `generate` reads the upstream root-`command` shape as the flat one: the
+/// root command's fields lifted to the root give the same tree.
+#[test]
+fn a_root_command_document_generates_the_tree_of_its_flat_twin() {
+    let case = fixtures().join("2.declare");
+    let dir = tmp("root-command");
+    let flat = dir.join("flat.json");
+    emit(&case, &flat);
+    let mut doc: Value = serde_json::from_str(&std::fs::read_to_string(&flat).unwrap()).unwrap();
+    let root = doc.as_object_mut().unwrap();
+    let mut command = serde_json::Map::new();
+    command.insert("name".into(), Value::from("widgets"));
+    for key in ["options", "commands", "exitCodes"] {
+        command.insert(key.into(), root.remove(key).expect(key));
+    }
+    root.insert("command".into(), Value::Object(command));
+    let nested = dir.join("nested.json");
+    std::fs::write(&nested, serde_json::to_string_pretty(&doc).unwrap()).unwrap();
+
+    generate_rust_cli(&case, &flat.to_string_lossy(), &dir.join("flat"));
+    generate_rust_cli(&case, &nested.to_string_lossy(), &dir.join("nested"));
+    let want = tree(&dir.join("flat"));
+    assert!(!want.is_empty());
+    assert_eq!(tree(&dir.join("nested")), want);
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn an_opencli_document_is_refused_for_an_sdk_language() {
     let case = fixtures().join("1.converter-options");

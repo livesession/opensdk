@@ -240,6 +240,10 @@ pub fn load_cli_source(spec: &str, lang: &str) -> Result<CliSource> {
         return Err(ir_rejection(lang));
     }
     if is_opencli_doc(&doc) {
+        // The upstream root-`command` shape is read as the flat one the
+        // backends take; a flat document comes back unchanged.
+        let doc = opencli_model::lift_root_command(doc)
+            .map_err(|e| Error::msg(format!("{spec}: {e}")))?;
         return Ok(CliSource::OpenCli(doc));
     }
     Ok(CliSource::OpenApi(doc))
@@ -315,7 +319,10 @@ pub fn generate_cli_target(opts: &CliTargetOptions, cwd: &Path) -> Result<()> {
     let empty = Map::new();
     let split = split_cli_options(&lang, opts.options.as_ref().unwrap_or(&empty))?;
     let cli_spec = match sniffed {
-        Some(doc) if is_opencli_doc(&doc) => doc,
+        // The upstream root-`command` shape is read as the flat one the
+        // backends take; a flat document comes back unchanged.
+        Some(doc) if is_opencli_doc(&doc) => opencli_model::lift_root_command(doc)
+            .map_err(|e| Error::msg(format!("{}: {e}", opts.spec)))?,
         sniffed => {
             let converter = converter_bag_with_defaults(
                 split.converter,
