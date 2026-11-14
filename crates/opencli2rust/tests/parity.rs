@@ -167,6 +167,18 @@ fn default_headers() {
     run_case("12.default-headers");
 }
 
+/// `x-passthrough`: a command that hands every argument after it, unparsed,
+/// to another program. It is generated as the hand-written passthrough shape
+/// (`disable_help_flag(true)` and one trailing `OsString` positional) and run
+/// through the `Commands` trait, at the top level (`agent`) and nested
+/// (`tools sync`). Its documented arguments, options and subcommands are never
+/// read: `agent`'s `--profile` and `-o` would collide with the recursive root
+/// options, and `agent resume`'s HTTP binding would be a handler.
+#[test]
+fn passthrough() {
+    run_case("13.passthrough");
+}
+
 /// `baseURL` (the spelling the sdk.json CLI sections use) and `baseUrl` both
 /// reach `config.rs`; before the alias, `baseURL` passed the option split and
 /// was then silently dropped.
@@ -376,4 +388,55 @@ fn a_flatten_body_never_sends_its_declared_media_type() {
     assert!(
         handler("json").contains(r#"("Content-Type", "application/merge-patch+json".to_string())"#)
     );
+}
+
+/// A passthrough's documented subtree is never checked against the root
+/// options (the program parses it), but the one positional it is generated
+/// with is; and the marker cannot sit on the root or on an HTTP command.
+#[test]
+fn passthrough_markers_are_checked_where_they_matter() {
+    use opencli2rust::try_opencli2rust;
+    let spec = |root_option: &str| {
+        serde_json::json!({
+            "opencli": "1.0.0",
+            "info": { "title": "widgets", "version": "1.0.0" },
+            "options": [{ "name": root_option, "recursive": true }],
+            "commands": [{
+                "name": "agent",
+                "x-passthrough": {},
+                "options": [{ "name": "profile" }, { "name": "verbose", "aliases": ["v"] }],
+                "commands": [{ "name": "resume", "arguments": [{ "name": "profile" }] }]
+            }]
+        })
+    };
+    let err = |spec: &Value| try_opencli2rust(spec, None).err().map(|e| e.to_string());
+    assert_eq!(err(&spec("profile")), None);
+    assert_eq!(
+        err(&spec("args")).as_deref(),
+        Some(
+            "opencli2rust: root option `--args` and the passthrough argument `<args>` of `agent` \
+             both use the argument id `args` — rename one, or change its aliases"
+        )
+    );
+
+    let mut root = spec("profile");
+    root["x-passthrough"] = serde_json::json!({});
+    assert_eq!(
+        err(&root).as_deref(),
+        Some("opencli2rust: `x-passthrough` marks a command, not the document root")
+    );
+    let mut bound = spec("profile");
+    bound["commands"][0]["x-openapi"] = serde_json::json!({ "method": "get", "path": "/a" });
+    assert_eq!(
+        err(&bound).as_deref(),
+        Some(
+            "opencli2rust: command `agent` is a passthrough (`x-passthrough`) and also binds an \
+             HTTP request (`x-openapi`); a passthrough hands its arguments to another program"
+        )
+    );
+    // Below a passthrough nothing is read, a binding included.
+    let mut below = spec("profile");
+    below["commands"][0]["commands"][0]["x-openapi"] =
+        serde_json::json!({ "method": "get", "path": "/a" });
+    assert_eq!(err(&below), None);
 }
