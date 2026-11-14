@@ -27,6 +27,11 @@
 //! assert_eq!(Document::from_json(&json).unwrap(), doc);
 //! ```
 
+// The README's example runs as a doctest.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 mod merge;
 mod model;
 mod mount;
