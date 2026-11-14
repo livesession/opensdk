@@ -637,6 +637,7 @@ dependencies = [
  "openapi2opensdk",
  "opencli2go",
  "opencli2rust",
+ "opencli_model",
  "opensdk_chain",
  "opensdk_config",
  "opensdk_core",

@@ -13,6 +13,8 @@
 //!   program). [`EXTENSIONS_SCHEMA_JSON`] is their JSON Schema, and
 //!   [`SCHEMA_JSON`] the base OpenCLI schema; validate a document against
 //!   both with the validator of your choice.
+//! * [`merge_fragment`] merges a hand-written OpenCLI fragment into a
+//!   document (the `opensdk opencli --declare` step).
 //!
 //! ```
 //! use opencli_model::{Command, Document, EnvVar};
@@ -24,8 +26,11 @@
 //! assert_eq!(Document::from_json(&json).unwrap(), doc);
 //! ```
 
+mod merge;
 mod model;
 mod shape;
+
+pub use merge::merge_fragment;
 
 pub use model::{
     Argument, Arity, CliOption, Command, Contact, Conventions, Document, EnvVar, ExitCode,
@@ -48,6 +53,12 @@ pub const EXTENSIONS_SCHEMA_JSON: &str = include_str!("../schema/opencli-extensi
 /// is wrong and where.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Error(pub String);
+
+impl Error {
+    pub(crate) fn msg(message: impl Into<String>) -> Self {
+        Error(message.into())
+    }
+}
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

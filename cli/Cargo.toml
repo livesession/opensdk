@@ -43,6 +43,8 @@ openapi2opensdk = { path = "../crates/openapi2opensdk" }
 openapi2opencli = { path = "../crates/openapi2opencli" }
 opencli2go = { path = "../crates/opencli2go" }
 opencli2rust = { path = "../crates/opencli2rust" }
+# The typed OpenCLI model: the `--declare` merge and the `--mount` step.
+opencli_model = { path = "../crates/opencli_model" }
 
 # ── the 7 emitters (the registry table) ──────────────────────────────────────
 opensdk_go = { path = "../crates/opensdk_go" }
