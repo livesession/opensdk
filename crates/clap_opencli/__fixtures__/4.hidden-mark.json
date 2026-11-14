@@ -37,6 +37,17 @@
           ]
         }
       ]
+    },
+    {
+      "name": "log-file",
+      "description": "Where to write the internal log",
+      "recursive": true,
+      "hidden": true,
+      "arguments": [
+        {
+          "name": "log-file"
+        }
+      ]
     }
   ],
   "commands": [

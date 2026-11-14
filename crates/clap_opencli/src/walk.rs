@@ -55,11 +55,13 @@ impl<'o> Walk<'o> {
             if is_help_or_version(arg) || is_spread_copy(arg, unbuilt, inherited) {
                 continue;
             }
-            if arg.is_hide_set() && self.options.hidden == Hidden::Omit {
-                continue;
-            }
+            // Recorded even when it is left out below: its copies further
+            // down are still copies.
             if arg.is_global_set() {
                 declared_globals.push(arg.get_id().as_str().to_string());
+            }
+            if arg.is_hide_set() && self.options.hidden == Hidden::Omit {
+                continue;
             }
             if arg.is_positional() {
                 positionals.push((

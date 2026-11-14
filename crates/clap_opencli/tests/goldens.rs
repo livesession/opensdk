@@ -276,6 +276,13 @@ fn hidden_cli() -> Command {
                 .help("When to color output"),
         )
         .arg(Arg::new("token").hide(true).help("A hidden positional"))
+        .arg(
+            Arg::new("log-file")
+                .long("log-file")
+                .global(true)
+                .hide(true)
+                .help("Where to write the internal log"),
+        )
         .subcommand(
             Command::new("run")
                 .about("Run the task")
@@ -297,10 +304,26 @@ fn hidden_cli() -> Command {
 
 #[test]
 fn hidden_is_marked_by_default() {
-    golden(
-        "4.hidden-mark",
-        &from_command(&hidden_cli()).build().unwrap(),
-    );
+    let doc = from_command(&hidden_cli()).build().unwrap();
+    golden("4.hidden-mark", &doc);
+    // A hidden global is written once, where it is declared.
+    let log = doc.options.iter().find(|o| o.name == "log-file").unwrap();
+    assert_eq!((log.recursive, log.hidden), (Some(true), Some(true)));
+    let run = doc.command(&["run"]).unwrap();
+    assert!(run.options.iter().all(|o| o.name != "log-file"));
+}
+
+/// Every option name in the document, at any depth.
+fn all_option_names(doc: &Document) -> Vec<String> {
+    fn walk(commands: &[opencli_model::Command], out: &mut Vec<String>) {
+        for c in commands {
+            out.extend(c.options.iter().map(|o| o.name.clone()));
+            walk(&c.commands, out);
+        }
+    }
+    let mut out: Vec<String> = doc.options.iter().map(|o| o.name.clone()).collect();
+    walk(&doc.commands, &mut out);
+    out
 }
 
 #[test]
@@ -312,6 +335,8 @@ fn hidden_is_omitted_on_request() {
         .build()
         .unwrap();
     golden("5.hidden-omit", &doc);
+    let names = all_option_names(&doc);
+    assert!(!names.iter().any(|n| n == "log-file"), "{names:?}");
 }
 
 // ── 6. aliases ──────────────────────────────────────────────────────────────
