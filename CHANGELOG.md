@@ -1,8 +1,85 @@
 # Changelog
 
-Releases are tagged `vX.Y.Z` on the `opensdk` binary (`cli/Cargo.toml`); the
-library crates are not versioned independently. Earlier releases are described
-on their GitHub release pages.
+Releases are tagged `vX.Y.Z` on the `opensdk` binary (`cli/Cargo.toml`). The
+library crates are not versioned independently, except `opencli_model` and
+`clap_opencli`: libraries other projects depend on, each with its own version
+(from 0.1.0), released with the tag that carries it. Earlier releases are
+described on their GitHub release pages.
+
+## 0.4.0 (unreleased)
+
+- New library crate **`opencli_model`** (0.1.0): a typed model of the flat
+  OpenCLI shape the chain reads and writes.
+  - Every object keeps the keys it does not type, so `x-*` keys round-trip;
+    writing uses one canonical key order. Reading also accepts the upstream
+    root-`command` shape and lifts it to flat (`lift_root_command`); a
+    document with both shapes is an error.
+  - Three generic extensions are typed: `x-interactive {commands, keys}` (what
+    a running interactive session accepts; its commands are typed inside the
+    session, never argv commands), `x-environment [{name, description,
+    values}]` and `x-passthrough {program}` (a command that hands every
+    argument after it, unparsed, to another program).
+    `schema/opencli-extensions.schema.json` is their contract, exported as
+    `EXTENSIONS_SCHEMA_JSON` beside the base schema (`SCHEMA_JSON`, moved here
+    from `openapi2opencli/tests`, byte for byte). Every committed OpenCLI
+    document is validated against both and round-tripped through the model.
+  - `merge_fragment`, the `--declare` merge, moves here from the binary
+    unchanged (documents merged before merge byte-identically), then takes
+    root `examples`, `interactive` and `x-*` keys too, each replacing what the
+    document has. `x-openapi` stays the converter's, `x-passthrough` marks a
+    command and never the root, and `x-interactive` / `x-environment` must
+    have their typed shape.
+  - `mount` places a component CLI's document at one command of a host CLI's
+    (rules M1–M7 on the function): equal conventions; a passthrough stub
+    (`x-passthrough` with no arguments, options or subcommands) is filled and
+    keeps its name, aliases, hidden flag, marker and description, else the
+    command is appended under the spelling-collision rule; the component's
+    root arguments, options, commands, exit codes, examples, `interactive`,
+    metadata and `x-*` keys move onto the command, and its `info.version`
+    becomes the metadata `componentVersion`; an `x-openapi` binding anywhere
+    is an error; a host recursive option in scope that answers to a spelling
+    of a component option is an error naming both, unless the component's
+    option is dropped (and a drop matching nothing is an error).
+- New library crate **`clap_opencli`** (0.1.0): describe a clap CLI as an
+  OpenCLI document. `from_command(&cmd)...build()` maps a builder or derive
+  tree (read after `Command::build` and compared with the unbuilt one:
+  clap's help subcommand and help/version arguments skipped by action,
+  globals `recursive` only where declared, positionals in index order with
+  arity and accepted values, options with their visible aliases and one
+  argument per value name, metadata `default`, `env` (the `env` feature),
+  `repeatable`, `conflictsWith`, `exclusive`, `last`; hidden items marked or
+  omitted). Exit codes, examples, `x-environment`, `interactive`,
+  `x-interactive` (`interactive_from_command` reads a REPL parsed with clap),
+  `x-*` keys and per-command extras (`at(&path, ...)`, an unknown path is an
+  error) are declared beside it. `snapshot::assert_file` keeps a committed
+  document current in a test (`OPENCLI_UPDATE=1` rewrites it). No
+  proc-macro, and clap is taken without default features, so a CLI's clap
+  build is unchanged. Supported: clap 4.5 and later 4.x; a CI job holds clap
+  at 4.5.58.
+- `opensdk opencli ... --mount NAME=DOC [--mount-drop NAME:OPTION]...`: after
+  the converter and the `--declare` fragments, each mount places a component
+  CLI's OpenCLI document at the command NAME (`parent/name` mounts under
+  `parent`) by `opencli_model::mount`, and reports one line on stderr:
+  `mounted <name> <version>: dropped --<option>`. Fixture
+  `cli/__fixtures__/opencli/3.mount`; every rule has its error test.
+- `generate --spec <doc>` and `opencli --spec <doc>` read an OpenCLI
+  document in the upstream root-`command` shape (lifted to flat).
+- `x-passthrough` in the generators:
+  - `opencli2rust` generates a marked command as exactly the hand-written
+    passthrough shape: `.disable_help_flag(true)` and one `args` positional
+    (`num_args(0..)`, `trailing_var_arg`, `allow_hyphen_values`, parsed to
+    `OsString`), bound through the generated `Commands` trait
+    (`fn <name>(ctx, m)`). Its documented arguments, options and subcommands
+    are never read, and the root-option collision check skips them. The
+    marker on the root, or on a command that also binds an HTTP request, is a
+    generation error. Fixture `13.passthrough`; `runtime_smoke` builds it and
+    checks the hand-off. Every other golden is byte-identical.
+  - `opencli2go` refuses a document with the marker (`try_opencli2go` returns
+    the error; `opencli2go` panics with it; `generate --lang go-cli` reports
+    it) until it generates one.
+- The binary's own reference document, `cli/opencli.json`, is built from its
+  clap tree by `clap_opencli` and drift-checked in `cli/tests/reference.rs`;
+  `scripts/release.sh` bumps its `info.version` with the manifest's.
 
 ## 0.3.1
 
