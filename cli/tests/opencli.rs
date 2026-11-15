@@ -254,6 +254,15 @@ fn every_mount_rule_has_its_error() {
         ),
         "mount agent: --mount-drop agent:nope matches no option of the component"
     );
+    // A drop given twice, with or without its dashes, is one drop.
+    assert_eq!(
+        mount_error(
+            &dir,
+            &[&format!("agent={agent}")],
+            &["agent:profile", "agent:--profile", "agent:profile"]
+        ),
+        "no error"
+    );
     std::fs::remove_dir_all(&dir).ok();
 }
 

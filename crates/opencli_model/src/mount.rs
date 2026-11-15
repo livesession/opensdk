@@ -50,7 +50,8 @@ pub struct MountOptions {
     /// Empty: the top level.
     pub under: Vec<String>,
     /// Names of the component's options to remove from the mounted subtree,
-    /// wherever they appear. Each must match at least one option.
+    /// wherever they appear, with or without their dashes. Each must match at
+    /// least one option; a name given twice is dropped once.
     pub drop_options: Vec<String>,
     /// The metadata entry that records the component's `info.version`.
     pub version_metadata: String,
@@ -221,17 +222,19 @@ pub fn mount(
         commands: component.commands.clone(),
         ..Default::default()
     };
-    let mut dropped = Vec::new();
+    let mut dropped: Vec<String> = Vec::new();
     for option in &options.drop_options {
         let option = option.trim_start_matches('-');
+        // A repeat (`profile` and `--profile` are one) was dropped already.
+        if dropped.iter().any(|d| d == option) {
+            continue;
+        }
         if drop_option(&mut mounted, option) == 0 {
             return Err(fail(format!(
                 "--mount-drop {flag_name}:{option} matches no option of the component"
             )));
         }
-        if !dropped.iter().any(|d| d == option) {
-            dropped.push(option.to_string());
-        }
+        dropped.push(option.to_string());
     }
 
     // M4: a host option in scope must not answer to a spelling the component
@@ -490,6 +493,28 @@ mod tests {
         );
         assert!(agent.x_passthrough.is_none());
         assert_eq!(doc.command(&["tools"]).unwrap().commands.len(), 2);
+    }
+
+    #[test]
+    fn a_drop_given_twice_is_dropped_once() {
+        let mut doc = host();
+        let twice = MountOptions {
+            drop_options: vec!["profile".into(), "--profile".into(), "profile".into()],
+            ..Default::default()
+        };
+        let report = mount(&mut doc, "agent", &component(), &twice).unwrap();
+        assert_eq!(report.to_string(), "mounted agent 0.4.0: dropped --profile");
+        assert_eq!(report.dropped, ["profile"]);
+        // A name that matches nothing is still an error after a repeat.
+        let mut doc = host();
+        let unknown = MountOptions {
+            drop_options: vec!["profile".into(), "profile".into(), "nope".into()],
+            ..Default::default()
+        };
+        assert_eq!(
+            err(&mut doc, "agent", &component(), &unknown),
+            "mount agent: --mount-drop agent:nope matches no option of the component"
+        );
     }
 
     #[test]
