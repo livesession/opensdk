@@ -45,10 +45,12 @@ described on their GitHub release pages.
   tree (read after `Command::build` and compared with the unbuilt one:
   clap's help subcommand and help/version arguments skipped by action,
   globals `recursive` only where declared, positionals in index order with
-  arity and accepted values, options with their visible aliases and one
-  argument per value name, metadata `default`, `env` (the `env` feature),
-  `repeatable`, `conflictsWith`, `exclusive`, `last`; hidden items marked or
-  omitted). Exit codes, examples, `x-environment`, `interactive`,
+  arity and accepted values, options named by their long name with their
+  visible aliases and one argument per value name (an option with only a
+  short is an error, a one-character long alias is left out: a
+  one-character name reads as a long, a one-character alias as a short),
+  metadata `default`, `env` (the `env` feature), `repeatable`,
+  `conflictsWith`, `exclusive`, `last`; hidden items marked or omitted). Exit codes, examples, `x-environment`, `interactive`,
   `x-interactive` (`interactive_from_command` reads a REPL parsed with clap),
   `x-*` keys and per-command extras (`at(&path, ...)`, an unknown path is an
   error) are declared beside it. `snapshot::assert_file` keeps a committed

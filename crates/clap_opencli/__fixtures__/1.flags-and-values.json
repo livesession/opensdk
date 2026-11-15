@@ -109,7 +109,10 @@
     },
     {
       "name": "x",
-      "description": "A short-only flag"
+      "aliases": [
+        "y"
+      ],
+      "description": "A flag with a one-character long name"
     }
   ]
 }

@@ -27,7 +27,7 @@ fn the_reference_document_is_current() {
         .example("acme ask 'hello'")
         .env(EnvVar::new("ACME_COLOR", "When to color output").values(["always", "never"]))
         .interactive(true)
-        .interactive_commands(clap_opencli::interactive_from_command(&acme::Repl::command()))
+        .interactive_commands(clap_opencli::interactive_from_command(&acme::Repl::command()).unwrap())
         .keys([KeyBinding::new(["ctrl+c"], "Interrupt, then quit")])
         .at(&["resume"], |c| c.example("acme resume --last")) // an unknown path is an error
         .extension("x-acme-channel", "stable") // x- keys only
@@ -53,7 +53,7 @@ not by id) are skipped.
 | bin name, else name; `version`; `about`; `long_about` when it differs | `info.title`, `info.version`, `info.summary`, `info.description` (each can be overridden) |
 | a subcommand: name, visible aliases, `long_about` else `about`, `hide` | a command: `name`, `aliases`, `description`, `hidden` |
 | positionals, in index order | `arguments`: the first value name lowercased (else the id), `required`, `arity` unless exactly one, the non-hidden possible values as `acceptedValues`, the help heading as `group`, `hidden` |
-| options | `options`: the long name else the short; `aliases` = the short plus the visible aliases; one argument per value name; flags (`SetTrue`, `SetFalse`, `Count`) take none and get no default |
+| options | `options`: the long name; `aliases` = the short plus the visible aliases; one argument per value name; flags (`SetTrue`, `SetFalse`, `Count`) take none and get no default. An option with only a short is an error and a one-character long alias is left out: an OpenCLI option is named by its long name and a one-character alias reads as a short |
 | `global(true)` | `recursive: true` where declared; the copies clap spreads to subcommands are not written |
 | `Append`, `Count` | metadata `repeatable` |
 | `default_value(s)` unless hidden | metadata `default` |
@@ -62,7 +62,7 @@ not by id) are skipped.
 | `hide` | `hidden: true` (`Hidden::Mark`), or left out (`Hidden::Omit`) |
 
 Not mapped: `requires` (clap has no getter for it), whether an argument group
-is required, value hints, external subcommands.
+is required, one-character long aliases, value hints, external subcommands.
 
 ## Versions
 

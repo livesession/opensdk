@@ -338,7 +338,7 @@ impl Command {
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct CliOption {
     /// The long name, without dashes (a one-character name is still a long
-    /// one, `--x`).
+    /// one, `--x`). An option with only a short has no name in this shape.
     pub name: String,
     /// Other spellings, without dashes: one character is a short (`-o`),
     /// more is a long (`--out`).

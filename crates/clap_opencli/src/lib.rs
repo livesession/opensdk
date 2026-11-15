@@ -55,23 +55,27 @@
 //!   one value (no maximum when unbounded); the non-hidden possible values as
 //!   `acceptedValues`; the help heading as `group`; `long_help` else `help`
 //!   as the description; `hidden`.
-//! * **Options:** the long name, else the short one; as aliases, the short
-//!   (when there is a long) and the visible long and short aliases. An option
-//!   taking values has one argument per value name (else one, named like a
-//!   positional, with the option's arity); a flag (`SetTrue`, `SetFalse`,
+//! * **Options:** the long name; as aliases, the short and the visible long
+//!   and short aliases. An OpenCLI option is named by its long name, and a
+//!   one-character alias is read as a short: an option with only a short
+//!   (`-x`) is an error, since its name would read `--x`, and a
+//!   one-character long alias (`--y`, which would read `-y`) is left out. An
+//!   option taking values has one argument per value name (else one, named
+//!   like a positional, with the option's arity); a flag (`SetTrue`, `SetFalse`,
 //!   `Count`) has none and no default. `Append` and `Count` add the metadata
 //!   `repeatable`. A global is `recursive: true` where it is declared; the
 //!   copies clap spreads to the subcommands are not written.
 //! * **Metadata:** `default` (one string, or a list for several values)
 //!   unless the default is hidden from help; `env` with the `env` feature
 //!   (and an `x-environment` entry on the root, unless the argument is
-//!   hidden); `conflictsWith`, the spellings (`--name`, `-n`, `<name>`) of the
+//!   hidden); `conflictsWith`, the spellings (`--name`, `<name>`) of the
 //!   arguments an argument declares a conflict with, groups unrolled;
 //!   `exclusive` and `last` when set.
 //! * **Hidden** commands and arguments are marked `hidden: true`
 //!   ([`Hidden::Mark`], the default) or left out ([`Hidden::Omit`]).
 //! * **Not mapped:** `requires` (clap has no getter for it), whether an
-//!   argument group is required, value hints, external subcommands.
+//!   argument group is required, one-character long aliases, value hints,
+//!   external subcommands.
 //!
 //! clap 4.5 is the oldest version supported, and every 4.x after it.
 //!
@@ -128,13 +132,18 @@ pub fn from_command(command: &clap::Command) -> Builder {
 /// The commands of a REPL parsed with clap, for [`Builder::interactive_commands`]:
 /// the subcommands of `command`, mapped like the commands of a CLI (hidden
 /// ones marked). The command's own arguments are not part of the result.
-pub fn interactive_from_command(command: &clap::Command) -> Vec<Command> {
+///
+/// # Errors
+///
+/// Where [`Builder::build`] fails on the tree: an option with only a short.
+pub fn interactive_from_command(command: &clap::Command) -> Result<Vec<Command>, Error> {
     let mut built = command.clone();
     built.build();
     let options = Options::default();
-    Walk::new(&options)
-        .parts(&built, Some(command), &[])
-        .commands
+    let root = vec![command.get_name().to_string()];
+    Ok(Walk::new(&options)
+        .parts(&built, Some(command), &[], &root)?
+        .commands)
 }
 
 /// The extras a command can declare: everything clap does not know.
@@ -309,9 +318,10 @@ impl Builder {
     /// # Errors
     ///
     /// When the command has no version and none is given with
-    /// [`Builder::version`], when an [`at`](Builder::at) path names no
-    /// command, and when an extension key is not an `x-` key, has a typed
-    /// form, or is `x-openapi`.
+    /// [`Builder::version`], when an option has only a short (`-x`: an
+    /// OpenCLI option is named by its long name), when an
+    /// [`at`](Builder::at) path names no command, and when an extension key
+    /// is not an `x-` key, has a typed form, or is `x-openapi`.
     ///
     /// # Panics
     ///
@@ -352,7 +362,8 @@ impl Builder {
         doc.info.description = self.description.or(long_about);
 
         let mut walk = Walk::new(&self.options);
-        let parts = walk.parts(&built, Some(unbuilt), &[]);
+        let root = vec![unbuilt.get_name().to_string()];
+        let parts = walk.parts(&built, Some(unbuilt), &[], &root)?;
         doc.arguments = parts.arguments;
         doc.options = parts.options;
         doc.commands = parts.commands;

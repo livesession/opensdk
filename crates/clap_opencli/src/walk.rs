@@ -8,7 +8,7 @@
 //! tree, and every argument whose action is help or version, whatever its id.
 
 use clap::{Arg, ArgAction, Command as ClapCommand};
-use opencli_model::{Argument, Arity, CliOption, Command, EnvVar, Metadata};
+use opencli_model::{Argument, Arity, CliOption, Command, EnvVar, Error, Metadata};
 
 use crate::{Hidden, Options};
 
@@ -40,13 +40,15 @@ impl<'o> Walk<'o> {
     /// The parts of `built`, a command of a built tree. `unbuilt` is the same
     /// command before the build, when it existed then (a command added by
     /// `Command::defer` did not); `inherited` holds the ids of the globals an
-    /// ancestor declares.
+    /// ancestor declares; `path` names the command, from the root's name, for
+    /// the errors.
     pub fn parts(
         &mut self,
         built: &ClapCommand,
         unbuilt: Option<&ClapCommand>,
         inherited: &[String],
-    ) -> Parts {
+        path: &[String],
+    ) -> Result<Parts, Error> {
         let mut parts = Parts::default();
         let mut positionals = Vec::new();
         let mut declared_globals = inherited.to_vec();
@@ -69,7 +71,7 @@ impl<'o> Walk<'o> {
                     self.argument(built, arg),
                 ));
             } else {
-                parts.options.push(self.option(built, arg));
+                parts.options.push(self.option(built, arg, path)?);
             }
         }
         // `sort_by_key` is stable: two positionals without an index (an
@@ -85,11 +87,13 @@ impl<'o> Walk<'o> {
                 continue;
             }
             let unbuilt_sub = unbuilt.and_then(|u| u.find_subcommand(sub.get_name()));
+            let mut sub_path = path.to_vec();
+            sub_path.push(sub.get_name().to_string());
             parts
                 .commands
-                .push(self.command(sub, unbuilt_sub, &declared_globals));
+                .push(self.command(sub, unbuilt_sub, &declared_globals, &sub_path)?);
         }
-        parts
+        Ok(parts)
     }
 
     fn command(
@@ -97,9 +101,10 @@ impl<'o> Walk<'o> {
         built: &ClapCommand,
         unbuilt: Option<&ClapCommand>,
         inherited: &[String],
-    ) -> Command {
-        let parts = self.parts(built, unbuilt, inherited);
-        Command {
+        path: &[String],
+    ) -> Result<Command, Error> {
+        let parts = self.parts(built, unbuilt, inherited, path)?;
+        Ok(Command {
             name: built.get_name().to_string(),
             aliases: built.get_visible_aliases().map(str::to_string).collect(),
             description: built
@@ -111,7 +116,7 @@ impl<'o> Walk<'o> {
             commands: parts.commands,
             hidden: self.hidden(built.is_hide_set()),
             ..Default::default()
-        }
+        })
     }
 
     /// A positional argument.
@@ -136,23 +141,41 @@ impl<'o> Walk<'o> {
     }
 
     /// An option.
-    fn option(&mut self, owner: &ClapCommand, arg: &Arg) -> CliOption {
-        let long = arg.get_long();
+    ///
+    /// The chain names an option by its long name and reads every
+    /// one-character alias as a short: a one-character name is a long
+    /// (`--x`). So an option with only a short cannot be written (its name
+    /// would read `--x`, which clap rejects) and is an error, and a
+    /// one-character long alias (`--y`, which would read `-y`) is left out.
+    fn option(
+        &mut self,
+        owner: &ClapCommand,
+        arg: &Arg,
+        path: &[String],
+    ) -> Result<CliOption, Error> {
         let short = arg.get_short();
-        let name = match (long, short) {
+        let name = match (arg.get_long(), short) {
             (Some(long), _) => long.to_string(),
-            (None, Some(short)) => short.to_string(),
+            (None, Some(short)) => {
+                return Err(Error(format!(
+                    "`{}`: the option `-{short}` has no long name; an OpenCLI option is named by \
+                     its long name (a one-character name reads as `--{short}`), so give it one \
+                     with `Arg::long`, or hide it and leave it out with `Hidden::Omit`",
+                    path.join(" ")
+                )));
+            }
             // clap calls an argument without a long or a short a positional.
             (None, None) => arg.get_id().as_str().to_string(),
         };
         let mut aliases = Vec::new();
-        if let (Some(_), Some(short)) = (long, short) {
+        if let Some(short) = short {
             aliases.push(short.to_string());
         }
         aliases.extend(
             arg.get_visible_aliases()
                 .unwrap_or_default()
                 .into_iter()
+                .filter(|alias| alias.chars().count() > 1)
                 .map(str::to_string),
         );
         aliases.extend(
@@ -173,7 +196,7 @@ impl<'o> Walk<'o> {
             metadata.insert(at, Metadata::new("repeatable", true));
         }
 
-        CliOption {
+        Ok(CliOption {
             name,
             aliases,
             required: arg.is_required_set().then_some(true),
@@ -184,7 +207,7 @@ impl<'o> Walk<'o> {
             arguments: option_values(arg),
             metadata,
             ..Default::default()
-        }
+        })
     }
 
     /// The metadata both kinds share, in order: `default`, `env`,

@@ -132,13 +132,67 @@ fn flags_and_values() {
                 .value_name("PATH")
                 .help("Paths to include"),
         )
+        // A one-character long is still a long: named `x`, read `--x`.
         .arg(
+            Arg::new("x")
+                .long("x")
+                .short('y')
+                .action(ArgAction::SetTrue)
+                .help("A flag with a one-character long name"),
+        );
+    let doc = from_command(&cli).build().unwrap();
+    golden("1.flags-and-values", &doc);
+    let x = doc.options.iter().find(|o| o.name == "x").unwrap();
+    assert_eq!(x.spellings(), ["--x", "-y"]);
+    cli.clone().try_get_matches_from(["acme", "--x"]).unwrap();
+    cli.try_get_matches_from(["acme", "-y"]).unwrap();
+}
+
+#[test]
+fn an_option_with_only_a_short_is_an_error() {
+    // The chain names an option by its long name: `{"name": "x"}` reads as
+    // `--x`, which clap rejects for this option.
+    let cli = Command::new("acme").version("1.0.0").subcommand(
+        Command::new("run").arg(
             Arg::new("x")
                 .short('x')
                 .action(ArgAction::SetTrue)
                 .help("A short-only flag"),
-        );
-    golden("1.flags-and-values", &from_command(&cli).build().unwrap());
+        ),
+    );
+    assert!(cli
+        .clone()
+        .try_get_matches_from(["acme", "run", "--x"])
+        .is_err());
+    let err = from_command(&cli).build().unwrap_err();
+    assert_eq!(
+        err.0,
+        "`acme run`: the option `-x` has no long name; an OpenCLI option is named by its long \
+         name (a one-character name reads as `--x`), so give it one with `Arg::long`, or hide \
+         it and leave it out with `Hidden::Omit`"
+    );
+    // Hidden and left out, it is no error.
+    let hidden = Command::new("acme").version("1.0.0").arg(
+        Arg::new("x")
+            .short('x')
+            .action(ArgAction::SetTrue)
+            .hide(true),
+    );
+    let doc = from_command(&hidden)
+        .options(Options {
+            hidden: Hidden::Omit,
+        })
+        .build()
+        .unwrap();
+    assert!(doc.options.is_empty());
+    // A REPL's commands are read the same way.
+    let repl = Command::new("session")
+        .multicall(true)
+        .subcommand(Command::new("model").arg(Arg::new("q").short('q').action(ArgAction::SetTrue)));
+    assert!(interactive_from_command(&repl)
+        .unwrap_err()
+        .0
+        .starts_with("`session model`: the option `-q` has no long name"));
 }
 
 // ── 2. positionals and arity ────────────────────────────────────────────────
@@ -358,6 +412,9 @@ fn only_visible_aliases_are_written() {
                         .alias("assume-yes")
                         .visible_short_alias('y')
                         .short_alias('F')
+                        // `--Y`: a one-character alias reads as a short
+                        // (`-Y`), so this one is left out.
+                        .visible_alias("Y")
                         .action(ArgAction::SetTrue)
                         .help("Do not ask"),
                 ),
@@ -367,7 +424,15 @@ fn only_visible_aliases_are_written() {
                 .about("List the items")
                 .visible_aliases(["ls", "l"]),
         );
-    golden("6.aliases", &from_command(&cli).build().unwrap());
+    let doc = from_command(&cli).build().unwrap();
+    golden("6.aliases", &doc);
+    let force = &doc.command(&["remove"]).unwrap().options[0];
+    assert_eq!(force.spellings(), ["--force", "-f", "--yes", "-y"]);
+    cli.clone()
+        .try_get_matches_from(["acme", "remove", "--Y"])
+        .unwrap();
+    cli.try_get_matches_from(["acme", "remove", "-Y"])
+        .unwrap_err();
 }
 
 // ── 7. defaults and conflicts ───────────────────────────────────────────────
@@ -640,7 +705,7 @@ fn extras_builder() -> clap_opencli::Builder {
         .example("acme-agent -p 'summarize' < notes.txt")
         .env(EnvVar::new("ACME_AGENT_HOME", "Where sessions are kept"))
         .interactive(true)
-        .interactive_commands(interactive_from_command(&Repl::command()))
+        .interactive_commands(interactive_from_command(&Repl::command()).unwrap())
         .keys([
             KeyBinding::new(["ctrl+c"], "Interrupt the answer; twice to quit"),
             KeyBinding::new(["esc"], "Close the picker").context("picker"),
@@ -665,7 +730,7 @@ fn the_builders_extras() {
 
 #[test]
 fn a_repl_parsed_with_clap_gives_the_session_commands() {
-    let commands = interactive_from_command(&Repl::command());
+    let commands = interactive_from_command(&Repl::command()).unwrap();
     let names: Vec<&str> = commands.iter().map(|c| c.name.as_str()).collect();
     assert_eq!(
         names,
