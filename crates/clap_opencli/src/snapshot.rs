@@ -32,7 +32,8 @@ pub const UPDATE_VAR: &str = "OPENCLI_UPDATE";
 /// # Panics
 ///
 /// When the file is missing or differs (the message names the first line that
-/// differs), or when it cannot be read or written.
+/// differs, or says the files differ only in the newlines at their end), or
+/// when it cannot be read or written.
 #[track_caller]
 pub fn assert_file(path: impl AsRef<Path>, doc: &Document) {
     let update = std::env::var_os(UPDATE_VAR).is_some_and(|v| v == "1");
@@ -66,20 +67,40 @@ pub(crate) fn check(path: &Path, expected: &str, update: bool) -> Result<(), Str
     if committed == expected {
         return Ok(());
     }
+    let rewrite = format!("run the test with {UPDATE_VAR}=1 to rewrite it, then review the diff");
+    // `str::lines` would hide this one: it ignores a final newline.
+    let body = |text: &str| text.trim_end_matches('\n').len();
+    if committed[..body(&committed)] == expected[..body(expected)] {
+        let newlines = |text: &str| text.len() - body(text);
+        return Err(format!(
+            "{shown} is out of date: it differs only in the newlines at its end (committed: {}, \
+             generated: {});\n{rewrite}",
+            newlines(&committed),
+            newlines(expected)
+        ));
+    }
     let mut committed_lines = committed.lines();
     let mut expected_lines = expected.lines();
     let mut line = 1;
+    let shown_line = |l: Option<&str>| match l.map(str::trim) {
+        None => "(end of file)".to_string(),
+        Some("") => "(an empty line)".to_string(),
+        Some(l) => l.to_string(),
+    };
     let (was, now) = loop {
         match (committed_lines.next(), expected_lines.next()) {
             (Some(a), Some(b)) if a == b => line += 1,
-            (a, b) => break (a.unwrap_or("(end of file)"), b.unwrap_or("(end of file)")),
+            // The same lines: a carriage return `str::lines` drops.
+            (None, None) => {
+                return Err(format!(
+                    "{shown} is out of date: it differs only in its line endings;\n{rewrite}"
+                ))
+            }
+            (a, b) => break (shown_line(a), shown_line(b)),
         }
     };
     Err(format!(
-        "{shown} is out of date at line {line}:\n  committed: {}\n  generated: {}\n\
-         run the test with {UPDATE_VAR}=1 to rewrite it, then review the diff",
-        was.trim(),
-        now.trim()
+        "{shown} is out of date at line {line}:\n  committed: {was}\n  generated: {now}\n{rewrite}"
     ))
 }
 
@@ -121,7 +142,47 @@ mod tests {
         assert!(err.contains("committed: \"b\": 2"), "{err}");
         assert!(err.contains("generated: \"b\": 3"), "{err}");
         let err = check(&path, "{\n  \"a\": 1,\n  \"b\": 2\n}\n\n", false).unwrap_err();
+        assert!(
+            err.contains("differs only in the newlines at its end"),
+            "{err}"
+        );
+        // A line added at the end, or a blank line inside, is named.
+        let err = check(&path, "{\n  \"a\": 1,\n  \"b\": 2\n}\n{}\n", false).unwrap_err();
+        assert!(err.contains("out of date at line 5"), "{err}");
         assert!(err.contains("committed: (end of file)"), "{err}");
+        assert!(err.contains("generated: {}"), "{err}");
+        let err = check(&path, "{\n\n  \"a\": 1,\n  \"b\": 2\n}\n", false).unwrap_err();
+        assert!(err.contains("out of date at line 2"), "{err}");
+        assert!(err.contains("generated: (an empty line)"), "{err}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_difference_only_in_the_final_newline_is_named() {
+        let dir = scratch("newline");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("opencli.json");
+        let expected = "{\n  \"a\": 1\n}\n";
+        // Saved by an editor that strips the final newline...
+        std::fs::write(&path, expected.trim_end()).unwrap();
+        let err = check(&path, expected, false).unwrap_err();
+        assert!(
+            err.starts_with(&format!(
+                "{} is out of date: it differs only in the newlines at its end (committed: 0, \
+                 generated: 1);",
+                path.display()
+            )),
+            "{err}"
+        );
+        assert!(err.contains("OPENCLI_UPDATE=1"), "{err}");
+        // ...or one that adds a blank line, with CRLF endings.
+        std::fs::write(&path, "{\r\n  \"a\": 1\r\n}\r\n\r\n").unwrap();
+        let err = check(&path, expected, false).unwrap_err();
+        assert!(err.contains("(committed: 2, generated: 1)"), "{err}");
+        // A carriage return left over (`\r\r\n`) is a line ending too.
+        std::fs::write(&path, "{\r\r\n  \"a\": 1\n}\n").unwrap();
+        let err = check(&path, expected, false).unwrap_err();
+        assert!(err.contains("differs only in its line endings"), "{err}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
