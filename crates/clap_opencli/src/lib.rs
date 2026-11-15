@@ -141,8 +141,10 @@ pub fn from_command(command: &clap::Command) -> Builder {
 
 /// The commands of a REPL parsed with clap, for [`Builder::interactive_commands`]:
 /// the subcommands of `command`, mapped like the commands of a CLI (hidden
-/// ones marked). The command's own arguments are not part of the result.
-/// Like [`from_command`], it reads an unbuilt command.
+/// ones marked). The command's own arguments are not part of the result, but
+/// its globals are: every session command accepts them, so each carries
+/// them, `recursive` (the session has no command of its own to declare them
+/// on). Like [`from_command`], it reads an unbuilt command.
 ///
 /// # Errors
 ///
@@ -154,9 +156,9 @@ pub fn interactive_from_command(command: &clap::Command) -> Result<Vec<Command>,
     built.build();
     let options = Options::default();
     let root = vec![command.get_name().to_string()];
-    Ok(Walk::new(&options, Vec::new())
-        .parts(&built, Some(command), &[], &root)?
-        .commands)
+    // No globals inherited: the copies clap spread from the root are written
+    // on each session command.
+    Walk::new(&options, Vec::new()).subcommands(&built, Some(command), &[], &root)
 }
 
 /// Refuse a command clap has already built: in a built tree, clap's own help

@@ -43,25 +43,25 @@ described on their GitHub release pages.
     option is dropped (and a drop matching nothing is an error).
 - New library crate **`clap_opencli`** (0.1.0): describe a clap CLI as an
   OpenCLI document. `from_command(&cmd)...build()` maps a builder or derive
-  tree (an unbuilt one, a built one is an error; read after
-  `Command::build` and compared with the unbuilt one:
-  clap's help subcommand and help/version arguments skipped by action,
-  globals `recursive` only where declared, positionals in index order with
-  arity and accepted values, options named by their long name with their
-  visible aliases and one argument per value name (an option with only a
-  short is an error, a one-character long alias is left out: a
-  one-character name reads as a long, a one-character alias as a short),
-  metadata `default`, `env` (the `env` feature), `repeatable`,
+  tree (an unbuilt one, a built one is an error; read after `Command::build`
+  and compared with the unbuilt one: clap's help subcommand and help/version
+  arguments skipped by action, globals `recursive` only where declared,
+  positionals in index order with arity and accepted values, options named by
+  their long name with their visible aliases and one argument per value name
+  (an option with only a short is an error, a one-character long alias is left
+  out: a one-character name reads as a long, a one-character alias as a
+  short), metadata `default`, `env` (the `env` feature), `repeatable`,
   `conflictsWith` (declared conflicts, and the other members of a group that
-  is not `multiple`), `exclusive`, `last`; hidden items marked or omitted). Exit codes, examples, `x-environment`, `interactive`,
-  `x-interactive` (`interactive_from_command` reads a REPL parsed with clap),
-  `x-*` keys and per-command extras (`at(&path, ...)`, an unknown path is an
-  error; a command marked `passthrough` comes out as a stub a mount fills,
-  without what clap parses for it) are declared beside it. `snapshot::assert_file` keeps a committed
-  document current in a test (`OPENCLI_UPDATE=1` rewrites it). No
-  proc-macro, and clap is taken without default features, so a CLI's clap
-  build is unchanged. Supported: clap 4.5 and later 4.x; a CI job holds clap
-  at 4.5.58.
+  is not `multiple`), `exclusive`, `last`; hidden items marked or omitted).
+  Exit codes, examples, `x-environment`, `interactive`, `x-interactive`
+  (`interactive_from_command` reads a REPL parsed with clap, its globals
+  written on every session command), `x-*` keys and per-command extras
+  (`at(&path, ...)`, an unknown path is an error; a command marked
+  `passthrough` comes out as a stub a mount fills, without what clap parses
+  for it) are declared beside it. `snapshot::assert_file` keeps a committed
+  document current in a test (`OPENCLI_UPDATE=1` rewrites it). No proc-macro,
+  and clap is taken without default features, so a CLI's clap build is
+  unchanged. Supported: clap 4.5 and later 4.x; a CI job holds clap at 4.5.58.
 - `opensdk opencli ... --mount NAME=DOC [--mount-drop NAME:OPTION]...`: after
   the converter and the `--declare` fragments, each mount places a component
   CLI's OpenCLI document at the command NAME (`parent/name` mounts under

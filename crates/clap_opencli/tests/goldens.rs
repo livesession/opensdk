@@ -794,6 +794,40 @@ fn a_repl_parsed_with_clap_gives_the_session_commands() {
     assert_eq!(commands[0].arguments[0].name, "name");
 }
 
+#[test]
+fn a_repls_globals_reach_every_session_command() {
+    // A REPL that parses each line with no binary name (a multicall one
+    // cannot hold arguments).
+    let repl = Command::new("session")
+        .no_binary_name(true)
+        .subcommand_required(true)
+        .arg(
+            Arg::new("json")
+                .long("json")
+                .global(true)
+                .action(ArgAction::SetTrue)
+                .help("Answer in JSON"),
+        )
+        .subcommand(
+            Command::new("model")
+                .about("Switch the model")
+                .subcommand(Command::new("list").about("List the models")),
+        )
+        .subcommand(Command::new("quit").about("Leave the session"));
+    repl.clone()
+        .try_get_matches_from(["model", "--json"])
+        .unwrap();
+    let commands = interactive_from_command(&repl).unwrap();
+    for command in &commands {
+        let json = command.options.iter().find(|o| o.name == "json");
+        let json = json.unwrap_or_else(|| panic!("`{}` has no --json", command.name));
+        assert_eq!(json.recursive, Some(true));
+        assert_eq!(json.description.as_deref(), Some("Answer in JSON"));
+    }
+    // Written once per session command, not again below it.
+    assert!(commands[0].commands[0].options.is_empty());
+}
+
 // ── 13. a passthrough command of a hand-written host (builder) ─────────────
 
 /// A host CLI that runs an agent CLI as its `agent` command, in the

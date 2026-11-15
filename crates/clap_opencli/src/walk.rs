@@ -83,7 +83,21 @@ impl<'o> Walk<'o> {
         // unbuilt tree never reaches here) keep their declaration order.
         positionals.sort_by_key(|(index, _)| *index);
         parts.arguments = positionals.into_iter().map(|(_, a)| a).collect();
+        parts.commands = self.subcommands(built, unbuilt, &declared_globals, path)?;
+        Ok(parts)
+    }
 
+    /// The subcommands of `built` (clap's help subcommand skipped), each with
+    /// its parts; `inherited` holds the ids of the globals `built` and its
+    /// ancestors declare, whose copies below are not written.
+    pub fn subcommands(
+        &mut self,
+        built: &ClapCommand,
+        unbuilt: Option<&ClapCommand>,
+        inherited: &[String],
+        path: &[String],
+    ) -> Result<Vec<Command>, Error> {
+        let mut commands = Vec::new();
         for sub in built.get_subcommands() {
             if is_help_subcommand(built, unbuilt, sub) {
                 continue;
@@ -94,11 +108,9 @@ impl<'o> Walk<'o> {
             let unbuilt_sub = unbuilt.and_then(|u| u.find_subcommand(sub.get_name()));
             let mut sub_path = path.to_vec();
             sub_path.push(sub.get_name().to_string());
-            parts
-                .commands
-                .push(self.command(sub, unbuilt_sub, &declared_globals, &sub_path)?);
+            commands.push(self.command(sub, unbuilt_sub, inherited, &sub_path)?);
         }
-        Ok(parts)
+        Ok(commands)
     }
 
     fn command(
