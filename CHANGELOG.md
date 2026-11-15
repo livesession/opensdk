@@ -6,7 +6,7 @@ library crates are not versioned independently, except `opencli_model` and
 (from 0.1.0), released with the tag that carries it. Earlier releases are
 described on their GitHub release pages.
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2026-11-15)
 
 - New library crate **`opencli_model`** (0.1.0): a typed model of the flat
   OpenCLI shape the chain reads and writes.
