@@ -154,7 +154,7 @@ pub fn interactive_from_command(command: &clap::Command) -> Result<Vec<Command>,
     built.build();
     let options = Options::default();
     let root = vec![command.get_name().to_string()];
-    Ok(Walk::new(&options)
+    Ok(Walk::new(&options, Vec::new())
         .parts(&built, Some(command), &[], &root)?
         .commands)
 }
@@ -418,7 +418,13 @@ impl Builder {
         doc.info.summary = self.summary.or(about);
         doc.info.description = self.description.or(long_about);
 
-        let mut walk = Walk::new(&self.options);
+        let passthrough = self
+            .at
+            .iter()
+            .filter(|(_, at)| at.passthrough.is_some())
+            .map(|(path, _)| path.clone())
+            .collect();
+        let mut walk = Walk::new(&self.options, passthrough);
         let root = vec![unbuilt.get_name().to_string()];
         let parts = walk.parts(&built, Some(unbuilt), &[], &root)?;
         doc.arguments = parts.arguments;
@@ -478,8 +484,13 @@ impl At {
     }
 
     /// Mark the command `x-passthrough`: it hands every argument after it,
-    /// unparsed, to another program (which its subcommands, if any,
-    /// document).
+    /// unparsed, to another program.
+    ///
+    /// What clap parses for the command (the trailing positional that
+    /// collects the arguments) is the host's plumbing, not the program's
+    /// interface, so it is left out: the command comes out as a passthrough
+    /// stub, with its name, aliases, description and `hidden`, which
+    /// [`opencli_model::mount`] can fill with the program's own document.
     pub fn passthrough(mut self, marker: XPassthrough) -> Self {
         self.passthrough = Some(marker);
         self

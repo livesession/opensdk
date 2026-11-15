@@ -24,15 +24,20 @@ pub(crate) struct Parts {
 /// One walk over a command tree.
 pub(crate) struct Walk<'o> {
     options: &'o Options,
+    /// The paths (names below the root) of the commands marked
+    /// `x-passthrough`, whose arguments, options and subcommands are not
+    /// walked.
+    passthrough: Vec<Vec<String>>,
     /// The environment variables the arguments read (the `env` feature), in
     /// walk order, one entry per name.
     pub environment: Vec<EnvVar>,
 }
 
 impl<'o> Walk<'o> {
-    pub fn new(options: &'o Options) -> Self {
+    pub fn new(options: &'o Options, passthrough: Vec<Vec<String>>) -> Self {
         Walk {
             options,
+            passthrough,
             environment: Vec::new(),
         }
     }
@@ -103,7 +108,15 @@ impl<'o> Walk<'o> {
         inherited: &[String],
         path: &[String],
     ) -> Result<Command, Error> {
-        let parts = self.parts(built, unbuilt, inherited, path)?;
+        // A passthrough command hands every argument to another program:
+        // what clap parses for it (the trailing positional that collects
+        // them) is the host's plumbing, not the program's interface, so it is
+        // a stub, which a mount can fill with the program's document.
+        let parts = if self.passthrough.iter().any(|p| p[..] == path[1..]) {
+            Parts::default()
+        } else {
+            self.parts(built, unbuilt, inherited, path)?
+        };
         Ok(Command {
             name: built.get_name().to_string(),
             aliases: built.get_visible_aliases().map(str::to_string).collect(),

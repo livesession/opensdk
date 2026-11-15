@@ -35,6 +35,7 @@ const CASES: &[&str] = &[
     "10.no-help-no-version",
     "11.parent-with-args",
     "12.extras",
+    "13.passthrough-host",
 ];
 
 fn fixtures() -> PathBuf {
@@ -791,6 +792,109 @@ fn a_repl_parsed_with_clap_gives_the_session_commands() {
     );
     assert_eq!(commands[1].aliases, ["new"]);
     assert_eq!(commands[0].arguments[0].name, "name");
+}
+
+// ── 13. a passthrough command of a hand-written host (builder) ─────────────
+
+/// A host CLI that runs an agent CLI as its `agent` command, in the
+/// hand-written passthrough shape (the one opencli2rust generates).
+fn passthrough_host() -> Command {
+    Command::new("acme")
+        .version("2.0.0")
+        .about("Manage widgets")
+        .arg(
+            Arg::new("profile")
+                .long("profile")
+                .short('P')
+                .global(true)
+                .value_name("NAME")
+                .help("The profile to use"),
+        )
+        .subcommand(
+            Command::new("agent")
+                .about("Run the agent CLI")
+                .visible_alias("ag")
+                .disable_help_flag(true)
+                .arg(
+                    Arg::new("args")
+                        .num_args(0..)
+                        .trailing_var_arg(true)
+                        .allow_hyphen_values(true)
+                        .value_parser(clap::value_parser!(std::ffi::OsString))
+                        .help("acme-agent's own arguments."),
+                ),
+        )
+        .subcommand(Command::new("status").about("Show the status"))
+}
+
+fn passthrough_host_doc() -> Document {
+    from_command(&passthrough_host())
+        .at(&["agent"], |c| {
+            c.passthrough(XPassthrough::program("acme-agent"))
+        })
+        .build()
+        .unwrap()
+}
+
+#[test]
+fn a_passthrough_command_is_a_stub() {
+    // The shape hands the rest of the command line over, flags included.
+    let m = passthrough_host()
+        .try_get_matches_from(["acme", "agent", "--help", "-x", "resume"])
+        .unwrap();
+    let (_, agent) = m.subcommand().unwrap();
+    assert_eq!(
+        agent
+            .get_many::<std::ffi::OsString>("args")
+            .unwrap()
+            .collect::<Vec<_>>(),
+        ["--help", "-x", "resume"]
+    );
+
+    let doc = passthrough_host_doc();
+    golden("13.passthrough-host", &doc);
+    let agent = doc.command(&["agent"]).unwrap();
+    assert!(agent.is_passthrough_stub(), "{agent:#?}");
+    assert_eq!(agent.aliases, ["ag"]);
+    // Unmarked, the positional is documented like any other.
+    let plain = from_command(&passthrough_host()).build().unwrap();
+    assert_eq!(plain.command(&["agent"]).unwrap().arguments[0].name, "args");
+}
+
+#[test]
+fn a_component_mounts_into_the_passthrough_stub() {
+    // The host is golden 13 and the component golden 11 (each test above
+    // pins its document to its file).
+    let mut host = passthrough_host_doc();
+    let component = from_command(&AgentCli::command()).build().unwrap();
+    let report = opencli_model::mount(
+        &mut host,
+        "agent",
+        &component,
+        &opencli_model::MountOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(report.to_string(), "mounted agent 0.4.0");
+    assert!(report.filled_stub);
+    let agent = host.command(&["agent"]).unwrap();
+    assert_eq!(agent.description.as_deref(), Some("Run the agent CLI"));
+    assert_eq!(agent.aliases, ["ag"]);
+    assert_eq!(
+        agent.x_passthrough,
+        Some(XPassthrough::program("acme-agent"))
+    );
+    assert_eq!(agent.arguments[0].name, "prompt");
+    let names = |options: &[opencli_model::CliOption]| -> Vec<String> {
+        options.iter().map(|o| o.name.clone()).collect()
+    };
+    assert_eq!(names(&agent.options), ["print", "model"]);
+    let commands: Vec<&str> = agent.commands.iter().map(|c| c.name.as_str()).collect();
+    assert_eq!(commands, ["resume", "login"]);
+    // The mounted document still validates.
+    let value = serde_json::to_value(&host).unwrap();
+    for schema in [SCHEMA_JSON, EXTENSIONS_SCHEMA_JSON] {
+        assert!(validator(schema).is_valid(&value));
+    }
 }
 
 // ── errors ──────────────────────────────────────────────────────────────────

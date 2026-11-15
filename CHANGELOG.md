@@ -55,7 +55,8 @@ described on their GitHub release pages.
   is not `multiple`), `exclusive`, `last`; hidden items marked or omitted). Exit codes, examples, `x-environment`, `interactive`,
   `x-interactive` (`interactive_from_command` reads a REPL parsed with clap),
   `x-*` keys and per-command extras (`at(&path, ...)`, an unknown path is an
-  error) are declared beside it. `snapshot::assert_file` keeps a committed
+  error; a command marked `passthrough` comes out as a stub a mount fills,
+  without what clap parses for it) are declared beside it. `snapshot::assert_file` keeps a committed
   document current in a test (`OPENCLI_UPDATE=1` rewrites it). No
   proc-macro, and clap is taken without default features, so a CLI's clap
   build is unchanged. Supported: clap 4.5 and later 4.x; a CI job holds clap

@@ -1,0 +1,39 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "2.0.0",
+    "summary": "Manage widgets"
+  },
+  "options": [
+    {
+      "name": "profile",
+      "aliases": [
+        "P"
+      ],
+      "description": "The profile to use",
+      "recursive": true,
+      "arguments": [
+        {
+          "name": "name"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "agent",
+      "aliases": [
+        "ag"
+      ],
+      "description": "Run the agent CLI",
+      "x-passthrough": {
+        "program": "acme-agent"
+      }
+    },
+    {
+      "name": "status",
+      "description": "Show the status"
+    }
+  ]
+}

@@ -67,6 +67,15 @@ Not mapped: `requires` and an argument group's own `conflicts_with` (clap has
 no getter for either), whether an argument group is required, one-character
 long aliases, value hints, external subcommands.
 
+## A passthrough command
+
+A host CLI that hands everything after one of its commands to another program
+marks that command with `.at(&["agent"], |c| c.passthrough(XPassthrough::program("acme-agent")))`.
+What clap parses for it (the trailing positional that collects the arguments)
+is the host's plumbing, so it is left out: the command comes out as a
+passthrough stub, which `opencli_model::mount` (or `opensdk opencli --mount`)
+fills with the program's own document.
+
 ## Versions
 
 clap 4.5 and every later 4.x; CI holds a job at 4.5. The crate writes the
