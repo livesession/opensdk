@@ -43,6 +43,8 @@ openapi2opensdk = { path = "../crates/openapi2opensdk" }
 openapi2opencli = { path = "../crates/openapi2opencli" }
 opencli2go = { path = "../crates/opencli2go" }
 opencli2rust = { path = "../crates/opencli2rust" }
+# The typed OpenCLI model: the `--declare` merge and the `--mount` step.
+opencli_model = { path = "../crates/opencli_model" }
 
 # ── the 7 emitters (the registry table) ──────────────────────────────────────
 opensdk_go = { path = "../crates/opensdk_go" }
@@ -52,3 +54,9 @@ opensdk_ruby = { path = "../crates/opensdk_ruby" }
 opensdk_java = { path = "../crates/opensdk_java" }
 opensdk_dotnet = { path = "../crates/opensdk_dotnet" }
 opensdk_rust = { path = "../crates/opensdk_rust" }
+
+[dev-dependencies]
+# The binary's own OpenCLI document (`opencli.json`) is built from its clap
+# tree in a test (tests/reference.rs), so the committed file cannot drift from
+# the parser.
+clap_opencli = { path = "../crates/clap_opencli" }

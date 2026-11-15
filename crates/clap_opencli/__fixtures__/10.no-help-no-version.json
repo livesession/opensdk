@@ -1,0 +1,19 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "options": [
+    {
+      "name": "version",
+      "description": "Print the version as JSON"
+    }
+  ],
+  "commands": [
+    {
+      "name": "run",
+      "description": "Run it"
+    }
+  ]
+}

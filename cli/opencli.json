@@ -1,0 +1,522 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "opensdk",
+    "version": "0.3.1",
+    "summary": "Generate SDKs from OpenAPI specs through OpenSDK emitter plugins"
+  },
+  "arguments": [
+    {
+      "name": "config",
+      "description": "Shorthand: generate everything declared by this config (`opensdk ./sdk.json` == `opensdk run --chain ./sdk.json` for a chain, or `opensdk generate --config <path>` for language sections)"
+    }
+  ],
+  "options": [
+    {
+      "name": "config",
+      "description": "Path to opensdk config file (default: sdk.json in cwd)",
+      "recursive": true,
+      "arguments": [
+        {
+          "name": "path"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "parse",
+      "description": "Parse an OpenAPI spec and output the OpenSDK IR as JSON",
+      "options": [
+        {
+          "name": "spec",
+          "required": true,
+          "description": "Path to the OpenAPI spec (yaml/json)",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Write the IR to a file instead of stdout",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "sdk-name",
+          "description": "SDK name for the converter",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "grouping",
+          "description": "JSON grouping file ({mountRules, operationHints}); overrides the config values",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "xsdk",
+      "description": "Embed x-sdk SDK docs (signatures, types, usage samples) into an OpenAPI spec — for CI/CD pipelines that ship a docs-ready spec",
+      "options": [
+        {
+          "name": "spec",
+          "required": true,
+          "description": "Path to the OpenAPI spec (yaml/json)",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Write the enriched spec to a file instead of stdout",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "langs",
+          "description": "Comma-separated SDK language ids (default: all six)",
+          "arguments": [
+            {
+              "name": "ids"
+            }
+          ]
+        },
+        {
+          "name": "sdk-name",
+          "description": "SDK name for the converter",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "grouping",
+          "description": "JSON grouping file ({mountRules, operationHints}); overrides the config values",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "generate",
+      "description": "Generate an SDK from an OpenAPI spec (or a pre-parsed IR json) — or a CLI via the go-cli/rust-cli targets. With no --lang, every language declared in sdk.json is generated.",
+      "options": [
+        {
+          "name": "spec",
+          "description": "Path to the OpenAPI spec (yaml/json) or OpenSDK IR (.json); for the go-cli/rust-cli targets also an OpenCLI document (see `opencli`)",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "lang",
+          "description": "Emitter language/alias (go|python|typescript|ruby|java|csharp|rust|...) or a CLI target (go-cli|rust-cli); omit to build every language in sdk.json",
+          "arguments": [
+            {
+              "name": "language"
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Output directory (single --lang), or the base dir for per-language subfolders (multi-target)",
+          "arguments": [
+            {
+              "name": "dir"
+            }
+          ]
+        },
+        {
+          "name": "sdk-name",
+          "description": "SDK name for the converter",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "grouping",
+          "description": "JSON grouping file ({mountRules, operationHints}); overrides the config values",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "dry-run",
+          "description": "Print the files that would be generated without writing"
+        },
+        {
+          "name": "no-tests",
+          "description": "Don't emit the generated SDK's self-test suite (sets emitterOptions.<lang>.tests=false)"
+        },
+        {
+          "name": "merge",
+          "description": "Preserve hand-edits to generated files: 3-way merge them with the new generation instead of overwriting (writes .sdk/base; conflicts get <<<<<<< markers)"
+        },
+        {
+          "name": "format",
+          "description": "Run the language formatter (rustfmt) over the generated files BEFORE writing them, so .sdk/sdk.lock records the formatted bytes and regeneration stays a byte-stable no-op"
+        }
+      ]
+    },
+    {
+      "name": "opencli",
+      "description": "Write the OpenCLI document a CLI target generates from (the converter step of `generate --lang go-cli|rust-cli`), merging hand-written OpenCLI fragments into it and mounting component CLIs' documents. `generate --spec <that file>` then builds the CLI from it.",
+      "options": [
+        {
+          "name": "spec",
+          "description": "Path to the OpenAPI spec (yaml/json); an OpenCLI document is taken as is. Default: the config's api",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "lang",
+          "description": "The CLI target whose sdk.json section supplies the converter options (default: the first CLI section in the config)",
+          "arguments": [
+            {
+              "name": "target",
+              "acceptedValues": [
+                "rust-cli",
+                "go-cli"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "declare",
+          "description": "Merge a hand-written OpenCLI fragment (repeatable, applied in order): root options/exitCodes/examples/interactive/info.description and x-* keys replace, commands append, a command named like an existing top-level one updates its description/aliases/hidden",
+          "arguments": [
+            {
+              "name": "fragment.json"
+            }
+          ],
+          "metadata": [
+            {
+              "name": "repeatable",
+              "value": true
+            }
+          ]
+        },
+        {
+          "name": "mount",
+          "description": "Mount a component CLI's OpenCLI document as the command NAME (parent/name mounts under parent), after the fragments: a passthrough stub of that name is filled, else the command is appended (repeatable). Reports one line per mount on stderr",
+          "arguments": [
+            {
+              "name": "name=document"
+            }
+          ],
+          "metadata": [
+            {
+              "name": "repeatable",
+              "value": true
+            }
+          ]
+        },
+        {
+          "name": "mount-drop",
+          "description": "Drop the component's OPTION from the NAME mount, wherever it appears: for an option the host's recursive options already answer to (repeatable)",
+          "arguments": [
+            {
+              "name": "name:option"
+            }
+          ],
+          "metadata": [
+            {
+              "name": "repeatable",
+              "value": true
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Write the OpenCLI JSON to a file instead of stdout",
+          "arguments": [
+            {
+              "name": "file"
+            }
+          ]
+        },
+        {
+          "name": "sdk-name",
+          "description": "Defaults the CLI name (the section's cliName wins)",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "diff",
+      "description": "Diff two spec versions by SDK-consumer impact (exit 2 = breaking, 1 = risky, 0 = safe/none)",
+      "arguments": [
+        {
+          "name": "base",
+          "required": true,
+          "description": "The published/old spec: OpenAPI (yaml/json) or pre-parsed OpenSDK IR (.json)"
+        },
+        {
+          "name": "head",
+          "required": true,
+          "description": "The new spec: OpenAPI (yaml/json) or pre-parsed OpenSDK IR (.json)"
+        }
+      ],
+      "options": [
+        {
+          "name": "fail-on",
+          "description": "Failure gate: breaking|risky exit per the 0/1/2 table; any also exits 1 on safe-only changes",
+          "arguments": [
+            {
+              "name": "severity",
+              "acceptedValues": [
+                "breaking",
+                "risky",
+                "any"
+              ]
+            }
+          ],
+          "metadata": [
+            {
+              "name": "default",
+              "value": "breaking"
+            }
+          ]
+        },
+        {
+          "name": "json",
+          "description": "Print the machine-readable IrDiff JSON to stdout instead of the grouped report"
+        },
+        {
+          "name": "sdk-name",
+          "description": "SDK name for the converter (applied to both sides)",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "grouping",
+          "description": "JSON grouping file ({mountRules, operationHints}); applied to BOTH sides so remounts never diff as renames",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        }
+      ],
+      "exitCodes": [
+        {
+          "code": 0,
+          "description": "No change, or only safe changes (unless --fail-on any)"
+        },
+        {
+          "code": 1,
+          "description": "A risky change, any change under --fail-on any, or an error"
+        },
+        {
+          "code": 2,
+          "description": "A breaking change"
+        }
+      ]
+    },
+    {
+      "name": "publish",
+      "description": "Publish already-generated SDK(s) to their language registries (npm/PyPI/RubyGems/NuGet/Maven; Go = git tag). Run `generate` first.",
+      "options": [
+        {
+          "name": "lang",
+          "description": "Emitter language/alias; omit to publish every language declared in sdk.json",
+          "arguments": [
+            {
+              "name": "language"
+            }
+          ]
+        },
+        {
+          "name": "output",
+          "description": "Generated SDK dir (single --lang), or the base dir of per-language subfolders",
+          "arguments": [
+            {
+              "name": "dir"
+            }
+          ]
+        },
+        {
+          "name": "registry",
+          "description": "Registry URL override (wins over the config publish.registry)",
+          "arguments": [
+            {
+              "name": "url"
+            }
+          ]
+        },
+        {
+          "name": "package-version",
+          "description": "Package version override (wins over the config publish.version). Used where the registry takes no manifest version — the Go git tag. Named --package-version, not --version, which conventionally prints the tool's own version",
+          "arguments": [
+            {
+              "name": "semver"
+            }
+          ]
+        },
+        {
+          "name": "tag",
+          "description": "Dist-tag for registries that support one (npm). Omit for the registry default (latest)",
+          "arguments": [
+            {
+              "name": "dist-tag"
+            }
+          ]
+        },
+        {
+          "name": "dry-run",
+          "description": "Package only (npm pack / build / gem build / dotnet pack) without pushing"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "Run a chain.json pipeline: process sources (merge + overlays) then generate every target SDK (add --publish to publish each).",
+      "options": [
+        {
+          "name": "chain",
+          "description": "Path to the chain file (default: chain.json or .chain/chain.json)",
+          "arguments": [
+            {
+              "name": "path"
+            }
+          ]
+        },
+        {
+          "name": "target",
+          "description": "Only run this target (else every target in the chain)",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "source",
+          "description": "Only run targets bound to this source",
+          "arguments": [
+            {
+              "name": "name"
+            }
+          ]
+        },
+        {
+          "name": "publish",
+          "description": "Also publish each generated target to its registry"
+        },
+        {
+          "name": "dry-run",
+          "description": "Process + print without writing SDKs or pushing"
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "description": "Scaffold a config file (sdk.json by default, or an opensdk.config.mjs plugin bundle)",
+      "options": [
+        {
+          "name": "project",
+          "description": "Project directory (default: cwd)",
+          "arguments": [
+            {
+              "name": "dir"
+            }
+          ]
+        },
+        {
+          "name": "format",
+          "description": "Config format",
+          "arguments": [
+            {
+              "name": "format",
+              "acceptedValues": [
+                "json",
+                "mjs"
+              ]
+            }
+          ],
+          "metadata": [
+            {
+              "name": "default",
+              "value": "json"
+            }
+          ]
+        },
+        {
+          "name": "dir",
+          "description": "Write the config under a subdir (e.g. .sdk / .chain)",
+          "arguments": [
+            {
+              "name": "subdir"
+            }
+          ]
+        },
+        {
+          "name": "lang",
+          "description": "Seed this language (default: typescript)",
+          "arguments": [
+            {
+              "name": "language"
+            }
+          ]
+        },
+        {
+          "name": "chain",
+          "description": "Scaffold a chain.json pipeline (sources → targets) instead"
+        }
+      ]
+    }
+  ],
+  "exitCodes": [
+    {
+      "code": 0,
+      "description": "Success; --help and --version exit 0 too"
+    },
+    {
+      "code": 1,
+      "description": "An error or a usage error"
+    }
+  ],
+  "examples": [
+    "opensdk generate --spec openapi.yaml --lang go",
+    "opensdk opencli --config sdk.json --lang rust-cli --output opencli.json",
+    "opensdk diff old.yaml new.yaml --fail-on risky"
+  ]
+}

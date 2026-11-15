@@ -1,0 +1,46 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "arguments": [
+    {
+      "name": "target",
+      "description": "What to fetch",
+      "group": "Inputs"
+    }
+  ],
+  "options": [
+    {
+      "name": "json",
+      "description": "Print JSON",
+      "group": "Output"
+    },
+    {
+      "name": "pretty",
+      "description": "Indent the JSON",
+      "group": "Output"
+    },
+    {
+      "name": "timeout",
+      "description": "Give up after this long",
+      "group": "Network",
+      "arguments": [
+        {
+          "name": "seconds"
+        }
+      ]
+    },
+    {
+      "name": "proxy",
+      "description": "Send requests through a proxy",
+      "group": "Advanced",
+      "arguments": [
+        {
+          "name": "url"
+        }
+      ]
+    }
+  ]
+}

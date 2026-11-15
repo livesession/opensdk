@@ -1,0 +1,22 @@
+[package]
+name = "opencli_model"
+edition.workspace = true
+# Versioned on its own, unlike the rest of the workspace (which sits at 0.0.0
+# and ships only inside the `opensdk` binary): this crate is a library other
+# projects depend on, so its number has to mean something.
+version = "0.1.0"
+license.workspace = true
+repository.workspace = true
+description = "A typed OpenCLI document model: x-* extensions round-trip, the generic extensions and their JSON Schema, fragment merge and component mount"
+readme = "README.md"
+keywords = ["opencli", "cli", "documentation", "json-schema"]
+categories = ["command-line-interface", "parser-implementations"]
+
+[dependencies]
+serde = { workspace = true }
+# `preserve_order` (from the workspace pin) is load-bearing here too: the
+# extension maps keep the order their keys were written in.
+serde_json = { workspace = true }
+
+[dev-dependencies]
+jsonschema = { workspace = true }

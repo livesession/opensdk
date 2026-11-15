@@ -14,3 +14,6 @@ oas_doc = { path = "../oas_doc" }
 [dev-dependencies]
 parity_kit = { path = "../parity_kit" }
 jsonschema = { workspace = true }
+# The vendored OpenCLI schema lives there (`SCHEMA_JSON`), and every committed
+# OpenCLI document is round-tripped through its typed model.
+opencli_model = { path = "../opencli_model" }

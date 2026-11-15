@@ -126,3 +126,29 @@ pub fn render_positional_arg(arg: &Value, local: bool) -> RsVal {
     }
     chain(format!("Arg::new({})", json_str(name)), calls)
 }
+
+/// The id of the one positional an `x-passthrough` command takes.
+pub const PASSTHROUGH_ARG: &str = "args";
+
+/// The one positional of an `x-passthrough` command: every argument after the
+/// command, flags included, unparsed and as `OsString`s, handed to `program`.
+/// With the command's `.disable_help_flag(true)` this is the shape a
+/// hand-written passthrough uses: `--help` after the command is the program's.
+pub fn render_passthrough_arg(program: &str) -> RsVal {
+    chain(
+        format!("Arg::new({})", json_str(PASSTHROUGH_ARG)),
+        vec![
+            ("num_args".into(), vec![lit("0..")]),
+            ("trailing_var_arg".into(), vec![lit("true")]),
+            ("allow_hyphen_values".into(), vec![lit("true")]),
+            (
+                "value_parser".into(),
+                vec![lit("clap::value_parser!(OsString)")],
+            ),
+            (
+                "help".into(),
+                vec![rs_str(&format!("{program}'s own arguments."))],
+            ),
+        ],
+    )
+}

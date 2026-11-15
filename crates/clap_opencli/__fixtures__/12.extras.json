@@ -1,0 +1,154 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme agent",
+    "version": "0.4.0",
+    "description": "An agent CLI for the terminal.\n\nStart a session with a prompt, or resume one.",
+    "summary": "Chat with an agent"
+  },
+  "arguments": [
+    {
+      "name": "prompt",
+      "description": "The prompt to start with"
+    }
+  ],
+  "options": [
+    {
+      "name": "print",
+      "aliases": [
+        "p"
+      ],
+      "description": "Print the answer and exit"
+    },
+    {
+      "name": "model",
+      "aliases": [
+        "m"
+      ],
+      "description": "The model to use",
+      "arguments": [
+        {
+          "name": "name"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "resume",
+      "aliases": [
+        "continue"
+      ],
+      "description": "Resume a session",
+      "arguments": [
+        {
+          "name": "session",
+          "description": "The session to resume"
+        }
+      ],
+      "options": [
+        {
+          "name": "last",
+          "description": "Resume the most recent session",
+          "metadata": [
+            {
+              "name": "conflictsWith",
+              "value": [
+                "<session>"
+              ]
+            }
+          ]
+        }
+      ],
+      "exitCodes": [
+        {
+          "code": 0,
+          "description": "Resumed"
+        },
+        {
+          "code": 3,
+          "description": "No session to resume"
+        }
+      ],
+      "examples": [
+        "acme-agent resume --last"
+      ]
+    },
+    {
+      "name": "login",
+      "description": "Sign in through the browser",
+      "x-passthrough": {
+        "program": "acme-login"
+      },
+      "x-acme-since": {
+        "version": "0.3.0"
+      }
+    }
+  ],
+  "exitCodes": [
+    {
+      "code": 0,
+      "description": "Success"
+    },
+    {
+      "code": 1,
+      "description": "An error"
+    },
+    {
+      "code": 2,
+      "description": "Usage error"
+    }
+  ],
+  "examples": [
+    "acme-agent 'what changed?'",
+    "acme-agent -p 'summarize' < notes.txt"
+  ],
+  "interactive": true,
+  "x-interactive": {
+    "commands": [
+      {
+        "name": "model",
+        "description": "Switch the model",
+        "arguments": [
+          {
+            "name": "name",
+            "description": "The model; without it, a picker opens"
+          }
+        ]
+      },
+      {
+        "name": "clear",
+        "aliases": [
+          "new"
+        ],
+        "description": "Start a new conversation"
+      },
+      {
+        "name": "quit",
+        "description": "Leave the session"
+      }
+    ],
+    "keys": [
+      {
+        "keys": [
+          "ctrl+c"
+        ],
+        "description": "Interrupt the answer; twice to quit"
+      },
+      {
+        "keys": [
+          "esc"
+        ],
+        "description": "Close the picker",
+        "context": "picker"
+      }
+    ]
+  },
+  "x-environment": [
+    {
+      "name": "ACME_AGENT_HOME",
+      "description": "Where sessions are kept"
+    }
+  ],
+  "x-acme-channel": "stable"
+}

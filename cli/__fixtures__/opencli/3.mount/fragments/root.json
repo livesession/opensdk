@@ -1,0 +1,25 @@
+{
+  "info": { "description": "Manage widgets from the terminal." },
+  "options": [
+    {
+      "name": "profile",
+      "aliases": ["P"],
+      "description": "The configuration profile to use",
+      "recursive": true,
+      "arguments": [{ "name": "name" }]
+    }
+  ],
+  "exitCodes": [
+    { "code": 0, "description": "Success" },
+    { "code": 2, "description": "Usage error" }
+  ],
+  "commands": [
+    { "name": "api", "description": "Call the API directly" },
+    {
+      "name": "agent",
+      "aliases": ["ag"],
+      "description": "Run the agent CLI: every argument after `agent` is its own.",
+      "x-passthrough": { "program": "acme-agent" }
+    }
+  ]
+}

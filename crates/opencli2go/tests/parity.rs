@@ -140,3 +140,37 @@ fn the_base_url_option_takes_both_spellings() {
         );
     }
 }
+
+/// `x-passthrough` is refused, naming the command: the Go backend does not
+/// generate a passthrough yet, and walking its documented children as
+/// generated commands would build a CLI that parses another program's flags.
+#[test]
+fn a_passthrough_command_is_refused() {
+    use opencli2go::try_opencli2go;
+    let spec = serde_json::json!({
+        "opencli": "1.0.0",
+        "info": { "title": "widgets", "version": "1.0.0" },
+        "commands": [
+            { "name": "ping", "x-openapi": { "method": "get", "path": "/ping" } },
+            { "name": "tools", "commands": [{ "name": "sync", "x-passthrough": {} }] }
+        ]
+    });
+    let err = try_opencli2go(&spec, None).unwrap_err().to_string();
+    assert_eq!(
+        err,
+        "opencli2go: command `tools sync` is marked `x-passthrough` (it hands every argument \
+         after it, unparsed, to another program), which the Go backend does not generate yet; \
+         generate this document with the rust-cli target, or drop the marker"
+    );
+    let mut root = spec.clone();
+    root["commands"][1]["commands"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("x-passthrough");
+    assert!(try_opencli2go(&root, None).is_ok());
+    root["x-passthrough"] = serde_json::json!({});
+    assert!(try_opencli2go(&root, None)
+        .unwrap_err()
+        .0
+        .starts_with("the document root is marked"));
+}

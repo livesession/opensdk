@@ -165,6 +165,8 @@ pub fn try_opencli2rust(spec: &Value, options: Option<Options>) -> Result<FileMa
         .clone()
         .unwrap_or_else(|| "custom".to_string());
 
+    check_passthroughs(spec).map_err(Error)?;
+
     let mut files: FileMap = Vec::new();
 
     let empty: Vec<Value> = Vec::new();
@@ -259,6 +261,43 @@ pub fn try_opencli2rust(spec: &Value, options: Option<Options>) -> Result<FileMa
     ));
 
     Ok(files)
+}
+
+/// `x-passthrough` marks a command: the root cannot carry it, and a
+/// passthrough hands its arguments to another program, so it cannot also bind
+/// an HTTP request. What sits below a passthrough is never read.
+fn check_passthroughs(spec: &Value) -> Result<(), String> {
+    if spec.get("x-passthrough").is_some() {
+        return Err("`x-passthrough` marks a command, not the document root".into());
+    }
+    fn walk(commands: &[Value], path: &[&str]) -> Result<(), String> {
+        for command in commands {
+            let name = command.get("name").and_then(Value::as_str).unwrap_or("");
+            let mut here = path.to_vec();
+            here.push(name);
+            if command.get("x-passthrough").is_some() {
+                if command.get("x-openapi").is_some() {
+                    return Err(format!(
+                        "command `{}` is a passthrough (`x-passthrough`) and also binds an HTTP \
+                         request (`x-openapi`); a passthrough hands its arguments to another \
+                         program",
+                        here.join(" ")
+                    ));
+                }
+                continue;
+            }
+            if let Some(subs) = command.get("commands").and_then(Value::as_array) {
+                walk(subs, &here)?;
+            }
+        }
+        Ok(())
+    }
+    let commands = spec
+        .get("commands")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or_default();
+    walk(commands, &[])
 }
 
 fn cmd_mod_rs(resources: &[ResourceFile]) -> String {

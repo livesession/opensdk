@@ -1,0 +1,35 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "1.0.0"
+  },
+  "commands": [
+    {
+      "name": "remove",
+      "aliases": [
+        "rm"
+      ],
+      "description": "Remove an item",
+      "options": [
+        {
+          "name": "force",
+          "aliases": [
+            "f",
+            "yes",
+            "y"
+          ],
+          "description": "Do not ask"
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "aliases": [
+        "ls",
+        "l"
+      ],
+      "description": "List the items"
+    }
+  ]
+}

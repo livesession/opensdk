@@ -1,0 +1,17 @@
+{
+  "opencli": "0.1",
+  "info": { "title": "acme-sync", "version": "1.2.0" },
+  "command": {
+    "name": "acme-sync",
+    "description": "Sync widgets across two accounts.",
+    "options": [
+      { "name": "dry-run", "description": "Show what would change" }
+    ],
+    "commands": [
+      { "name": "status", "description": "Show the last sync" }
+    ],
+    "x-environment": [
+      { "name": "ACME_SYNC_DIR", "description": "Where the sync state is kept" }
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "widgets",
+    "version": "1.0.0",
+    "description": "Manage widgets from the terminal, and run the tools that come with them."
+  },
+  "x-openapi": { "servers": ["https://api.widgets.test"] },
+  "options": [
+    {
+      "name": "profile",
+      "aliases": ["P"],
+      "description": "The configuration profile to use",
+      "recursive": true,
+      "arguments": [{ "name": "name" }]
+    },
+    {
+      "name": "output",
+      "aliases": ["o"],
+      "description": "Output format",
+      "recursive": true,
+      "arguments": [{ "name": "format", "acceptedValues": ["json", "table"] }]
+    }
+  ],
+  "commands": [
+    {
+      "name": "widgets",
+      "description": "Manage widgets",
+      "commands": [
+        {
+          "name": "list",
+          "description": "List widgets",
+          "options": [{ "name": "limit", "arguments": [{ "name": "integer" }] }],
+          "x-openapi": {
+            "method": "get",
+            "path": "/widgets",
+            "params": [{ "name": "limit", "in": "query", "from": "option:limit" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "agent",
+      "aliases": ["ag"],
+      "description": "Run the agent CLI: every argument after `agent` is its own.",
+      "x-passthrough": { "program": "acme-agent" },
+      "arguments": [
+        { "name": "prompt", "description": "What to ask; without it, the interactive session opens" }
+      ],
+      "options": [
+        { "name": "print", "aliases": ["p"], "description": "Answer once and exit" },
+        { "name": "profile", "description": "The agent's own profile flag", "arguments": [{ "name": "name" }] }
+      ],
+      "commands": [
+        {
+          "name": "resume",
+          "description": "Resume a previous session",
+          "options": [{ "name": "output", "aliases": ["o"], "arguments": [{ "name": "file" }] }],
+          "x-openapi": { "method": "get", "path": "/never-read" }
+        }
+      ],
+      "exitCodes": [{ "code": 3, "description": "Not signed in" }],
+      "metadata": [{ "name": "componentVersion", "value": "0.4.0" }]
+    },
+    {
+      "name": "tools",
+      "description": "Local tools",
+      "commands": [
+        {
+          "name": "sync",
+          "description": "Run the sync tool; every argument after `sync` is its own.",
+          "x-passthrough": {}
+        },
+        { "name": "doctor", "description": "Check the local setup" }
+      ]
+    }
+  ],
+  "exitCodes": [
+    { "code": 0, "description": "Success" },
+    { "code": 2, "description": "Usage error" }
+  ]
+}

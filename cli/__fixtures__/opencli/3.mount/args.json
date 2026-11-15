@@ -1,0 +1,6 @@
+{
+  "lang": "rust-cli",
+  "declare": ["fragments/root.json"],
+  "mount": ["agent=components/agent.opencli.json", "api/sync=components/sync.opencli.json"],
+  "mountDrop": ["agent:profile"]
+}

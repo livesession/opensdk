@@ -48,6 +48,16 @@ echo "cli/Cargo.toml: $current -> $version"
 # dependency pins further down must not be touched.
 perl -0pi -e "s/^version = \"\Q$current\E\"\$/version = \"$version\"/m" cli/Cargo.toml
 
+# The binary's own OpenCLI document carries the same number as its
+# `info.version`, the first `"version"` key in the file. cli/tests/reference.rs
+# compares the file with the clap tree, so a bump that skipped it would fail
+# the release's test run.
+perl -0pi -e "s/\"version\": \"\Q$current\E\"/\"version\": \"$version\"/" cli/opencli.json
+if ! grep -q "\"version\": \"$version\"" cli/opencli.json; then
+  echo "error: cli/opencli.json has no \"version\": \"$current\" to bump" >&2
+  exit 1
+fi
+
 # Refresh Cargo.lock's entry for this package. `cargo check`, NOT
 # `generate-lockfile`: the latter re-resolves every transitive dependency, and
 # nearly every gate here is a byte comparison that an unrelated bump can flip.
@@ -69,7 +79,7 @@ if [ "$manifest" != "$version" ]; then
   exit 1
 fi
 
-git add cli/Cargo.toml Cargo.lock
+git add cli/Cargo.toml cli/opencli.json Cargo.lock
 git commit -q -m "chore(release): $tag"
 git tag -a "$tag" -m "$tag"
 

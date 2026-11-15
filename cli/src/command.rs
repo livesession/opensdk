@@ -195,7 +195,8 @@ pub fn command() -> Command {
                 .about(
                     "Write the OpenCLI document a CLI target generates from (the converter step \
                      of `generate --lang go-cli|rust-cli`), merging hand-written OpenCLI \
-                     fragments into it. `generate --spec <that file>` then builds the CLI from it.",
+                     fragments into it and mounting component CLIs' documents. `generate --spec \
+                     <that file>` then builds the CLI from it.",
                 )
                 .arg(spec_arg(false).help(
                     "Path to the OpenAPI spec (yaml/json); an OpenCLI document is taken as is. \
@@ -218,9 +219,32 @@ pub fn command() -> Command {
                         .action(ArgAction::Append)
                         .help(
                             "Merge a hand-written OpenCLI fragment (repeatable, applied in order): \
-                             root options/exitCodes/info.description replace, commands append, a \
-                             command named like an existing top-level one updates its \
-                             description/aliases/hidden",
+                             root options/exitCodes/examples/interactive/info.description and x-* \
+                             keys replace, commands append, a command named like an existing \
+                             top-level one updates its description/aliases/hidden",
+                        ),
+                )
+                .arg(
+                    Arg::new("mount")
+                        .long("mount")
+                        .value_name("name=document")
+                        .action(ArgAction::Append)
+                        .help(
+                            "Mount a component CLI's OpenCLI document as the command NAME \
+                             (parent/name mounts under parent), after the fragments: a \
+                             passthrough stub of that name is filled, else the command is \
+                             appended (repeatable). Reports one line per mount on stderr",
+                        ),
+                )
+                .arg(
+                    Arg::new("mount-drop")
+                        .long("mount-drop")
+                        .value_name("name:option")
+                        .action(ArgAction::Append)
+                        .help(
+                            "Drop the component's OPTION from the NAME mount, wherever it \
+                             appears: for an option the host's recursive options already answer \
+                             to (repeatable)",
                         ),
                 )
                 .arg(
@@ -618,6 +642,14 @@ pub fn dispatch(matches: &ArgMatches, cwd: &Path) -> Result<i32> {
                         .unwrap_or_default(),
                     output: opt(m, "output"),
                     sdk_name: opt(m, "sdk-name"),
+                    mount: m
+                        .get_many::<String>("mount")
+                        .map(|v| v.cloned().collect())
+                        .unwrap_or_default(),
+                    mount_drop: m
+                        .get_many::<String>("mount-drop")
+                        .map(|v| v.cloned().collect())
+                        .unwrap_or_default(),
                 },
                 config,
                 cwd,

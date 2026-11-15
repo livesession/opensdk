@@ -1,0 +1,69 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme-agent",
+    "version": "0.4.0",
+    "description": "An agent CLI for the terminal.\n\nStart a session with a prompt, or resume one.",
+    "summary": "An agent CLI for the terminal"
+  },
+  "arguments": [
+    {
+      "name": "prompt",
+      "description": "The prompt to start with"
+    }
+  ],
+  "options": [
+    {
+      "name": "print",
+      "aliases": [
+        "p"
+      ],
+      "description": "Print the answer and exit"
+    },
+    {
+      "name": "model",
+      "aliases": [
+        "m"
+      ],
+      "description": "The model to use",
+      "arguments": [
+        {
+          "name": "name"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "resume",
+      "aliases": [
+        "continue"
+      ],
+      "description": "Resume a session",
+      "arguments": [
+        {
+          "name": "session",
+          "description": "The session to resume"
+        }
+      ],
+      "options": [
+        {
+          "name": "last",
+          "description": "Resume the most recent session",
+          "metadata": [
+            {
+              "name": "conflictsWith",
+              "value": [
+                "<session>"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "login",
+      "description": "Sign in"
+    }
+  ]
+}

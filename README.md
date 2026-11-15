@@ -19,6 +19,8 @@ crates are also consumable directly as libraries.
 | `crates/openapi2opencli` | OpenAPI → an OpenCLI doc (+ the `x-openapi` request binding) |
 | `crates/opencli2{go,rust}` | OpenCLI → a buildable CLI project |
 | `crates/opencli2opensdk` | OpenCLI → the OpenSDK IR |
+| `crates/opencli_model` | the typed OpenCLI model: `x-*` round-trip, the generic extensions and their schema, the `--declare` merge, the `--mount` step |
+| `crates/clap_opencli` | a clap CLI → its OpenCLI document |
 | `crates/opensdk_{go,node,python,ruby,java,dotnet,rust}` | the seven emitters |
 | `crates/opensdk_framework` | the emitter contract, orchestrator, and the regen-safe `write_project` lifecycle |
 | `crates/opensdk_{core,config,diff,chain}` | IR + behavior, config shapes, the breaking-change classifier, the chain pipeline |
@@ -93,8 +95,10 @@ spelling — two operations named alike, or a stated `get` beside a `retrieve`
 whose alias is `get` — is a conversion error naming both.
 
 Every OpenCLI document the repo commits (the converter's fixture outputs, the
-backends' fixture inputs, the `opensdk opencli` goldens) is validated against
-the OpenCLI JSON Schema vendored in `crates/openapi2opencli/tests`.
+backends' fixture inputs, the `opensdk opencli` goldens, the binary's own
+`cli/opencli.json`) is validated against the OpenCLI JSON Schema vendored in
+`crates/opencli_model/schema` and against the schema of the generic
+extensions beside it (`x-interactive`, `x-environment`, `x-passthrough`).
 
 **Backend options.** `rust-cli`: `crateName`, `binName`, `edition`, `baseURL`,
 `versionFrom` (`"spec"` or `"crate"`); `go-cli`: `modulePath`, `binName`,
@@ -106,7 +110,8 @@ section (`--lang`, default: the first CLI section in the config):
 
 ```bash
 # opensdk opencli [--spec <openapi>] [--config sdk.json] [--lang rust-cli|go-cli]
-#                 [--declare <fragment>]... [--output <file>] [--sdk-name <name>]
+#                 [--declare <fragment>]... [--mount <name>=<doc>]...
+#                 [--mount-drop <name>:<option>]... [--output <file>] [--sdk-name <name>]
 opensdk opencli --config sdk.json --lang rust-cli \
   --declare cli/root.json --declare cli/auth.json --output opencli.json
 opensdk generate --config sdk.json --lang rust-cli --spec opencli.json
@@ -116,12 +121,41 @@ opensdk generate --config sdk.json --lang rust-cli --spec opencli.json
 (the CLI name when the section sets no `cliName`).
 
 Each `--declare` fragment is an OpenCLI-shaped object merged in order: root
-`options`, `exitCodes` and `info.description` replace; `commands` append — a
+`options`, `exitCodes`, `examples`, `interactive`, `info.description` and
+`x-*` keys replace (`x-openapi` stays the converter's); `commands` append — a
 fragment command named like an existing top-level command (the `rootCommand`
 wrapper, say) instead updates that command's `description`, `aliases` and
 `hidden` and leaves its children alone. A name or alias another top-level
 command already answers to is an error, and so is an unknown root key; keys
 the merge does not know (a `$schema`) keep their place.
+
+Each `--mount NAME=DOC` then places a component CLI's OpenCLI document (a CLI
+the host runs as one of its commands) at the command NAME (`parent/name`
+mounts under `parent`): a passthrough stub of that name (a command marked
+`x-passthrough` with no arguments, options or subcommands) is filled, else the
+command is appended. A recursive host option that answers to a spelling of a
+component option is an error naming both, unless `--mount-drop NAME:OPTION`
+drops the component's; each mount reports `mounted <name> <version>: dropped
+--<option>` on stderr. The rules are on `opencli_model::mount`. An OpenCLI
+document in the upstream root-`command` shape is read too, lifted to the flat
+shape.
+
+**Passthrough commands.** `x-passthrough` on a command means the CLI hands
+every argument after it, unparsed, to another program, except two it reads
+first: its own recursive options given right after the command (`acme agent
+--profile x` keeps `--profile x` for the host), and a `--` right after the
+command or after those options, which only ends them and is not handed on.
+From the first other argument on, everything is the program's, `--help` and a
+later `--` included. The command's children, if any, document that program. `rust-cli` generates it as one
+trailing `OsString` positional with the command's help flag disabled, bound
+through the `Commands` trait, and never reads the children; `go-cli` refuses
+the marker for now.
+
+**A hand-written clap CLI** gets its document from `clap_opencli`:
+`clap_opencli::from_command(&cli).exit_code(..).example(..).build()` maps the
+clap tree and takes what clap cannot know beside it, and
+`clap_opencli::snapshot::assert_file` keeps a committed copy current in a test.
+The binary's own `cli/opencli.json` is built that way.
 `generate` recognizes an OpenCLI document (a root `opencli` key) and hands it
 straight to the backend, so a CLI that is part generated and part hand-written
 is described by one document. Only the CLI targets generate from it: a config

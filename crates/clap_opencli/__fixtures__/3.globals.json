@@ -1,0 +1,63 @@
+{
+  "opencli": "1.0.0",
+  "info": {
+    "title": "acme",
+    "version": "2.0.0",
+    "summary": "Manage widgets"
+  },
+  "options": [
+    {
+      "name": "profile",
+      "aliases": [
+        "P"
+      ],
+      "description": "The profile to use",
+      "recursive": true,
+      "arguments": [
+        {
+          "name": "name"
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "name": "widgets",
+      "description": "Change widgets",
+      "options": [
+        {
+          "name": "dry-run",
+          "description": "Print what would change, change nothing",
+          "recursive": true
+        }
+      ],
+      "commands": [
+        {
+          "name": "list",
+          "description": "List widgets",
+          "options": [
+            {
+              "name": "all",
+              "description": "Include archived widgets"
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "Delete a widget",
+          "arguments": [
+            {
+              "name": "id",
+              "required": true,
+              "description": "The widget's id"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "status",
+      "description": "Show the status"
+    }
+  ]
+}

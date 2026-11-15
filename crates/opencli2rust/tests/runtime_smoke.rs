@@ -1,6 +1,6 @@
 //! Does the generated runtime DO what the goldens say it emits?
 //!
-//! The byte goldens (`parity.rs`) pin the generated source; this tier builds two
+//! The byte goldens (`parity.rs`) pin the generated source; this tier builds three
 //! of the committed fixture crates and runs the binaries against a local
 //! server that records every request, header by header:
 //!
@@ -11,7 +11,13 @@
 //!   * `11.root-options` — with a `src/custom/mod.rs` that turns the root
 //!     `--token` into an `Authorization` header in `before_dispatch`: exactly
 //!     ONE `Authorization` reaches the server (the root option's, not also the
-//!     environment's), and `print_usage_error` chooses a usage error's exit code.
+//!     environment's), and `print_usage_error` chooses a usage error's exit code;
+//!   * `13.passthrough` — with a `src/custom/mod.rs` whose passthrough handlers
+//!     print what they received: every argument after the command reaches the
+//!     handler unparsed (`--help` included), while a recursive root option is
+//!     the host's before the command and right after it, and nowhere later,
+//!     and a `--` right after the command (or after those options) only ends
+//!     them — the two exceptions the x-passthrough contract states.
 //!
 //! Runs only under `XYD_SMOKE_RUST=1` (`cargo test -p opencli2rust --test
 //! runtime_smoke`), which CI sets — and then every failure FAILS, a dependency
@@ -420,6 +426,145 @@ fn root_options_reach_before_dispatch_and_authorization_is_sent_once() {
         .find("Global options:")
         .expect("a Global options heading");
     assert!(help.stdout[global..].contains("--token"), "{}", help.stdout);
+    assert!(server.take().is_empty());
+    std::fs::remove_file(&bin).ok();
+}
+
+/// The hand-written half of a CLI with passthrough commands: each handler
+/// prints the recursive root `--profile` clap saw and the arguments it was
+/// handed.
+const PASSTHROUGH_CUSTOM: &str = r#"use std::ffi::OsString;
+use std::future::Future;
+use std::pin::Pin;
+
+use clap::ArgMatches;
+
+use crate::gen::runtime::{CliOverrides, Commands, Context, CustomCommands, Error};
+
+pub struct Custom;
+
+impl CliOverrides for Custom {}
+
+fn report(name: &str, m: &ArgMatches) {
+    let profile = m.get_one::<String>("profile").cloned();
+    let args: Vec<String> = m
+        .get_many::<OsString>("args")
+        .map(|values| values.map(|a| a.to_string_lossy().into_owned()).collect())
+        .unwrap_or_default();
+    println!("{name} profile={profile:?} args={args:?}");
+}
+
+impl Commands for Custom {
+    fn agent(ctx: Context, m: ArgMatches) -> Pin<Box<dyn Future<Output = Result<(), Error>>>> {
+        Box::pin(async move {
+            let _ = ctx;
+            report("agent", &m);
+            Ok(())
+        })
+    }
+    fn tools_sync(ctx: Context, m: ArgMatches) -> Pin<Box<dyn Future<Output = Result<(), Error>>>> {
+        Box::pin(async move {
+            let _ = ctx;
+            report("tools sync", &m);
+            Ok(())
+        })
+    }
+    fn tools_doctor(ctx: Context, m: ArgMatches) -> Pin<Box<dyn Future<Output = Result<(), Error>>>> {
+        Box::pin(async move {
+            let _ = (ctx, m);
+            println!("doctor");
+            Ok(())
+        })
+    }
+}
+
+pub fn register(commands: &mut CustomCommands) {
+    let _ = commands;
+}
+
+pub fn overrides() -> Custom {
+    Custom
+}
+"#;
+
+#[test]
+fn a_passthrough_hands_every_later_argument_over_unparsed() {
+    if gated() {
+        eprintln!("runtime_smoke: skipped (set XYD_SMOKE_RUST=1)");
+        return;
+    }
+    let bin = build(
+        "13.passthrough",
+        &[("src/custom/mod.rs", PASSTHROUGH_CUSTOM)],
+    );
+    let server = Server::start();
+    let out = |args: &[&str]| {
+        let r = run(&bin, &server, args, None);
+        assert_eq!(r.code, 0, "{args:?} failed:\n{}", r.stderr);
+        r.stdout
+    };
+
+    // Flags after the command are the program's, `--help` included.
+    assert_eq!(
+        out(&["agent", "--help", "-x", "foo"]),
+        "agent profile=None args=[\"--help\", \"-x\", \"foo\"]\n"
+    );
+    assert_eq!(out(&["agent"]), "agent profile=None args=[]\n");
+    // A recursive root option is the host's before the command and right after
+    // it; once the program's arguments start, it is theirs.
+    assert_eq!(
+        out(&["--profile", "prod", "agent", "-p", "hi"]),
+        "agent profile=Some(\"prod\") args=[\"-p\", \"hi\"]\n"
+    );
+    assert_eq!(
+        out(&["agent", "--profile", "prod", "-p", "hi"]),
+        "agent profile=Some(\"prod\") args=[\"-p\", \"hi\"]\n"
+    );
+    assert_eq!(
+        out(&["agent", "-p", "--profile", "x"]),
+        "agent profile=None args=[\"-p\", \"--profile\", \"x\"]\n"
+    );
+    // `--` hands even the host's options over.
+    assert_eq!(
+        out(&["agent", "--", "--profile", "x"]),
+        "agent profile=None args=[\"--profile\", \"x\"]\n"
+    );
+    // The two exceptions the x-passthrough contract states: the host parses its
+    // recursive options right after the command, and a `--` there, right after
+    // the command or after those options, only ends them and is not handed on.
+    // A later `--` is the program's.
+    assert_eq!(out(&["agent", "--"]), "agent profile=None args=[]\n");
+    assert_eq!(
+        out(&["agent", "--profile", "prod", "--", "-p"]),
+        "agent profile=Some(\"prod\") args=[\"-p\"]\n"
+    );
+    assert_eq!(
+        out(&["agent", "--", "--"]),
+        "agent profile=None args=[\"--\"]\n"
+    );
+    assert_eq!(
+        out(&["agent", "hi", "--", "x"]),
+        "agent profile=None args=[\"hi\", \"--\", \"x\"]\n"
+    );
+    // The documented subcommands are the program's words, and the alias works.
+    assert_eq!(
+        out(&["ag", "resume", "--last"]),
+        "agent profile=None args=[\"resume\", \"--last\"]\n"
+    );
+    // Nested, beside an ordinary leaf.
+    assert_eq!(
+        out(&["tools", "sync", "--dry-run", "-o", "x"]),
+        "tools sync profile=None args=[\"--dry-run\", \"-o\", \"x\"]\n"
+    );
+    assert_eq!(out(&["tools", "doctor"]), "doctor\n");
+    // The host still documents the command itself.
+    let help = run(&bin, &server, &["help", "agent"], None);
+    assert_eq!(help.code, 0, "{}", help.stderr);
+    assert!(
+        help.stdout.contains("acme-agent's own arguments."),
+        "{}",
+        help.stdout
+    );
     assert!(server.take().is_empty());
     std::fs::remove_file(&bin).ok();
 }

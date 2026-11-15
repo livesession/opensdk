@@ -9,6 +9,7 @@
 
 use serde_json::Value;
 
+use crate::flags::PASSTHROUGH_ARG;
 use crate::model::{build_root_flags, FlagModel};
 
 /// The spellings of one argument as clap registers it.
@@ -69,12 +70,25 @@ fn string_list(v: Option<&Value>) -> Vec<String> {
 
 /// Every option and positional of every command in the tree, labelled with
 /// its command path.
+///
+/// An `x-passthrough` command contributes only the one positional it is
+/// generated with: its documented arguments, options and subcommands belong
+/// to the program it hands them to, which parses them itself.
 fn command_arguments(commands: &[Value], path: &[String], out: &mut Vec<Spelled>) {
     for command in commands {
         let name = command.get("name").and_then(Value::as_str).unwrap_or("");
         let mut here = path.to_vec();
         here.push(name.to_string());
         let at = here.join(" ");
+        if command.get("x-passthrough").is_some() {
+            out.push(Spelled {
+                label: format!("the passthrough argument `<{PASSTHROUGH_ARG}>` of `{at}`"),
+                id: PASSTHROUGH_ARG.to_string(),
+                longs: Vec::new(),
+                short: None,
+            });
+            continue;
+        }
         for opt in command
             .get("options")
             .and_then(Value::as_array)

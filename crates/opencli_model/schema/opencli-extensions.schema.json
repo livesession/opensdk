@@ -1,0 +1,216 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "opencli-extensions.schema.json",
+    "title": "OpenCLI generic extensions",
+    "description": "The x-interactive, x-environment and x-passthrough extensions of an OpenCLI document. Validate a document against this schema AND the base OpenCLI schema: this one checks only these three keys (walking the command tree to find them) and leaves every other key to the base schema. Objects are open, like the base schema's.",
+    "type": "object",
+    "properties": {
+        "x-interactive": {
+            "$ref": "#/$defs/XInteractive"
+        },
+        "x-environment": {
+            "$ref": "#/$defs/XEnvironment"
+        },
+        "x-passthrough": {
+            "not": {},
+            "description": "x-passthrough marks a command; the document root is not one."
+        },
+        "commands": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/Command"
+            }
+        }
+    },
+    "$defs": {
+        "Command": {
+            "type": "object",
+            "description": "A command of the document, walked only to reach its extensions and its subcommands.",
+            "properties": {
+                "x-interactive": {
+                    "$ref": "#/$defs/XInteractive"
+                },
+                "x-environment": {
+                    "$ref": "#/$defs/XEnvironment"
+                },
+                "x-passthrough": {
+                    "$ref": "#/$defs/XPassthrough"
+                },
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Command"
+                    }
+                }
+            }
+        },
+        "XInteractive": {
+            "type": "object",
+            "description": "What a running interactive session accepts. The commands are typed inside the session, not on the command line: they are written without the prefix the session reads them with (`model`, not `/model`), and a docs site makes no page for them.",
+            "properties": {
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/InteractiveCommand"
+                    },
+                    "description": "The commands typed inside the session"
+                },
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/KeyBinding"
+                    },
+                    "description": "The key bindings of the session"
+                }
+            }
+        },
+        "InteractiveCommand": {
+            "type": "object",
+            "description": "A command typed inside an interactive session. Its shape is the OpenCLI command's, without extensions of its own.",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The command name, without the session's prefix"
+                },
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                },
+                "description": {
+                    "type": "string"
+                },
+                "arguments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Named"
+                    }
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Named"
+                    }
+                },
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/InteractiveCommand"
+                    }
+                },
+                "hidden": {
+                    "type": "boolean"
+                },
+                "x-interactive": {
+                    "not": {},
+                    "description": "A session command does not open another session."
+                },
+                "x-passthrough": {
+                    "not": {},
+                    "description": "A session command is not run by the host program."
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "Named": {
+            "type": "object",
+            "description": "An argument or an option of a session command.",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "KeyBinding": {
+            "type": "object",
+            "description": "One key binding of an interactive session.",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "The keys that trigger it (`ctrl+c`, `esc`), any one of them"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "What the keys do"
+                },
+                "context": {
+                    "type": "string",
+                    "description": "Where the binding applies, when not everywhere (a picker, the composer)"
+                }
+            },
+            "required": [
+                "keys",
+                "description"
+            ]
+        },
+        "XEnvironment": {
+            "type": "array",
+            "description": "The environment variables the command reads.",
+            "items": {
+                "$ref": "#/$defs/EnvVar"
+            }
+        },
+        "EnvVar": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The variable's name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "What the variable does"
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "The values it accepts, when it is not free-form"
+                }
+            },
+            "required": [
+                "name",
+                "description"
+            ]
+        },
+        "XPassthrough": {
+            "type": "object",
+            "description": "The host hands every argument after this command, unparsed, to another program, except two it reads first: its own recursive options given right after the command (before the first argument of the program), which the host parses, and a `--` right after the command or after those options, which only ends them and is not handed on. From the first other argument on, everything is the program's, `--help` and a later `--` included. The command's arguments, options and subcommands, if any, document that program; code generators never read them.",
+            "properties": {
+                "program": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The program the arguments are handed to, when it is not named like the command"
+                }
+            }
+        }
+    }
+}

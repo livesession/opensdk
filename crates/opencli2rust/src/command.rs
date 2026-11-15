@@ -2,7 +2,7 @@
 
 use serde_json::Value;
 
-use crate::flags::{render_flag_args, render_positional_arg};
+use crate::flags::{render_flag_args, render_passthrough_arg, render_positional_arg};
 use crate::handler::{render_handler, RenderedHandler};
 use crate::model::{build_leaf_model, build_local_flags};
 use crate::naming::snake_case;
@@ -15,6 +15,9 @@ struct Leaf {
 
 struct State {
     has_arg: bool,
+    /// An `x-passthrough` command is in this resource's subtree (its
+    /// positional parses to `OsString`).
+    has_passthrough: bool,
     /// Non-API runnable-leaf paths recorded from this resource's subtree.
     action_paths: Vec<Vec<String>>,
 }
@@ -58,6 +61,26 @@ fn render_command_chain(
     }
     if command.get("hidden").and_then(|h| h.as_bool()) == Some(true) {
         calls.push(("hide".into(), vec![lit("true")]));
+    }
+
+    // An `x-passthrough` command hands every argument after it, unparsed, to
+    // another program. Its own arguments, options and subcommands document
+    // that program and are never read here: the clap command is exactly the
+    // hand-written passthrough shape (no help flag of its own, one trailing
+    // `OsString` positional), run through the `Commands` trait like any
+    // non-API leaf.
+    if let Some(marker) = command.get("x-passthrough") {
+        let name = command.get("name").and_then(|n| n.as_str()).unwrap_or("");
+        let program = marker
+            .get("program")
+            .and_then(|p| p.as_str())
+            .unwrap_or(name);
+        calls.push(("disable_help_flag".into(), vec![lit("true")]));
+        calls.push(("arg".into(), vec![render_passthrough_arg(program)]));
+        state.has_arg = true;
+        state.has_passthrough = true;
+        state.action_paths.push(path_names.to_vec());
+        return chain(format!("Command::new({})", json_str(name)), calls);
     }
 
     // "Has children" and "is itself runnable" are INDEPENDENT. They used to be
@@ -168,6 +191,7 @@ pub fn render_resource_file(top_command: &Value, module: &str) -> ResourceFile {
     let mut leaves: Vec<Leaf> = Vec::new();
     let mut state = State {
         has_arg: false,
+        has_passthrough: false,
         action_paths: Vec::new(),
     };
     let tree = render_command_chain(
@@ -226,6 +250,9 @@ pub fn render_resource_file(top_command: &Value, module: &str) -> ResourceFile {
     };
 
     let mut uses = Uses::new();
+    if state.has_passthrough {
+        uses.add(&["std::ffi::OsString"]);
+    }
     uses.add(&["std::process::ExitCode"]);
     uses.add(&[if state.has_arg {
         "clap::{Arg, ArgMatches, Command}"
