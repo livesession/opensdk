@@ -52,7 +52,7 @@ not by id) are skipped.
 |---|---|
 | bin name, else name; `version`; `about`; `long_about` when it differs | `info.title`, `info.version`, `info.summary`, `info.description` (each can be overridden) |
 | a subcommand: name, visible aliases, `long_about` else `about`, `hide` | a command: `name`, `aliases`, `description`, `hidden` |
-| positionals, in index order | `arguments`: the first value name lowercased (else the id), `required`, `arity` unless exactly one, the non-hidden possible values as `acceptedValues`, the help heading as `group`, `hidden` |
+| positionals, in index order | `arguments`: the first value name lowercased (else the id), `required`, `arity` unless exactly one (no maximum for `Append`), the non-hidden possible values as `acceptedValues`, the help heading as `group`, `hidden` |
 | options | `options`: the long name; `aliases` = the short plus the visible aliases; one argument per value name; flags (`SetTrue`, `SetFalse`, `Count`) take none and get no default. An option with only a short is an error and a one-character long alias is left out: an OpenCLI option is named by its long name and a one-character alias reads as a short |
 | `global(true)` | `recursive: true` where declared; the copies clap spreads to subcommands are not written |
 | `Append`, `Count` | metadata `repeatable` |

@@ -232,11 +232,30 @@ fn positionals_and_arity() {
                     .required(true)
                     .help("The key and its value"),
             ),
+        )
+        // A builder positional with `Append` and the default `num_args`
+        // takes every value that follows (derive's `Vec<T>` sets 1.. itself).
+        .subcommand(
+            Command::new("touch")
+                .about("Touch files")
+                .arg(Arg::new("file").help("Files").action(ArgAction::Append)),
         );
-    golden(
-        "2.positionals-and-arity",
-        &from_command(&cli).build().unwrap(),
+    let doc = from_command(&cli).build().unwrap();
+    golden("2.positionals-and-arity", &doc);
+    let touch = cli.find_subcommand("touch").unwrap().clone();
+    assert_eq!(
+        touch
+            .clone()
+            .try_get_matches_from(["touch", "a", "b", "c"])
+            .unwrap()
+            .get_many::<String>("file")
+            .unwrap()
+            .count(),
+        3
     );
+    let file = &doc.command(&["touch"]).unwrap().arguments[0];
+    let arity = file.arity.as_ref().expect("an arity");
+    assert_eq!((arity.minimum, arity.maximum), (Some(1), None));
 }
 
 // ── 3. globals declared at two levels (derive) ─────────────────────────────

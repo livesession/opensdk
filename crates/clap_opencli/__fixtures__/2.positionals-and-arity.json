@@ -51,6 +51,19 @@
           }
         }
       ]
+    },
+    {
+      "name": "touch",
+      "description": "Touch files",
+      "arguments": [
+        {
+          "name": "file",
+          "description": "Files",
+          "arity": {
+            "minimum": 1
+          }
+        }
+      ]
     }
   ]
 }

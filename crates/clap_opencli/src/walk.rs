@@ -131,7 +131,10 @@ impl<'o> Walk<'o> {
             name,
             required: arg.is_required_set().then_some(true),
             description: description(arg),
-            arity: arity(arg),
+            // clap keeps an `Append` positional open: it collects every
+            // value that follows, whatever one occurrence takes (its usage
+            // shows `<name>...`).
+            arity: arity(arg, matches!(arg.get_action(), ArgAction::Append)),
             accepted_values: accepted_values(arg),
             group: arg.get_help_heading().map(str::to_string),
             hidden: self.hidden(arg.is_hide_set()),
@@ -338,10 +341,16 @@ fn description(arg: &Arg) -> Option<String> {
         .map(|s| s.to_string())
 }
 
-/// The arity, unless it is exactly one value.
-fn arity(arg: &Arg) -> Option<Arity> {
+/// The arity, unless it is exactly one value. `unbounded` drops the
+/// maximum.
+fn arity(arg: &Arg, unbounded: bool) -> Option<Arity> {
     let range = arg.get_num_args()?;
-    let (min, max) = (range.min_values(), range.max_values());
+    let min = range.min_values();
+    let max = if unbounded {
+        usize::MAX
+    } else {
+        range.max_values()
+    };
     if (min, max) == (1, 1) {
         return None;
     }
@@ -385,7 +394,8 @@ fn option_values(arg: &Arg) -> Vec<Argument> {
         .unwrap_or_else(|| arg.get_id().as_str().to_string());
     vec![Argument {
         name,
-        arity: arity(arg),
+        // An option's arity is per occurrence; `repeatable` says it repeats.
+        arity: arity(arg, false),
         accepted_values: accepted,
         ..Default::default()
     }]

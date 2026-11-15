@@ -52,9 +52,10 @@
 //!   override them.
 //! * **Positionals** become `arguments`, in index order: the first value name,
 //!   lowercased (else the id); `required`; the `arity` unless it is exactly
-//!   one value (no maximum when unbounded); the non-hidden possible values as
-//!   `acceptedValues`; the help heading as `group`; `long_help` else `help`
-//!   as the description; `hidden`.
+//!   one value (no maximum when unbounded, or when the action is `Append`,
+//!   which clap keeps open for every later value); the non-hidden possible
+//!   values as `acceptedValues`; the help heading as `group`; `long_help`
+//!   else `help` as the description; `hidden`.
 //! * **Options:** the long name; as aliases, the short and the visible long
 //!   and short aliases. An OpenCLI option is named by its long name, and a
 //!   one-character alias is read as a short: an option with only a short
