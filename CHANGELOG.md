@@ -61,7 +61,7 @@ described on their GitHub release pages.
   for it) are declared beside it. `snapshot::assert_file` keeps a committed
   document current in a test (`OPENCLI_UPDATE=1` rewrites it). No proc-macro,
   and clap is taken without default features, so a CLI's clap build is
-  unchanged. Supported: clap 4.5 and later 4.x; a CI job holds clap at 4.5.58.
+  unchanged. Supported: clap 4.5 and later 4.x; a CI job holds clap at 4.5.0.
 - `opensdk opencli ... --mount NAME=DOC [--mount-drop NAME:OPTION]...`: after
   the converter and the `--declare` fragments, each mount places a component
   CLI's OpenCLI document at the command NAME (`parent/name` mounts under

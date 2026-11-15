@@ -126,9 +126,11 @@ jobs:
         run: bash scripts/check-standalone.sh
 
   # clap_opencli supports clap from 4.5 on, but Cargo.lock holds the newest
-  # 4.x, so the rust job never builds the floor. This job locks clap to 4.5.58
-  # and runs the adapter's suite (its goldens included), so a getter newer than
-  # 4.5, or a mapping that differs there, fails here.
+  # 4.x, so the rust job never builds the floor. This job locks clap to 4.5.0,
+  # the oldest release the manifest admits (`clap = "4.5"`), and runs the
+  # adapter's suite (its goldens included), so a getter added after 4.5.0, or
+  # a mapping that differs there, fails here. clap_opencli's floor test keeps
+  # the pin and the manifest in step.
   clap-floor:
     name: clap 4.5 floor (clap_opencli)
     runs-on: ubuntu-24.04
@@ -139,7 +141,7 @@ jobs:
 
       - name: hold clap at 4.5.x
         run: |
-          cargo update -p clap --precise 4.5.58
+          cargo update -p clap --precise 4.5.0
           cargo tree -p clap_opencli -e normal -i clap --depth 0 | tee /dev/stderr | grep -q '^clap v4\.5\.'
 
       - name: test
