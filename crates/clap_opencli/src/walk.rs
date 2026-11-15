@@ -268,16 +268,29 @@ impl<'o> Walk<'o> {
             .push(EnvVar::new(name, description).values(accepted_values(arg)));
     }
 
-    /// The spellings of the arguments `arg` conflicts with, groups unrolled,
-    /// as declared on `arg` (clap applies them both ways when parsing).
+    /// The spellings of the arguments `arg` conflicts with, groups unrolled:
+    /// the conflicts declared on `arg` (clap applies them both ways when
+    /// parsing), then the other members of every group `arg` belongs to that
+    /// is not `multiple` (clap's default), whose members exclude each other.
     fn conflicts(&self, owner: &ClapCommand, arg: &Arg) -> Vec<String> {
         // `get_arg_conflicts_with` reads a global's conflicts across the
         // subcommands and cannot unroll a group there; the declaring command
         // holds every id it names (clap asserts that when it builds), so ask
         // it as for a plain argument.
         let plain = arg.clone().global(false);
+        let mut others = owner.get_arg_conflicts_with(&plain);
+        for group in owner.get_groups() {
+            // `is_multiple` takes `&mut self` (clap 4.5 and 4.6).
+            if group.clone().is_multiple() || !group.get_args().any(|id| id == arg.get_id()) {
+                continue;
+            }
+            // A group holds arguments only (clap asserts it when it builds).
+            for member in group.get_args().filter(|id| *id != arg.get_id()) {
+                others.extend(owner.get_arguments().find(|a| a.get_id() == member));
+            }
+        }
         let mut out: Vec<String> = Vec::new();
-        for other in owner.get_arg_conflicts_with(&plain) {
+        for other in others {
             if is_help_or_version(other)
                 || (other.is_hide_set() && self.options.hidden == Hidden::Omit)
             {

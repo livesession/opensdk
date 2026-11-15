@@ -81,11 +81,27 @@
     },
     {
       "name": "csv",
-      "description": "Write CSV"
+      "description": "Write CSV",
+      "metadata": [
+        {
+          "name": "conflictsWith",
+          "value": [
+            "--tsv"
+          ]
+        }
+      ]
     },
     {
       "name": "tsv",
-      "description": "Write TSV"
+      "description": "Write TSV",
+      "metadata": [
+        {
+          "name": "conflictsWith",
+          "value": [
+            "--csv"
+          ]
+        }
+      ]
     },
     {
       "name": "raw",
@@ -108,6 +124,19 @@
         {
           "name": "exclusive",
           "value": true
+        }
+      ]
+    },
+    {
+      "name": "gzip",
+      "description": "Compress with gzip"
+    },
+    {
+      "name": "level",
+      "description": "The compression level",
+      "arguments": [
+        {
+          "name": "level"
         }
       ]
     }

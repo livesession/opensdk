@@ -500,6 +500,8 @@ fn defaults_and_conflicts() {
                 .action(ArgAction::SetTrue)
                 .help("Write TSV"),
         )
+        // Not `multiple` (clap's default): `--csv` and `--tsv` exclude each
+        // other.
         .group(ArgGroup::new("tables").args(["csv", "tsv"]))
         .arg(
             Arg::new("raw")
@@ -519,11 +521,42 @@ fn defaults_and_conflicts() {
             Arg::new("file")
                 .default_value("-")
                 .help("The input; `-` reads stdin"),
+        )
+        // A `multiple` group leaves its members free to combine.
+        .arg(
+            Arg::new("gzip")
+                .long("gzip")
+                .action(ArgAction::SetTrue)
+                .help("Compress with gzip"),
+        )
+        .arg(
+            Arg::new("level")
+                .long("level")
+                .help("The compression level"),
+        )
+        .group(
+            ArgGroup::new("compression")
+                .args(["gzip", "level"])
+                .multiple(true),
         );
-    golden(
-        "7.defaults-and-conflicts",
-        &from_command(&cli).build().unwrap(),
-    );
+    let doc = from_command(&cli).build().unwrap();
+    golden("7.defaults-and-conflicts", &doc);
+    let conflicts = |name: &str| -> Vec<String> {
+        let option = doc.options.iter().find(|o| o.name == name).unwrap();
+        option
+            .metadata
+            .iter()
+            .find(|m| m.name == "conflictsWith")
+            .map(|m| serde_json::from_value(m.value.clone().unwrap()).unwrap())
+            .unwrap_or_default()
+    };
+    assert_eq!(conflicts("csv"), ["--tsv"]);
+    assert_eq!(conflicts("tsv"), ["--csv"]);
+    assert_eq!(conflicts("gzip"), Vec::<String>::new());
+    // clap agrees.
+    let parse = |args: &[&str]| cli.clone().try_get_matches_from(args);
+    assert!(parse(&["acme", "--csv", "--tsv"]).is_err());
+    parse(&["acme", "--gzip", "--level", "3"]).unwrap();
 }
 
 // ── 8. env (the `env` feature) ──────────────────────────────────────────────

@@ -70,13 +70,16 @@
 //!   unless the default is hidden from help; `env` with the `env` feature
 //!   (and an `x-environment` entry on the root, unless the argument is
 //!   hidden); `conflictsWith`, the spellings (`--name`, `<name>`) of the
-//!   arguments an argument declares a conflict with, groups unrolled;
+//!   arguments an argument declares a conflict with, groups unrolled, and of
+//!   the other members of each group it belongs to that is not `multiple`
+//!   (clap's default, under which the members exclude each other);
 //!   `exclusive` and `last` when set.
 //! * **Hidden** commands and arguments are marked `hidden: true`
 //!   ([`Hidden::Mark`], the default) or left out ([`Hidden::Omit`]).
-//! * **Not mapped:** `requires` (clap has no getter for it), whether an
-//!   argument group is required, one-character long aliases, value hints,
-//!   external subcommands.
+//! * **Not mapped:** `requires` and an argument group's own
+//!   `conflicts_with` (clap has no getter for either), whether an argument
+//!   group is required, one-character long aliases, value hints, external
+//!   subcommands.
 //!
 //! clap 4.5 is the oldest version supported, and every 4.x after it.
 //!

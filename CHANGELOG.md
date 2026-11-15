@@ -50,7 +50,8 @@ described on their GitHub release pages.
   short is an error, a one-character long alias is left out: a
   one-character name reads as a long, a one-character alias as a short),
   metadata `default`, `env` (the `env` feature), `repeatable`,
-  `conflictsWith`, `exclusive`, `last`; hidden items marked or omitted). Exit codes, examples, `x-environment`, `interactive`,
+  `conflictsWith` (declared conflicts, and the other members of a group that
+  is not `multiple`), `exclusive`, `last`; hidden items marked or omitted). Exit codes, examples, `x-environment`, `interactive`,
   `x-interactive` (`interactive_from_command` reads a REPL parsed with clap),
   `x-*` keys and per-command extras (`at(&path, ...)`, an unknown path is an
   error) are declared beside it. `snapshot::assert_file` keeps a committed

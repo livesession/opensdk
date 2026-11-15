@@ -58,11 +58,12 @@ not by id) are skipped.
 | `Append`, `Count` | metadata `repeatable` |
 | `default_value(s)` unless hidden | metadata `default` |
 | `env` (the `env` feature) | metadata `env`, and a root `x-environment` entry |
-| `conflicts_with` (groups unrolled), `exclusive`, `last` | metadata `conflictsWith` (spellings), `exclusive`, `last` |
+| `conflicts_with` (groups unrolled), the other members of a group that is not `multiple`, `exclusive`, `last` | metadata `conflictsWith` (spellings), `exclusive`, `last` |
 | `hide` | `hidden: true` (`Hidden::Mark`), or left out (`Hidden::Omit`) |
 
-Not mapped: `requires` (clap has no getter for it), whether an argument group
-is required, one-character long aliases, value hints, external subcommands.
+Not mapped: `requires` and an argument group's own `conflicts_with` (clap has
+no getter for either), whether an argument group is required, one-character
+long aliases, value hints, external subcommands.
 
 ## Versions
 
