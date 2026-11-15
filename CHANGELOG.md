@@ -18,7 +18,8 @@ described on their GitHub release pages.
     a running interactive session accepts; its commands are typed inside the
     session, never argv commands), `x-environment [{name, description,
     values}]` and `x-passthrough {program}` (a command that hands every
-    argument after it, unparsed, to another program).
+    argument after it, unparsed, to another program, except the host's
+    recursive options right after it and a `--` that ends them).
     `schema/opencli-extensions.schema.json` is their contract, exported as
     `EXTENSIONS_SCHEMA_JSON` beside the base schema (`SCHEMA_JSON`, moved here
     from `openapi2opencli/tests`, byte for byte). Every committed OpenCLI

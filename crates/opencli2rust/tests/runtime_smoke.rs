@@ -15,7 +15,9 @@
 //!   * `13.passthrough` — with a `src/custom/mod.rs` whose passthrough handlers
 //!     print what they received: every argument after the command reaches the
 //!     handler unparsed (`--help` included), while a recursive root option is
-//!     the host's before the command and right after it, and nowhere later.
+//!     the host's before the command and right after it, and nowhere later,
+//!     and a `--` right after the command (or after those options) only ends
+//!     them — the two exceptions the x-passthrough contract states.
 //!
 //! Runs only under `XYD_SMOKE_RUST=1` (`cargo test -p opencli2rust --test
 //! runtime_smoke`), which CI sets — and then every failure FAILS, a dependency
@@ -526,6 +528,23 @@ fn a_passthrough_hands_every_later_argument_over_unparsed() {
     assert_eq!(
         out(&["agent", "--", "--profile", "x"]),
         "agent profile=None args=[\"--profile\", \"x\"]\n"
+    );
+    // The two exceptions the x-passthrough contract states: the host parses its
+    // recursive options right after the command, and a `--` there, right after
+    // the command or after those options, only ends them and is not handed on.
+    // A later `--` is the program's.
+    assert_eq!(out(&["agent", "--"]), "agent profile=None args=[]\n");
+    assert_eq!(
+        out(&["agent", "--profile", "prod", "--", "-p"]),
+        "agent profile=Some(\"prod\") args=[\"-p\"]\n"
+    );
+    assert_eq!(
+        out(&["agent", "--", "--"]),
+        "agent profile=None args=[\"--\"]\n"
+    );
+    assert_eq!(
+        out(&["agent", "hi", "--", "x"]),
+        "agent profile=None args=[\"hi\", \"--\", \"x\"]\n"
     );
     // The documented subcommands are the program's words, and the alias works.
     assert_eq!(

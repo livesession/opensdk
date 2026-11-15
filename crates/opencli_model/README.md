@@ -18,8 +18,11 @@ documents, with no CLI library behind it.
   - `x-environment: [{ name, description, values? }]`: the environment
     variables a command reads.
   - `x-passthrough: { program? }`, on a command: the CLI hands every argument
-    after the command, unparsed, to another program. The command's children,
-    if any, document that program; code generators never read them.
+    after the command, unparsed, to another program, except its own recursive
+    options given right after the command, which it parses, and a `--` right
+    after the command or after those options, which only ends them. The
+    command's children, if any, document that program; code generators never
+    read them.
 - **Schemas.** `SCHEMA_JSON` is the base OpenCLI JSON Schema and
   `EXTENSIONS_SCHEMA_JSON` (`schema/opencli-extensions.schema.json`) the
   contract of the three extensions. Validate a document against both, with the

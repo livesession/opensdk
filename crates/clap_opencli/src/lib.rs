@@ -484,7 +484,9 @@ impl At {
     }
 
     /// Mark the command `x-passthrough`: it hands every argument after it,
-    /// unparsed, to another program.
+    /// unparsed, to another program (except the host's recursive options
+    /// right after it, and a `--` that ends them; see
+    /// [`XPassthrough`]).
     ///
     /// What clap parses for the command (the trailing positional that
     /// collects the arguments) is the host's plumbing, not the program's

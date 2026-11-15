@@ -578,7 +578,12 @@ impl EnvVar {
 }
 
 /// `x-passthrough`: the host hands every argument after this command,
-/// unparsed, to another program.
+/// unparsed, to another program, except two it reads first: its own
+/// recursive options given right after the command (before the first
+/// argument of the program), which the host parses, and a `--` right after
+/// the command or after those options, which only ends them and is not handed
+/// on. From the first other argument on, everything is the program's,
+/// `--help` and a later `--` included.
 ///
 /// The command's arguments, options and subcommands, if any, document that
 /// program. Code generators never read them; docs render them as usual.

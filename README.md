@@ -141,8 +141,12 @@ document in the upstream root-`command` shape is read too, lifted to the flat
 shape.
 
 **Passthrough commands.** `x-passthrough` on a command means the CLI hands
-every argument after it, unparsed, to another program; the command's
-children, if any, document that program. `rust-cli` generates it as one
+every argument after it, unparsed, to another program, except two it reads
+first: its own recursive options given right after the command (`acme agent
+--profile x` keeps `--profile x` for the host), and a `--` right after the
+command or after those options, which only ends them and is not handed on.
+From the first other argument on, everything is the program's, `--help` and a
+later `--` included. The command's children, if any, document that program. `rust-cli` generates it as one
 trailing `OsString` positional with the command's help flag disabled, bound
 through the `Commands` trait, and never reads the children; `go-cli` refuses
 the marker for now.
