@@ -42,7 +42,8 @@ described on their GitHub release pages.
     option is dropped (and a drop matching nothing is an error).
 - New library crate **`clap_opencli`** (0.1.0): describe a clap CLI as an
   OpenCLI document. `from_command(&cmd)...build()` maps a builder or derive
-  tree (read after `Command::build` and compared with the unbuilt one:
+  tree (an unbuilt one, a built one is an error; read after
+  `Command::build` and compared with the unbuilt one:
   clap's help subcommand and help/version arguments skipped by action,
   globals `recursive` only where declared, positionals in index order with
   arity and accepted values, options named by their long name with their

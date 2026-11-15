@@ -863,6 +863,73 @@ fn the_command_is_left_as_it_was() {
         .unwrap();
 }
 
+#[test]
+fn a_built_command_is_an_error() {
+    let cli = || {
+        Command::new("acme")
+            .version("1.0.0")
+            .arg(
+                Arg::new("profile")
+                    .long("profile")
+                    .global(true)
+                    .help("The profile to use"),
+            )
+            .subcommand(Command::new("run").about("Run it"))
+    };
+    let unbuilt = from_command(&cli()).build().unwrap();
+    assert_eq!(unbuilt.commands.len(), 1);
+    assert!(unbuilt.commands[0].options.is_empty());
+
+    let expected = "`acme` was already built (it holds clap's own `help` subcommand); pass an \
+                    unbuilt command, a fresh `Cli::command()` or builder, since a built tree \
+                    cannot tell clap's additions from the CLI's own";
+    // `Command::build`, and a parse through `_mut`, which builds the root.
+    let mut built = cli();
+    built.build();
+    assert_eq!(from_command(&built).build().unwrap_err().0, expected);
+    let mut parsed = cli();
+    parsed.try_get_matches_from_mut(["acme", "run"]).unwrap();
+    assert_eq!(from_command(&parsed).build().unwrap_err().0, expected);
+    // Without subcommands, the help and version flags give it away.
+    let mut flags = Command::new("acme").version("1.0.0");
+    flags.build();
+    assert!(from_command(&flags)
+        .build()
+        .unwrap_err()
+        .0
+        .contains("it holds clap's own `--help`"));
+    let mut version_only = Command::new("acme")
+        .version("1.0.0")
+        .disable_help_flag(true);
+    version_only.build();
+    assert!(from_command(&version_only)
+        .build()
+        .unwrap_err()
+        .0
+        .contains("it holds clap's own `--version`"));
+    // A REPL is read the same way.
+    let mut repl = Repl::command();
+    repl.build();
+    assert!(interactive_from_command(&repl)
+        .unwrap_err()
+        .0
+        .starts_with("`session` was already built"));
+    // A CLI's own help flag and `help` subcommand come with clap's disabled.
+    let own = Command::new("acme")
+        .version("1.0.0")
+        .disable_help_flag(true)
+        .disable_help_subcommand(true)
+        .arg(
+            Arg::new("help")
+                .long("help")
+                .action(ArgAction::Help)
+                .help("Print help"),
+        )
+        .subcommand(Command::new("help").about("Open the manual"));
+    let doc = from_command(&own).build().unwrap();
+    assert_eq!(doc.commands[0].name, "help");
+}
+
 // ── every golden ────────────────────────────────────────────────────────────
 
 fn validator(schema: &str) -> jsonschema::Validator {

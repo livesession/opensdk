@@ -46,7 +46,9 @@ your own validator.
 
 Read after `Command::build`, compared with the unbuilt tree to find what clap
 added. clap's `help` subcommand and every help or version argument (by action,
-not by id) are skipped.
+not by id) are skipped. So `from_command` takes an unbuilt command (a fresh
+`Cli::command()` or builder): one already built by `Command::build`, a
+`get_matches*_mut` call or a completion generator is an error.
 
 | clap | OpenCLI |
 |---|---|

@@ -40,9 +40,10 @@
 //! # The mapping
 //!
 //! The tree is read after [`clap::Command::build`], so defaults are filled in,
-//! and compared with the unbuilt tree to find what clap added. clap's `help`
-//! subcommand and every argument whose action is help or version are skipped
-//! (by action, so an argument a CLI names `version` stays).
+//! and compared with the unbuilt tree to find what clap added; so the command
+//! given must be unbuilt (a built one is an error). clap's `help` subcommand
+//! and every argument whose action is help or version are skipped (by action,
+//! so an argument a CLI names `version` stays).
 //!
 //! * **Commands:** the name, the visible aliases, `long_about` else `about`
 //!   as the description, `hidden`.
@@ -118,8 +119,13 @@ pub struct Options {
 
 /// Start describing `command` (the root of a CLI).
 ///
-/// The command is cloned, so it can still be used to parse. Nothing is read
-/// until [`Builder::build`].
+/// The command must be unbuilt: a fresh `Cli::command()` or builder, never
+/// one that [`clap::Command::build`], a `get_matches*_mut` call or a
+/// completion generator has already built, since only an unbuilt tree tells
+/// clap's own help subcommand and the copies of every global apart from the
+/// CLI's own ([`Builder::build`] refuses a built one). The command is cloned,
+/// so it can still be used to parse. Nothing is read until
+/// [`Builder::build`].
 pub fn from_command(command: &clap::Command) -> Builder {
     Builder {
         command: command.clone(),
@@ -136,11 +142,14 @@ pub fn from_command(command: &clap::Command) -> Builder {
 /// The commands of a REPL parsed with clap, for [`Builder::interactive_commands`]:
 /// the subcommands of `command`, mapped like the commands of a CLI (hidden
 /// ones marked). The command's own arguments are not part of the result.
+/// Like [`from_command`], it reads an unbuilt command.
 ///
 /// # Errors
 ///
-/// Where [`Builder::build`] fails on the tree: an option with only a short.
+/// Where [`Builder::build`] fails on the tree: a command already built, an
+/// option with only a short.
 pub fn interactive_from_command(command: &clap::Command) -> Result<Vec<Command>, Error> {
+    check_unbuilt(command)?;
     let mut built = command.clone();
     built.build();
     let options = Options::default();
@@ -148,6 +157,48 @@ pub fn interactive_from_command(command: &clap::Command) -> Result<Vec<Command>,
     Ok(Walk::new(&options)
         .parts(&built, Some(command), &[], &root)?
         .commands)
+}
+
+/// Refuse a command clap has already built: in a built tree, clap's own help
+/// subcommand and the copies of every global it spread look like the CLI's,
+/// so the walk, which compares the built tree with the unbuilt one, would
+/// document them.
+///
+/// Building adds, to the root, a help flag (id `help`) unless it is
+/// disabled, a version flag (id `version`) when the command has a version
+/// and it is not disabled, and a `help` subcommand when the command has
+/// subcommands and it is not disabled. An unbuilt command holds none of them
+/// in those cases: clap asserts the ids and the subcommand names unique when
+/// it builds, so a CLI's own help flag or `help` subcommand comes with the
+/// switch that disables clap's.
+fn check_unbuilt(command: &clap::Command) -> Result<(), Error> {
+    let holds = |id: &str, action: fn(&clap::ArgAction) -> bool| {
+        command
+            .get_arguments()
+            .any(|a| a.get_id() == id && action(a.get_action()))
+    };
+    let help_flag = !command.is_disable_help_flag_set()
+        && holds("help", |a| matches!(a, clap::ArgAction::Help));
+    let version_flag = !command.is_disable_version_flag_set()
+        && holds("version", |a| matches!(a, clap::ArgAction::Version));
+    let help_subcommand = !command.is_disable_help_subcommand_set()
+        && command.get_subcommands().any(|s| s.get_name() == "help");
+    if help_flag || version_flag || help_subcommand {
+        return Err(Error(format!(
+            "`{}` was already built (it holds clap's own {}); pass an unbuilt command, a fresh \
+             `Cli::command()` or builder, since a built tree cannot tell clap's additions from \
+             the CLI's own",
+            command.get_name(),
+            if help_subcommand {
+                "`help` subcommand"
+            } else if help_flag {
+                "`--help`"
+            } else {
+                "`--version`"
+            }
+        )));
+    }
+    Ok(())
 }
 
 /// The extras a command can declare: everything clap does not know.
@@ -321,7 +372,8 @@ impl Builder {
     ///
     /// # Errors
     ///
-    /// When the command has no version and none is given with
+    /// When the command was already built (see [`from_command`]), when it
+    /// has no version and none is given with
     /// [`Builder::version`], when an option has only a short (`-x`: an
     /// OpenCLI option is named by its long name), when an
     /// [`at`](Builder::at) path names no command, and when an extension key
@@ -331,6 +383,7 @@ impl Builder {
     ///
     /// Where clap's own build does: a command clap considers malformed.
     pub fn build(self) -> Result<Document, Error> {
+        check_unbuilt(&self.command)?;
         self.extras.check("the root")?;
         for (path, at) in &self.at {
             at.extras.check(&format!("command `{}`", path.join(" ")))?;
